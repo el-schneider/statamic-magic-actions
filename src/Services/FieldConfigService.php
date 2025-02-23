@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use Illuminate\Support\Facades\Config;
 use Statamic\Facades\File;
-use Statamic\Fields\Field;
 
-class FieldConfigService
+final class FieldConfigService
 {
-    protected array $config;
-    protected array $defaultFieldConfig;
+    private array $config;
+
+    private array $defaultFieldConfig;
 
     public function __construct()
     {
@@ -36,11 +38,10 @@ class FieldConfigService
         ];
     }
 
-
     public function registerFieldConfigs(): void
     {
         foreach ($this->getFieldtypesWithPrompts() as $fieldtype => $settings) {
-            if (!empty($settings['actions'])) {
+            if (! empty($settings['actions'])) {
                 $config = $this->defaultFieldConfig;
                 $config['magic_tags_action'] = [
                     'type' => 'select',
@@ -53,15 +54,6 @@ class FieldConfigService
                 $this->appendConfigToFieldtype($fieldtype, $config);
             }
         }
-    }
-
-    protected function appendConfigToFieldtype(string $fieldtype, array $config): void
-    {
-        if (!class_exists($fieldtype)) {
-            return;
-        }
-
-        $fieldtype::appendConfigFields($config);
     }
 
     public function getFieldConfig(): array
@@ -77,21 +69,30 @@ class FieldConfigService
             $actionsWithPrompts = [];
 
             foreach ($settings['actions'] ?? [] as $action) {
-                $publishedPromptPath = resource_path('prompts/' . $action['handle'] . '.md');
-                $addonPromptPath = __DIR__ . '/../../resources/prompts/' . $action['handle'] . '.md';
+                $publishedPromptPath = resource_path('prompts/'.$action['handle'].'.md');
+                $addonPromptPath = __DIR__.'/../../resources/prompts/'.$action['handle'].'.md';
 
                 if (File::exists($publishedPromptPath) || File::exists($addonPromptPath)) {
                     $actionsWithPrompts[] = $action;
                 }
             }
 
-            if (!empty($actionsWithPrompts)) {
+            if (! empty($actionsWithPrompts)) {
                 $fieldtypesWithPrompts[$fieldtype] = [
-                    'actions' => $actionsWithPrompts
+                    'actions' => $actionsWithPrompts,
                 ];
             }
         }
 
         return $fieldtypesWithPrompts;
+    }
+
+    private function appendConfigToFieldtype(string $fieldtype, array $config): void
+    {
+        if (! class_exists($fieldtype)) {
+            return;
+        }
+
+        $fieldtype::appendConfigFields($config);
     }
 }

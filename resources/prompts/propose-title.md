@@ -26,28 +26,30 @@ The response should be structured as a JSON object with the following shape:
 
 ```json
 {
- "data": "The proposed title"
+  "data": "The proposed title"
 }
 ```
 
 # Examples
 
 ### Example 1
+
 **Input Text:**
 "[Text body discussing various strategies for boosting personal productivity through time management and setting goals.]"
 
 **Output:**
 {
- "data": "Mastering Productivity: Strategies for Effective Time Management and Goal Setting"
+"data": "Mastering Productivity: Strategies for Effective Time Management and Goal Setting"
 }
 
 ### Example 2
+
 **Input Text:**
 "[Text body about the latest advancements in renewable energy technology, focusing on solar and wind power.]"
 
 **Output:**
 {
- "data": "Harnessing Nature: The Future of Renewable Energy with Solar and Wind Innovations"
+"data": "Harnessing Nature: The Future of Renewable Energy with Solar and Wind Innovations"
 }
 
 {{role "user"}}

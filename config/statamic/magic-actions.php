@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     /*
@@ -38,7 +40,7 @@ return [
                     'title' => 'Assign Tags from Taxonomies',
                     'handle' => 'assign-tags-from-taxonomies',
                 ],
-            ]
+            ],
         ],
 
         'Statamic\Fieldtypes\Text' => [
@@ -47,20 +49,25 @@ return [
                     'title' => 'Propose Title',
                     'handle' => 'propose-title',
                 ],
-            ]
+            ],
         ],
 
         'Statamic\Fieldtypes\Textarea' => [
             'actions' => [
                 [
+                    'title' => 'Extract Meta Description',
+                    'handle' => 'extract-meta-description',
+                ],
+            ],
+        ],
+
+        'Statamic\Fieldtypes\Bard' => [
+            'actions' => [
+                [
                     'title' => 'Create Teaser',
                     'handle' => 'create-teaser',
                 ],
-                [
-                    'title' => 'Extract Meta Description',
-                    'handle' => 'extract-meta-description',
-                ]
-           ]
+            ],
         ],
 
         'Statamic\Fieldtypes\Assets' => [
@@ -73,7 +80,7 @@ return [
                     'title' => 'Alt Text',
                     'handle' => 'alt-text',
                 ],
-            ]
-        ]
+            ],
+        ],
     ],
 ];

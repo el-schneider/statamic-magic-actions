@@ -39,7 +39,7 @@ Generate highly relevant tags for a given piece of written content from a websit
 
 **Output Tags:**
 {
-  "data": ["plant-based diet", "health benefits", "chronic disease prevention", "environmental impact"]
+"data": ["plant-based diet", "health benefits", "chronic disease prevention", "environmental impact"]
 }
 
 **Example 2:**
@@ -49,7 +49,7 @@ Generate highly relevant tags for a given piece of written content from a websit
 
 **Output Tags:**
 {
-  "data": ["artificial intelligence", "industry transformation", "automation", "enhanced decision making"]
+"data": ["artificial intelligence", "industry transformation", "automation", "enhanced decision making"]
 }
 
 # Notes

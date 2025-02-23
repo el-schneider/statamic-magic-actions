@@ -1,17 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ElSchneider\StatamicMagicActions;
 
-use ElSchneider\StatamicMagicActions\Http\Controllers\PromptsController;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
 use ElSchneider\StatamicMagicActions\Services\PromptsService;
-use Illuminate\Support\Facades\Route;
-use Statamic\Providers\AddonServiceProvider;
-use ElSchneider\StatamicMagicActions\Http\Controllers\FieldConfigController;
-use Statamic\Statamic;
 use Statamic\Facades\Entry;
+use Statamic\Providers\AddonServiceProvider;
+use Statamic\Statamic;
 
-class ServiceProvider extends AddonServiceProvider
+final class ServiceProvider extends AddonServiceProvider
 {
     protected $vite = [
         'input' => [
@@ -33,11 +32,6 @@ class ServiceProvider extends AddonServiceProvider
     public function bootAddon()
     {
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
-
-        $this->registerActionRoutes(function () {
-            Route::get('prompts', [PromptsController::class, 'index'])->name('prompts.index');
-            Route::get('field-configs', [FieldConfigController::class, 'index'])->name('field-configs.index');
-        });
 
         $magicFields = Entry::find(basename(request()->path()))?->blueprint->fields()->all()->filter(function ($field) {
             return $field->config()['magic_tags_enabled'] ?? false;

@@ -5,7 +5,7 @@
         "build": "vite build",
         "check": "npm run format:check && npm run pint:check",
         "dev": "vite",
-        "fix": "npm run format:fix && npm run npm run pint:fix",
+        "fix": "npm run format:fix && npm run pint:fix",
         "format:check": "prettier --check .",
         "format:fix": "prettier --write .",
         "pint:check": "./vendor/bin/pint --test",

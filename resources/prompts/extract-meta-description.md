@@ -24,11 +24,13 @@ Identify key phrases and concepts within the text that would increase search eng
 # Output Format
 
 Generate a JSON object structured as:
+
 ```json
 {
   "data": "The proposed title"
 }
 ```
+
 - The description must be a single sentence or two, with a maximum of 160 characters.
 - It should include identified keywords.
 - Designed to attract clicks and enhance SEO.
@@ -37,18 +39,20 @@ Generate a JSON object structured as:
 # Examples
 
 **Example 1:**
+
 - **Input:** A blog post discussing the benefits of organic gardening.
 - **Output:**
-{
+  {
   "data": "Discover organic gardening benefits: boost health, save costs, sustain life."
-}
+  }
 
 **Example 2:**
+
 - **Input:** Ein Artikel über die Bedeutung der Cybersicherheit in kleinen Unternehmen.
 - **Output:**
-{
+  {
   "data": "Schützen Sie kleine Unternehmen: Wichtige Cybersicherheitsstrategien sichern Daten und Vertrauen."
-}
+  }
 
 (Note: Outputs should be up to 160 characters and integrate important keywords from the content.)
 
