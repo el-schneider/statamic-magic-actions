@@ -1,0 +1,37 @@
+{
+    "name": "el-schneider/statamic-magic-actions",
+    "autoload": {
+        "psr-4": {
+            "ElSchneider\\StatamicMagicActions\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ElSchneider\\StatamicMagicActions\\Tests\\": "tests"
+        }
+    },
+    "require": {
+        "statamic/cms": "^5.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "pixelfear/composer-dist-plugin": true
+        }
+    },
+    "extra": {
+        "statamic": {
+            "name": "Statamic Magic Actions",
+            "description": "Statamic Magic Actions addon"
+        },
+        "laravel": {
+            "providers": [
+                "ElSchneider\\StatamicMagicActions\\ServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
