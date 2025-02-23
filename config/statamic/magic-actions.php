@@ -37,7 +37,6 @@ return [
                 [
                     'title' => 'Assign Tags from Taxonomies',
                     'handle' => 'assign-tags-from-taxonomies',
-                    'input' => "/taxonomies/tags",
                 ],
             ]
         ],

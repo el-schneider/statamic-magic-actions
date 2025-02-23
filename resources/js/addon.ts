@@ -39,13 +39,6 @@ import { Dotprompt } from 'dotprompt'
 import { toGeminiRequest } from '../../node_modules/dotprompt/src/adapters/gemini.js'
 import { toOpenAIRequest } from '../../node_modules/dotprompt/src/adapters/openai.js'
 
-interface PromptResponse {
-  handle: string
-  prompt: string
-  model: string
-  provider: string
-}
-
 class MagicActionsService {
   private endpoints = {
     openai: 'https://api.openai.com/v1/chat/completions',
@@ -55,8 +48,6 @@ class MagicActionsService {
   constructor() {}
 
   async executePrompt(rendered: any, provider: string, model: string) {
-    console.log(model)
-
     if (provider === 'openai') {
       const apiKey = window.StatamicConfig.providers?.openai?.api_key
 
@@ -65,6 +56,7 @@ class MagicActionsService {
       }
 
       const openaiFormat = toOpenAIRequest(rendered)
+
       const response = await fetch(this.endpoints.openai, {
         method: 'POST',
         body: JSON.stringify(openaiFormat),
@@ -95,7 +87,7 @@ class MagicActionsService {
     throw new Error(`Unsupported provider: ${provider}`)
   }
 
-  async getCompletion(response: any, provider: string): Promise<string[]> {
+  async getCompletion(response: any, provider: string): Promise<{ data: Array<string> | string }> {
     if (provider === 'openai') {
       const content = response.choices[0].message.content
       const match = content.match(/(\[.*\]|\{.*\})/s)?.[0] || content
@@ -165,7 +157,7 @@ const registerFieldActions = async () => {
     }
 
     window.StatamicConfig.magicFields.forEach((field: any) => {
-      const componentName = map[field.type]
+      const componentName = `${field.component}-fieldtype`
 
       if (componentName) {
         window.Statamic.$fieldActions.add(componentName, {
@@ -186,8 +178,8 @@ const registerFieldActions = async () => {
                 throw new Error('Source field is empty')
               }
 
-              const tags = await magicActionsService.generateFromPrompt(sourceText, field.prompt)
-              update(Array.isArray(tags) ? tags.slice(0, 10) : tags)
+              const { data } = await magicActionsService.generateFromPrompt(sourceText, field.prompt)
+              update(Array.isArray(data) ? data.slice(0, 10) : data)
             } catch (error) {
               console.error('Error in Magic Tags action:', error)
               window.Statamic.$toast.error(error.message || 'Failed to generate tags')

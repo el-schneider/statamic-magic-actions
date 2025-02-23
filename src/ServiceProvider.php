@@ -39,35 +39,29 @@ class ServiceProvider extends AddonServiceProvider
             Route::get('field-configs', [FieldConfigController::class, 'index'])->name('field-configs.index');
         });
 
-        $blueprint = Entry::find(basename(request()->path()))?->blueprint?->contents();
+        $magicFields = Entry::find(basename(request()->path()))?->blueprint->fields()->all()->filter(function ($field) {
+            return $field->config()['magic_tags_enabled'] ?? false;
+        })->map(function ($field) {
+            $fieldtype = get_class($field->fieldtype());
+            $action = $field->config()['magic_tags_action'];
+            $title = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'])->firstWhere('handle', $action)['title'];
 
-        // dd($blueprint);
-
-        $magicFields = [];
-
-        if ($blueprint) {
-            foreach ($blueprint['tabs'] as $tab) {
-                foreach ($tab['sections'] as $section) {
-                    foreach ($section['fields'] as $fieldConfig) {
-                    if (!empty($fieldConfig['field']['magic_tags_enabled'])) {
-                        $magicFields[] = [
-                            'type' => $fieldConfig['field']['type'],
-                            'action' => $fieldConfig['field']['magic_tags_action'],
-                            'title' => collect(config('statamic.magic-actions.fieldtypes')['Statamic\Fieldtypes\\' . ucfirst($fieldConfig['field']['type'])]['actions'])
-                                ->firstWhere('handle', $fieldConfig['field']['magic_tags_action'])['title'],
-                            'prompt' => $this->app->make(PromptsService::class)->getPromptByHandle($fieldConfig['field']['magic_tags_action']),
-                        ];
-                    }
-                }
-                }
-            }
-        }
+            return [
+                'type' => $field->type(),
+                'action' => $field->config()['magic_tags_action'],
+                'component' => $field->fieldtype()->component(),
+                'title' => $title,
+                'prompt' => $this->app->make(PromptsService::class)->getPromptByHandle($action),
+            ];
+        });
 
         $providers = config('statamic.magic-actions.providers');
 
+        // dd($providers, $magicFields?->values());
+
         Statamic::provideToScript([
             'providers' => $providers,
-            'magicFields' => $magicFields,
+            'magicFields' => $magicFields?->values(),
         ]);
     }
 }
