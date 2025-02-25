@@ -18,22 +18,34 @@ final class FieldConfigService
         $this->config = Config::get('statamic.magic-actions', []);
 
         $this->defaultFieldConfig = [
-            'magic_tags' => [
+            'magic_actions' => [
                 'type' => 'section',
-                'display' => 'Magic Tags',
+                'display' => 'Magic Actions',
             ],
-            'magic_tags_enabled' => [
+            'magic_actions_enabled' => [
                 'type' => 'toggle',
-                'display' => 'Magic Tags Enabled',
+                'display' => 'Enabled',
                 'default' => false,
             ],
-            'magic_tags_source' => [
+            'magic_actions_source' => [
                 'type' => 'text',
-                'display' => 'Magic Tags Source',
-                'instructions' => 'The field that contains the content to be processed by Magic Tags.',
+                'display' => 'Source',
+                'instructions' => 'The field that contains the content to be processed by Magic Actions.',
                 'placeholder' => 'content',
-                'required' => ['magic_tags_enabled' => true],
-                'if' => ['magic_tags_enabled' => true],
+                'required' => ['magic_actions_enabled' => true],
+                'if' => ['magic_actions_enabled' => true],
+            ],
+            'magic_actions_mode' => [
+                'type' => 'select',
+                'display' => 'Mode',
+                'instructions' => 'Whether to append or replace to the existing content.',
+                'options' => [
+                    'append' => 'Append',
+                    'replace' => 'Replace',
+                ],
+                'default' => 'append',
+                'required' => ['magic_actions_enabled' => true],
+                'if' => ['magic_actions_enabled' => true],
             ],
         ];
     }
@@ -43,12 +55,12 @@ final class FieldConfigService
         foreach ($this->getFieldtypesWithPrompts() as $fieldtype => $settings) {
             if (! empty($settings['actions'])) {
                 $config = $this->defaultFieldConfig;
-                $config['magic_tags_action'] = [
+                $config['magic_actions_action'] = [
                     'type' => 'select',
-                    'display' => 'Magic Tags Action',
+                    'display' => 'Action',
                     'options' => collect($settings['actions'])->pluck('title', 'handle')->toArray(),
-                    'required' => ['magic_tags_enabled' => true],
-                    'if' => ['magic_tags_enabled' => true],
+                    'required' => ['magic_actions_enabled' => true],
+                    'if' => ['magic_actions_enabled' => true],
                 ];
 
                 $this->appendConfigToFieldtype($fieldtype, $config);

@@ -34,15 +34,15 @@ final class ServiceProvider extends AddonServiceProvider
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
 
         $magicFields = Entry::find(basename(request()->path()))?->blueprint->fields()->all()->filter(function ($field) {
-            return $field->config()['magic_tags_enabled'] ?? false;
+            return $field->config()['magic_actions_enabled'] ?? false;
         })->map(function ($field) {
             $fieldtype = get_class($field->fieldtype());
-            $action = $field->config()['magic_tags_action'];
+            $action = $field->config()['magic_actions_action'];
             $title = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'])->firstWhere('handle', $action)['title'];
 
             return [
                 'type' => $field->type(),
-                'action' => $field->config()['magic_tags_action'],
+                'action' => $field->config()['magic_actions_action'],
                 'component' => $field->fieldtype()->component(),
                 'title' => $title,
                 'prompt' => $this->app->make(PromptsService::class)->getPromptByHandle($action),
