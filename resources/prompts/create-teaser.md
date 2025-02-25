@@ -11,12 +11,13 @@ output:
 
 {{role "model"}}
 Generate a 300-character teaser for a given body of text, such as a blog post, article, or webpage, to be used in previews and other parts of a website.
+The output language MUST ALWAYS MATCH the input language.
 
 Focus on capturing the main points or intrigue of the content to attract readers while maintaining conciseness.
 
 # Steps
 
-1. Read the provided text thoroughly to understand the main themes and key points.
+1. Read the provided text thoroughly to understand the main themes and key points as well as language.
 2. Identify any unique, intriguing, or particularly interesting aspects of the text.
 3. Draft a teaser that encapsulates these elements without providing full details, encouraging readers to explore the full content.
 
@@ -34,16 +35,16 @@ The output must be in JSON format:
 
 **Example 1:**
 
-- **Input:** An article about innovative gardening techniques.
+- **Input:** [An article about innovative gardening techniques.]
 - **Output:** {
   "data": "Discover groundbreaking gardening techniques that can transform your backyard into a lush paradise, using eco-friendly methods and everyday materials. Unlock the secrets to a thriving garden today!"
   }
 
 **Example 2:**
 
-- **Input:** A blog post discussing the impact of technology on modern education.
+- **Input:** [Ein Blogbeitrag über die Auswirkungen der Technologie auf die moderne Bildung.]
 - **Output:** {
-  "data": "Explore how cutting-edge technology is reshaping education, offering new tools for teachers and students, and revolutionizing learning in ways we could once only imagine."
+  "data": "Entdecken Sie, wie modernste Technologie die Bildung neu gestaltet, neue Werkzeuge für Lehrer und Schüler bietet und das Lernen auf bisher unvorstellbare Weise revolutioniert."
   }
 
 # Notes

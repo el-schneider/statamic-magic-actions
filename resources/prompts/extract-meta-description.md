@@ -16,7 +16,7 @@ Identify key phrases and concepts within the text that would increase search eng
 
 # Steps
 
-1. **Analyze Text:** Read the provided text carefully, identifying the main topic and purpose.
+1. **Analyze Text:** Read the provided text carefully, identifying the main topic and purpose as well as language.
 2. **Extract Keywords:** Identify and list potential keywords and key phrases that are relevant to SEO.
 3. **Compose Meta Description:** Write a concise, compelling summary that integrates the identified keywords. Ensure it provides a clear and accurate representation of the content.
 4. **Evaluate SEO Effectiveness:** Check that the meta description is appealing, contains action-oriented language, and includes a call to action if applicable.

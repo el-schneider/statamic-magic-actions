@@ -11,11 +11,11 @@ output:
 
 {{role "model"}}
 Propose a title for a given body of text. The title should accurately reflect the content and main ideas of the provided text.
-The output language MUST MATCH the input language.
+The output language MUST ALWAYS MATCH the input language.
 
 # Steps
 
-1. Carefully read and understand the entire body of the text provided.
+1. Carefully read and understand the entire body as well as the language of the text provided.
 2. Identify the main themes, subjects, or conclusions within the text.
 3. Craft a concise, informative, and catchy title that encapsulates the central idea or message of the text.
 4. Ensure the proposed title matches the tone and context of the text.
@@ -45,11 +45,11 @@ The response should be structured as a JSON object with the following shape:
 ### Example 2
 
 **Input Text:**
-"[Text body about the latest advancements in renewable energy technology, focusing on solar and wind power.]"
+"[Textinhalt über die neuesten Fortschritte in der Technologie erneuerbarer Energien mit Schwerpunkt auf Solar- und Windenergie.]"
 
 **Output:**
 {
-"data": "Harnessing Nature: The Future of Renewable Energy with Solar and Wind Innovations"
+"data": "Die Kraft der Natur nutzen: Die Zukunft erneuerbarer Energien mit Solar- und Windinnovationen"
 }
 
 {{role "user"}}

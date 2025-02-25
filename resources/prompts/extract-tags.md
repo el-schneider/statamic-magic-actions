@@ -14,7 +14,7 @@ Generate highly relevant tags for a given piece of written content from a websit
 
 # Steps
 
-1. **Analyze the Content**: Read and understand the written content to identify key themes, topics, and subjects.
+1. **Analyze the Content**: Read and understand the written content to identify key themes, topics, subjects and language.
 2. **Identify Keywords**: Extract significant keywords and phrases that represent the core ideas within the content.
 3. **Generate Tags**: Based on the identified keywords, create concise and relevant tags that can be used to classify and describe the content.
 4. **Refinement**: Ensure the tags are specific, avoiding overly broad or general terms, and they accurately represent the content.
@@ -45,11 +45,11 @@ Generate highly relevant tags for a given piece of written content from a websit
 **Example 2:**
 
 **Input Content:**
-"Advancements in artificial intelligence are transforming industries by enabling automation, improving accuracy, and enhancing decision making."
+"Fortschritte in der künstlichen Intelligenz transformieren Industrien durch Automatisierung, verbesserte Genauigkeit und optimierte Entscheidungsfindung."
 
 **Output Tags:**
 {
-"data": ["artificial intelligence", "industry transformation", "automation", "enhanced decision making"]
+"data": ["künstliche Intelligenz", "Industrietransformation", "Automatisierung", "optimierte Entscheidungsfindung"]
 }
 
 # Notes
