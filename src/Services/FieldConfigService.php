@@ -32,7 +32,7 @@ final class FieldConfigService
                 'display' => 'Source',
                 'instructions' => 'The field that contains the content to be processed by Magic Actions.',
                 'placeholder' => 'content',
-                'required' => ['magic_actions_enabled' => true],
+                'sometimes' => ['magic_actions_enabled' => true],
                 'if' => ['magic_actions_enabled' => true],
             ],
             'magic_actions_mode' => [
@@ -44,7 +44,7 @@ final class FieldConfigService
                     'replace' => 'Replace',
                 ],
                 'default' => 'append',
-                'required' => ['magic_actions_enabled' => true],
+                'sometimes' => ['magic_actions_enabled' => true],
                 'if' => ['magic_actions_enabled' => true],
             ],
         ];
@@ -59,7 +59,7 @@ final class FieldConfigService
                     'type' => 'select',
                     'display' => 'Action',
                     'options' => collect($settings['actions'])->pluck('title', 'handle')->toArray(),
-                    'required' => ['magic_actions_enabled' => true],
+                    'sometimes' => ['magic_actions_enabled' => true],
                     'if' => ['magic_actions_enabled' => true],
                 ];
 

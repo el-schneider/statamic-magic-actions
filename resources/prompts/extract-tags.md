@@ -5,11 +5,12 @@ input:
     text: string
 output:
   format: json
-  schema:
-    tags(array): string
+  validation:
+    'data': 'required|array'
+    'data.*': 'required|string|min:2|max:50'
 ---
 
-{{role "model"}}
+<system>
 Generate highly relevant tags for a given piece of written content from a website. The generated tags should accurately reflect the main themes and topics discussed in the content.
 
 # Steps
@@ -21,7 +22,7 @@ Generate highly relevant tags for a given piece of written content from a websit
 
 # Output Format
 
-- The output should be a list of tags formatted as a JSON array of strings.
+- The output should be a JSON object with a `data` array of strings. ONLY EVER RETURN VALID JSON.
 - Example:
 
 ```json
@@ -58,6 +59,8 @@ Generate highly relevant tags for a given piece of written content from a websit
 - Limit the number of tags to avoid overwhelming or diluting relevance.
 - Consider edge cases where content covers multiple unrelated themes, and aim to capture the primary focus.
 - Generate tags in the same language as the input text to maintain consistency.
+</system>
 
-{{role "user"}}
-{{ text}}
+<user>
+{{ text }}
+</user>

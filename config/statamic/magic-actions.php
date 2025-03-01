@@ -35,10 +35,12 @@ return [
                 [
                     'title' => 'Extract Tags',
                     'handle' => 'extract-tags',
+                    'type' => 'completion',
                 ],
                 [
                     'title' => 'Assign Tags from Taxonomies',
                     'handle' => 'assign-tags-from-taxonomies',
+                    'type' => 'completion',
                 ],
             ],
         ],
@@ -48,6 +50,12 @@ return [
                 [
                     'title' => 'Propose Title',
                     'handle' => 'propose-title',
+                    'type' => 'completion',
+                ],
+                [
+                    'title' => 'Alt Text',
+                    'handle' => 'alt-text',
+                    'type' => 'vision',
                 ],
             ],
         ],
@@ -57,6 +65,7 @@ return [
                 [
                     'title' => 'Extract Meta Description',
                     'handle' => 'extract-meta-description',
+                    'type' => 'completion',
                 ],
             ],
         ],
@@ -66,6 +75,12 @@ return [
                 [
                     'title' => 'Create Teaser',
                     'handle' => 'create-teaser',
+                    'type' => 'completion',
+                ],
+                [
+                    'title' => 'Transcribe Audio',
+                    'handle' => 'transcribe-audio',
+                    'type' => 'transcription',
                 ],
             ],
         ],
@@ -75,10 +90,7 @@ return [
                 [
                     'title' => 'Extract Tags',
                     'handle' => 'extract-assets-tags',
-                ],
-                [
-                    'title' => 'Alt Text',
-                    'handle' => 'alt-text',
+                    'type' => 'vision',
                 ],
             ],
         ],

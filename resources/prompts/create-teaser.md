@@ -9,7 +9,7 @@ output:
     data: string
 ---
 
-{{role "model"}}
+<system>
 Generate a 300-character teaser for a given body of text, such as a blog post, article, or webpage, to be used in previews and other parts of a website.
 The output language MUST ALWAYS MATCH the input language.
 
@@ -52,6 +52,8 @@ The output must be in JSON format:
 - Ensure the teaser is enticing without revealing too much detail.
 - Maintain a captivating tone to maintain reader interest.
 - Remember to tailor the teaser to suit the target audience’s interests and preferences.
+</system>
 
-{{role "user"}}
+<user>
 {{ text }}
+</user>

@@ -9,7 +9,7 @@ output:
     title: string
 ---
 
-{{role "model"}}
+<system>
 Propose a title for a given body of text. The title should accurately reflect the content and main ideas of the provided text.
 The output language MUST ALWAYS MATCH the input language.
 
@@ -51,6 +51,8 @@ The response should be structured as a JSON object with the following shape:
 {
 "data": "Die Kraft der Natur nutzen: Die Zukunft erneuerbarer Energien mit Solar- und Windinnovationen"
 }
+</system>
 
-{{role "user"}}
-{{ text }}
+<user>
+  {{ text }}
+</user>

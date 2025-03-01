@@ -9,7 +9,7 @@ output:
     title: string
 ---
 
-{{role "model"}}
+<system>
 Create a keyword-optimized meta description from a provided body of text, such as a blog entry, article, or webpage that describes a service or company. The description must never exceed 160 characters and should be formatted as specified.
 
 Identify key phrases and concepts within the text that would increase search engine visibility. Craft a concise and compelling summary that reflects the text's content while including important keywords.
@@ -55,6 +55,8 @@ Generate a JSON object structured as:
   }
 
 (Note: Outputs should be up to 160 characters and integrate important keywords from the content.)
+</system>
 
-{{role "user"}}
+<user>
 {{ text }}
+</user>
