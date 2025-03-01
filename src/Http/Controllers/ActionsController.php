@@ -86,12 +86,12 @@ final class ActionsController extends Controller
     public function vision(Request $request): JsonResponse
     {
         $request->validate([
-            'asset_id' => 'required|string',
+            'asset_path' => 'required|string',
             'prompt' => 'required|string',
             'variables' => 'sometimes|array',
         ]);
 
-        $assetId = $request->input('asset_id');
+        $assetPath = $request->input('asset_path');
         $promptHandle = $request->input('prompt');
         $variables = $request->input('variables', []);
 
@@ -110,7 +110,7 @@ final class ActionsController extends Controller
         ], 3600);
 
         // Dispatch job
-        ProcessVisionJob::dispatch($jobId, $promptHandle, $assetId, $variables);
+        ProcessVisionJob::dispatch($jobId, $promptHandle, $assetPath, $variables);
 
         return response()->json([
             'job_id' => $jobId,
@@ -124,11 +124,11 @@ final class ActionsController extends Controller
     public function transcribe(Request $request): JsonResponse
     {
         $request->validate([
-            'asset_id' => 'required|string',
+            'asset_path' => 'required|string',
             'prompt' => 'required|string',
         ]);
 
-        $assetId = $request->input('asset_id');
+        $assetPath = $request->input('asset_path');
         $promptHandle = $request->input('prompt');
 
         // Check if prompt exists
@@ -146,7 +146,7 @@ final class ActionsController extends Controller
         ], 3600);
 
         // Dispatch job
-        ProcessTranscriptionJob::dispatch($jobId, $promptHandle, $assetId);
+        ProcessTranscriptionJob::dispatch($jobId, $promptHandle, $assetPath);
 
         return response()->json([
             'job_id' => $jobId,

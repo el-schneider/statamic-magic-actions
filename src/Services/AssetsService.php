@@ -12,9 +12,9 @@ final class AssetsService
     /**
      * Get an asset by its ID
      */
-    public function getAssetById(string $assetId)
+    public function getAssetByPath(string $assetPath)
     {
-        return Asset::find($assetId);
+        return Asset::findByUrl($assetPath);
     }
 
     /**
@@ -22,7 +22,7 @@ final class AssetsService
      */
     public function getAssetTempPath($asset): string
     {
-        $tempPath = storage_path('app/temp/'.uniqid().'-'.$asset->filename());
+        $tempPath = storage_path('app/temp/'.uniqid().'-'.$asset->basename());
         Storage::disk('local')->makeDirectory('temp');
 
         // Save the asset content to the temporary file

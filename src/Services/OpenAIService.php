@@ -178,12 +178,39 @@ final class OpenAIService
         $assetsService = app(AssetsService::class);
         $audioFilePath = $assetsService->getAssetTempPath($asset);
 
+        // Log file information for debugging
+        Log::debug('Transcribing audio file', [
+            'path' => $audioFilePath,
+            'exists' => file_exists($audioFilePath),
+            'size' => file_exists($audioFilePath) ? filesize($audioFilePath) : 0,
+            'mime' => file_exists($audioFilePath) ? mime_content_type($audioFilePath) : 'unknown',
+            'filename' => basename($audioFilePath),
+        ]);
+
         try {
+            // Ensure the file handle is valid
+            $fileHandle = fopen($audioFilePath, 'r');
+            if (! $fileHandle) {
+                Log::error('Failed to open audio file for reading');
+
+                return null;
+            }
+
+            // Make sure we're using the correct endpoint and parameters
             $response = Http::withToken($this->apiKey)
-                ->attach('file', fopen($audioFilePath, 'r'))
+                ->timeout(60) // Increase timeout for larger files
+                ->attach(
+                    'file',
+                    $fileHandle,
+                    basename($audioFilePath)
+                )
                 ->post('https://api.openai.com/v1/audio/transcriptions', [
                     'model' => $model ?? 'whisper-1',
+                    'response_format' => 'text',
                 ]);
+
+            // Close the file handle
+            fclose($fileHandle);
 
             // Clean up temp file
             $assetsService->cleanupTempFile($audioFilePath);
@@ -194,11 +221,10 @@ final class OpenAIService
                 return null;
             }
 
-            // Return a response array similar to completion and vision
             return [
-                'content' => $response->json('text'),
-                'text' => $response->json('text'),
+                'text' => $response->body(),
             ];
+
         } catch (Throwable $e) {
             Log::error('OpenAI Transcription API error: '.$e->getMessage());
 

@@ -118,10 +118,10 @@ class MagicActionsService {
     }
 
     // Vision endpoint
-    async executeVision(assetId: string, promptHandle: string, variables: Record<string, string> = {}): Promise<any> {
+    async executeVision(assetPath: string, promptHandle: string, variables: Record<string, string> = {}): Promise<any> {
         try {
             const { data } = await window.Statamic.$axios.post(this.endpoints.vision, {
-                asset_id: assetId,
+                asset_path: assetPath,
                 prompt: promptHandle,
                 variables,
             })
@@ -133,10 +133,10 @@ class MagicActionsService {
     }
 
     // Transcription endpoint
-    async executeTranscription(assetId: string, promptHandle: string): Promise<any> {
+    async executeTranscription(assetPath: string, promptHandle: string): Promise<any> {
         try {
             const { data } = await window.Statamic.$axios.post(this.endpoints.transcription, {
-                asset_id: assetId,
+                asset_path: assetPath,
                 prompt: promptHandle,
             })
 
@@ -175,7 +175,7 @@ class MagicActionsService {
         text: string,
         promptHandle: string,
         type: string = 'completion',
-        assetId?: string,
+        assetPath?: string,
     ): Promise<any> {
         try {
             let response
@@ -185,16 +185,16 @@ class MagicActionsService {
                     response = await this.executeCompletion(text, promptHandle)
                     break
                 case 'vision':
-                    if (!assetId) {
+                    if (!assetPath) {
                         throw new Error('Asset ID is required for vision requests')
                     }
-                    response = await this.executeVision(assetId, promptHandle, { text })
+                    response = await this.executeVision(assetPath, promptHandle, { text })
                     break
                 case 'transcription':
-                    if (!assetId) {
+                    if (!assetPath) {
                         throw new Error('Asset ID is required for transcription requests')
                     }
-                    response = await this.executeTranscription(assetId, promptHandle)
+                    response = await this.executeTranscription(assetPath, promptHandle)
                     break
                 default:
                     throw new Error(`Unsupported type: ${type}`)
@@ -267,8 +267,10 @@ const registerFieldActions = async () => {
                         try {
                             console.log(`Starting field action run for field:`, field)
                             console.log(`Field config:`, config)
+                            console.log(`Store:`, store, storeName)
 
                             const state = store.state.publish[storeName]
+                            console.log(`State:`, state)
                             console.log(`State values:`, state.values)
 
                             const type = field.action.includes('vision')
@@ -278,35 +280,25 @@ const registerFieldActions = async () => {
                                   : 'completion'
 
                             console.log(`Action type: ${type}, Action handle: ${field.action}`)
-                            let sourceValue, file
+                            let sourceValue
+                            let assetPath: string | undefined = undefined
 
-                            // For transcription and vision, we need to handle file uploads
-                            if (type === 'transcription' || type === 'vision') {
-                                if (config.type === 'assets' && state.values[config.magic_actions_source]) {
-                                    // For assets, we need to fetch the file from the asset source
-                                    const assetId = state.values[config.magic_actions_source]?.[0] || null
-                                    if (!assetId) {
-                                        throw new Error('No asset selected')
-                                    }
+                            // For vision and transcription, we need the asset ID
+                            if (type === 'vision' || type === 'transcription') {
+                                // Extract asset path from URL
+                                const url = window.location.pathname
+                                const match = url.match(/browse(.+?)\/edit/)
+                                assetPath = match
+                                    ? match[1]
+                                    : state.values[config.magic_actions_source]?.[0] || undefined
 
-                                    // For simplicity in this implementation, we'll use the asset URL
-                                    // In a real implementation, you would need to fetch the actual file
-                                    const assetUrl = `/api/assets/${assetId}` // This is a simplified example
-
-                                    if (type === 'vision') {
-                                        // For vision, we need the image itself
-                                        const response = await fetch(assetUrl)
-                                        file = await response.blob()
-                                        sourceValue = 'Analyze this image'
-                                    } else {
-                                        // For transcription, we need the audio file
-                                        const response = await fetch(assetUrl)
-                                        file = await response.blob()
-                                        sourceValue = '' // No text needed for transcription
-                                    }
-                                } else {
-                                    throw new Error(`${type === 'vision' ? 'Image' : 'Audio'} source is required`)
+                                console.log(`Asset ID:`, assetPath)
+                                if (!assetPath) {
+                                    throw new Error('No asset selected')
                                 }
+
+                                // For vision, we still need some text to analyze with
+                                sourceValue = type === 'vision' ? 'Analyze this image' : ''
                             } else {
                                 // For text completion, extract the text from the source field
                                 sourceValue = extractText(state.values[config.magic_actions_source])
@@ -315,25 +307,18 @@ const registerFieldActions = async () => {
                                 }
                             }
 
-                            // We no longer need to pass the file directly in the new implementation
-                            // Instead, we pass the asset ID for vision and transcription types
-                            const assetId =
-                                type === 'vision' || type === 'transcription'
-                                    ? state.values[config.magic_actions_source]?.[0] || null
-                                    : null
-
                             console.log(`Calling generateFromPrompt with params:`, {
                                 sourceValue,
                                 promptHandle: field.action,
                                 type,
-                                assetId,
+                                assetPath,
                             })
 
                             const data = await magicActionsService.generateFromPrompt(
                                 sourceValue,
-                                field.action, // We now use the action handle directly instead of the prompt content
+                                field.action,
                                 type,
-                                assetId,
+                                assetPath,
                             )
 
                             console.log(`API response data:`, data)

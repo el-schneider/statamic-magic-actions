@@ -25,18 +25,18 @@ final class ProcessTranscriptionJob implements ShouldQueue
 
     private string $promptHandle;
 
-    private string $assetId;
+    private string $assetPath;
 
     private array $variables;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(string $jobId, string $promptHandle, string $assetId, array $variables = [])
+    public function __construct(string $jobId, string $promptHandle, string $assetPath, array $variables = [])
     {
         $this->jobId = $jobId;
         $this->promptHandle = $promptHandle;
-        $this->assetId = $assetId;
+        $this->assetPath = $assetPath;
         $this->variables = $variables;
     }
 
@@ -53,7 +53,7 @@ final class ProcessTranscriptionJob implements ShouldQueue
             ], 3600);
 
             // Get asset data
-            $asset = $assetsService->getAssetById($this->assetId);
+            $asset = $assetsService->getAssetByPath($this->assetPath);
 
             if (! $asset) {
                 $this->handleError('Asset not found.');
@@ -71,7 +71,10 @@ final class ProcessTranscriptionJob implements ShouldQueue
             }
 
             // Call the OpenAI service
-            $response = $openAIService->transcribe($asset, $promptData['model'] ?? null);
+            $response = $openAIService->transcribe(
+                $asset,
+                $promptData['model'] ?? null,
+            );
 
             if (! $response) {
                 $this->handleError('Failed to get transcription from API.');
@@ -82,7 +85,7 @@ final class ProcessTranscriptionJob implements ShouldQueue
             // Store the result in cache
             Cache::put('magic_actions_job_'.$this->jobId, [
                 'status' => 'completed',
-                'data' => $response,
+                'data' => $response['text'],
             ], 3600);
         } catch (Exception $e) {
             $this->handleError('Error processing transcription: '.$e->getMessage());
