@@ -176,14 +176,14 @@ final class PromptParserService
             libxml_clear_errors();
 
             if ($xml === false) {
-                Log::warning('XML parsing failed, fallback to legacy parsing', ['errors' => $errors]);
-
-                return $this->parseMessagesLegacy($markdownContent);
+                Log::warning('XML parsing failed', ['errors' => $errors]);
             }
 
             // Process each role element
             foreach ($roles as $role) {
+
                 foreach ($xml->{$role} as $roleElement) {
+
                     $content = $this->parseRoleContent($roleElement);
 
                     if (! empty($content)) {
@@ -197,16 +197,12 @@ final class PromptParserService
 
             // Fallback if no messages were found
             if (empty($messages)) {
-                Log::warning('No role elements found in XML, using fallback parsing');
-
-                return $this->parseMessagesLegacy($markdownContent);
+                Log::warning('No role elements found in XML');
             }
 
             return $messages;
         } catch (Exception $e) {
             Log::warning('Error parsing XML content: '.$e->getMessage());
-
-            return $this->parseMessagesLegacy($markdownContent);
         }
     }
 
@@ -219,16 +215,16 @@ final class PromptParserService
         $hasSpecialChildren = false;
         $content = [];
 
-        // Convert the element to string to check for child nodes
-        $elementString = $roleElement->asXML();
+        // Check if there are child elements directly using SimpleXMLElement methods
+        $children = $roleElement->children();
+        $childCount = count($children);
 
-        // If the element has child elements like <image_url>, process as structured content
-        if (preg_match('/<(?!text\b)[a-z_][a-z0-9_]*[^>]*>/', $elementString)) {
+        // If there are child elements, process as structured content
+        if ($childCount > 0) {
             $hasSpecialChildren = true;
 
-            // Extract text content (everything that's not inside a tag)
-            $textContent = trim(preg_replace('/<[^>]+>.*?<\/[^>]+>/s', '', $elementString));
-            $textContent = trim(preg_replace('/<[^\/][^>]*>|<\/[^>]*>/', '', $textContent));
+            // Get the text content directly from the element
+            $textContent = trim((string) $roleElement);
 
             if (! empty($textContent)) {
                 $content[] = [
@@ -238,7 +234,7 @@ final class PromptParserService
             }
 
             // Process each child element
-            foreach ($roleElement->children() as $childName => $childElement) {
+            foreach ($children as $childName => $childElement) {
                 // Skip text nodes
                 if ($childName === 'text') {
                     continue;
@@ -262,50 +258,6 @@ final class PromptParserService
         }
 
         return $hasSpecialChildren ? $content : trim((string) $roleElement);
-    }
-
-    /**
-     * Legacy message parsing method for fallback
-     */
-    private function parseMessagesLegacy(string $markdownContent): array
-    {
-        $messages = [];
-
-        // Match system messages with both tag formats
-        if (preg_match('/<system>(.*?)<\/system>/s', $markdownContent, $systemMatches)) {
-            $messages[] = [
-                'role' => 'system',
-                'content' => trim($systemMatches[1]),
-            ];
-        }
-
-        // Match user messages - <user>...</user>
-        preg_match_all('/<user>(.*?)<\/user>/s', $markdownContent, $userMatches);
-        foreach ($userMatches[1] as $userContent) {
-            $messages[] = [
-                'role' => 'user',
-                'content' => trim($userContent),
-            ];
-        }
-
-        // Match assistant messages - <assistant>...</assistant>
-        preg_match_all('/<assistant>(.*?)<\/assistant>/s', $markdownContent, $assistantMatches);
-        foreach ($assistantMatches[1] as $assistantContent) {
-            $messages[] = [
-                'role' => 'assistant',
-                'content' => trim($assistantContent),
-            ];
-        }
-
-        // If no messages were extracted, use entire content as system message
-        if (empty($messages)) {
-            $messages[] = [
-                'role' => 'system',
-                'content' => trim($markdownContent),
-            ];
-        }
-
-        return $messages;
     }
 
     /**
