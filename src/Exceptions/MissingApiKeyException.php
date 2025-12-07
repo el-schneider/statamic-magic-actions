@@ -8,8 +8,8 @@ use Exception;
 
 final class MissingApiKeyException extends Exception
 {
-    public function __construct()
+    public function __construct(string $message = 'API key is not configured')
     {
-        parent::__construct('OpenAI API key is not configured');
+        parent::__construct($message);
     }
 }
