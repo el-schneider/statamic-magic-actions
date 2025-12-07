@@ -58,49 +58,5 @@ abstract class TestCase extends AddonTestCase
     protected function resolveApplicationConfiguration($app)
     {
         parent::resolveApplicationConfiguration($app);
-
-        // Set config to match addon structure
-        $app['config']->set('statamic.magic-actions.fieldtypes', [
-            'Statamic\Fieldtypes\Text' => [
-                'actions' => [
-                    [
-                        'title' => 'Propose Title',
-                        'action' => 'propose-title',
-                    ],
-                    [
-                        'title' => 'Alt Text',
-                        'action' => 'alt-text',
-                    ],
-                ],
-            ],
-            'Statamic\Fieldtypes\Textarea' => [
-                'actions' => [
-                    [
-                        'title' => 'Extract Meta Description',
-                        'action' => 'extract-meta-description',
-                    ],
-                ],
-            ],
-            'Statamic\Fieldtypes\Bard' => [
-                'actions' => [
-                    [
-                        'title' => 'Transcribe Audio',
-                        'action' => 'transcribe-audio',
-                    ],
-                    [
-                        'title' => 'Create Teaser',
-                        'action' => 'create-teaser',
-                    ],
-                ],
-            ],
-            'Statamic\Fieldtypes\Assets' => [
-                'actions' => [
-                    [
-                        'title' => 'Extract Tags',
-                        'action' => 'extract-assets-tags',
-                    ],
-                ],
-            ],
-        ]);
     }
 }
