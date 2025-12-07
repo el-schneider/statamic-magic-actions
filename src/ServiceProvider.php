@@ -41,9 +41,9 @@ final class ServiceProvider extends AddonServiceProvider
     {
         parent::boot();
 
-        // Register views from resources/actions with namespace 'magic-actions'
+        // Register views from addon's resources/actions with namespace 'magic-actions'
         $this->loadViewsFrom(
-            resource_path('actions'),
+            __DIR__.'/../resources/actions',
             'magic-actions'
         );
     }
@@ -53,53 +53,56 @@ final class ServiceProvider extends AddonServiceProvider
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
 
         $blueprint = null;
-        $requestPath = basename(request()->path());
+        $requestPath = request()->path();
 
         // Try to get blueprint from Entry
-        if ($entry = Entry::find($requestPath)) {
-            $blueprint = $entry->blueprint;
+        if (str_contains($requestPath, '/collections/')) {
+            if (preg_match('/entries\/([^\/]+)$/', $requestPath, $matches)) {
+                $entryId = $matches[1];
+
+                if ($entry = Entry::find($entryId)) {
+                    $blueprint = $entry->blueprint();
+                }
+            }
         }
 
         // Try to get blueprint from Asset
-        if (! $blueprint && str_contains(request()->path(), 'assets')) {
-            $assetPath = request()->path();
-            $assetFilename = null;
-
-            if (preg_match('/cp\/assets\/browse\/(.+?)\/edit/', $assetPath, $matches)) {
+        if (! $blueprint && str_contains($requestPath, 'assets')) {
+            if (preg_match('/cp\/assets\/browse\/(.+?)\/edit/', $requestPath, $matches)) {
                 $assetFilename = '/'.$matches[1];
 
                 if ($asset = \Statamic\Facades\Asset::find($assetFilename)) {
                     $blueprint = $asset->blueprint();
                 }
             }
-
         }
 
-        $magicFields = $blueprint?->fields()->all()->filter(function ($field) {
-            return $field->config()['magic_actions_enabled'] ?? false;
-        })->map(function ($field) {
-            $fieldtype = get_class($field->fieldtype());
-            $action = $field->config()['magic_actions_action'];
-            $actionConfig = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [])->firstWhere('action', $action);
-            $title = $actionConfig['title'] ?? $action;
+        $magicFields = null;
+        if ($blueprint) {
+            $magicFields = $blueprint->fields()->all()->filter(function ($field) {
+                return $field->config()['magic_actions_enabled'] ?? false;
+            })->map(function ($field) {
+                $fieldtype = \get_class($field->fieldtype());
+                $action = $field->config()['magic_actions_action'];
+                $actionConfig = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [])->firstWhere('action', $action);
+                $title = $actionConfig['title'] ?? $action;
 
-            // We no longer need to pass full prompt content to the frontend
-            // Just pass the action name which will be used to identify the prompt on the backend
-            return [
-                'type' => $field->type(),
-                'action' => $action,
-                'component' => $field->fieldtype()->component(),
-                'title' => $title,
-            ];
-        });
+                // We no longer need to pass full prompt content to the frontend
+                // Just pass the action name which will be used to identify the prompt on the backend
+                return [
+                    'type' => $field->type(),
+                    'action' => $action,
+                    'component' => $field->fieldtype()->component(),
+                    'title' => $title,
+                ];
+            });
+        }
 
         $providers = config('statamic.magic-actions.providers');
 
-        // dd($providers, $magicFields?->values());
-
         Statamic::provideToScript([
             'providers' => $providers,
-            'magicFields' => $magicFields?->values(),
+            'magicFields' => $magicFields ? $magicFields->values()->toArray() : [],
         ]);
     }
 }

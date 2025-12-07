@@ -17,6 +17,13 @@ abstract class TestCase extends AddonTestCase
 
     protected string $addonServiceProvider = ServiceProvider::class;
 
+    protected function getPackageProviders($app)
+    {
+        return array_merge(parent::getPackageProviders($app), [
+            \Prism\Prism\PrismServiceProvider::class,
+        ]);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

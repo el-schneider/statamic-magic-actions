@@ -94,11 +94,11 @@ class MagicActionsService {
     async executeCompletion(text: string, promptHandle: string): Promise<any> {
         try {
             console.log(`Starting completion request for prompt: ${promptHandle}`)
-            console.log(`Request payload:`, { text, prompt: promptHandle })
+            console.log(`Request payload:`, { text, action: promptHandle })
 
             const response = await window.Statamic.$axios.post(this.endpoints.completion, {
                 text,
-                prompt: promptHandle,
+                action: promptHandle,
             })
 
             console.log(`Completion response:`, response.data)
@@ -122,7 +122,7 @@ class MagicActionsService {
         try {
             const { data } = await window.Statamic.$axios.post(this.endpoints.vision, {
                 asset_path: assetPath,
-                prompt: promptHandle,
+                action: promptHandle,
                 variables,
             })
 
@@ -137,7 +137,7 @@ class MagicActionsService {
         try {
             const { data } = await window.Statamic.$axios.post(this.endpoints.transcription, {
                 asset_path: assetPath,
-                prompt: promptHandle,
+                action: promptHandle,
             })
 
             return this.pollJobStatus(data.job_id)
@@ -148,6 +148,11 @@ class MagicActionsService {
 
     // Extract content from API response
     processApiResponse(response: any): any {
+        // Handle direct string in data property (from job response)
+        if (response.data && typeof response.data === 'string') {
+            return response.data
+        }
+
         // Handling different response formats
         if (response.content) {
             // Try to parse JSON content if it exists
@@ -229,8 +234,53 @@ const extractText = (content: any): string => {
 const magicActionsService = new MagicActionsService()
 
 const transformerMap = {
-    tags: (data: string) => (Array.isArray(data) ? data.slice(0, 10) : [data]),
-    terms: (data: string) => (Array.isArray(data) ? data.slice(0, 10) : [data]),
+    text: (data: any) => {
+        // Extract string from data property if it exists, otherwise return as-is
+        if (data && typeof data === 'object' && data.data && typeof data.data === 'string') {
+            return data.data
+        }
+        return typeof data === 'string' ? data : String(data)
+    },
+    tags: (data: any) => {
+        // Extract string from data property if it exists
+        let content = data
+        if (data && typeof data === 'object' && data.data && typeof data.data === 'string') {
+            content = data.data
+        }
+        if (Array.isArray(content)) {
+            return content.slice(0, 10)
+        }
+        if (typeof content === 'string') {
+            // Parse quoted CSV format: "tag1", "tag2", "tag3"
+            const matches = content.match(/"([^"]*)"/g)
+            if (matches) {
+                return matches.map(m => m.replace(/"/g, '')).slice(0, 10)
+            }
+            // Fallback to comma-separated
+            return content.split(',').map(t => t.trim()).slice(0, 10)
+        }
+        return [content]
+    },
+    terms: (data: any) => {
+        // Extract string from data property if it exists
+        let content = data
+        if (data && typeof data === 'object' && data.data && typeof data.data === 'string') {
+            content = data.data
+        }
+        if (Array.isArray(content)) {
+            return content.slice(0, 10)
+        }
+        if (typeof content === 'string') {
+            // Parse quoted CSV format: "tag1", "tag2", "tag3"
+            const matches = content.match(/"([^"]*)"/g)
+            if (matches) {
+                return matches.map(m => m.replace(/"/g, '')).slice(0, 10)
+            }
+            // Fallback to comma-separated
+            return content.split(',').map(t => t.trim()).slice(0, 10)
+        }
+        return [content]
+    },
     bard: (data: string, value: any) => [
         ...value,
         {
@@ -255,7 +305,13 @@ const registerFieldActions = async () => {
             terms: 'relationship-fieldtype',
         }
 
-        window.StatamicConfig.magicFields.forEach((field: any) => {
+        const magicFields = window.StatamicConfig?.magicFields
+        if (!magicFields || !Array.isArray(magicFields)) {
+            console.log('No magic fields configured for this page')
+            return
+        }
+
+        magicFields.forEach((field: any) => {
             const componentName = `${field.component}-fieldtype`
 
             if (componentName) {
@@ -322,7 +378,7 @@ const registerFieldActions = async () => {
                             )
 
                             console.log(`API response data:`, data)
-                            const transformer = transformerMap[config.type] || ((d) => d)
+                            const transformer = transformerMap[field.type] || transformerMap.text
 
                             const mode = config.magic_actions_mode || 'append'
                             let newValue
