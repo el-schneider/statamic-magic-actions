@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
-use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
-final class CreateTeaser implements MagicAction
+final class CreateTeaser extends BaseMagicAction
 {
-    public function getTitle(): string
-    {
-        return 'Create Teaser';
-    }
-
-    public function getHandle(): string
-    {
-        return 'create-teaser';
-    }
+    public const string TITLE = 'Create Teaser';
+    public const string HANDLE = 'create-teaser';
 
     public function config(): array
     {

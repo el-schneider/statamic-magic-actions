@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
-use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
-final class AltText implements MagicAction
+final class AltText extends BaseMagicAction
 {
-    public function getTitle(): string
-    {
-        return 'Alt Text';
-    }
-
-    public function getHandle(): string
-    {
-        return 'alt-text';
-    }
+    public const string TITLE = 'Alt Text';
+    public const string HANDLE = 'alt-text';
 
     public function config(): array
     {

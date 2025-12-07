@@ -8,14 +8,8 @@ use Prism\Prism\Schema\ObjectSchema;
 
 interface MagicAction
 {
-    /**
-     * Human-readable title for display in the UI
-     */
     public function getTitle(): string;
 
-    /**
-     * Kebab-case handle used to identify the action
-     */
     public function getHandle(): string;
 
     /**

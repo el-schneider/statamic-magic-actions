@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
-use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
-final class ExtractMetaDescription implements MagicAction
+final class ExtractMetaDescription extends BaseMagicAction
 {
-    public function getTitle(): string
-    {
-        return 'Extract Meta Description';
-    }
-
-    public function getHandle(): string
-    {
-        return 'extract-meta-description';
-    }
+    public const string TITLE = 'Extract Meta Description';
+    public const string HANDLE = 'extract-meta-description';
 
     public function config(): array
     {

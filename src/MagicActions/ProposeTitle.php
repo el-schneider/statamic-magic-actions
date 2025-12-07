@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
-use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
-final class ProposeTitle implements MagicAction
+final class ProposeTitle extends BaseMagicAction
 {
-    public function getTitle(): string
-    {
-        return 'Propose Title';
-    }
-
-    public function getHandle(): string
-    {
-        return 'propose-title';
-    }
+    public const string TITLE = 'Propose Title';
+    public const string HANDLE = 'propose-title';
 
     public function config(): array
     {

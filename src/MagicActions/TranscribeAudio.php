@@ -4,20 +4,12 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
-use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ObjectSchema;
 
-final class TranscribeAudio implements MagicAction
+final class TranscribeAudio extends BaseMagicAction
 {
-    public function getTitle(): string
-    {
-        return 'Transcribe Audio';
-    }
-
-    public function getHandle(): string
-    {
-        return 'transcribe-audio';
-    }
+    public const string TITLE = 'Transcribe Audio';
+    public const string HANDLE = 'transcribe-audio';
 
     public function config(): array
     {

@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
-use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ArraySchema;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
-final class AssignTagsFromTaxonomies implements MagicAction
+final class AssignTagsFromTaxonomies extends BaseMagicAction
 {
-    public function getTitle(): string
-    {
-        return 'Assign Tags from Taxonomies';
-    }
-
-    public function getHandle(): string
-    {
-        return 'assign-tags-from-taxonomies';
-    }
+    public const string TITLE = 'Assign Tags from Taxonomies';
+    public const string HANDLE = 'assign-tags-from-taxonomies';
 
     public function config(): array
     {

@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
-use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ArraySchema;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
-final class ExtractAssetsTags implements MagicAction
+final class ExtractAssetsTags extends BaseMagicAction
 {
-    public function getTitle(): string
-    {
-        return 'Extract Tags';
-    }
-
-    public function getHandle(): string
-    {
-        return 'extract-assets-tags';
-    }
+    public const string TITLE = 'Extract Tags';
+    public const string HANDLE = 'extract-assets-tags';
 
     public function config(): array
     {
