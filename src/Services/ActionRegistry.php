@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use ElSchneider\StatamicMagicActions\MagicActions\BaseMagicAction;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -35,10 +36,7 @@ final class ActionRegistry
         // Remove any namespace
         $className = basename(str_replace('\\', '/', $className));
 
-        // Convert PascalCase to kebab-case
-        $kebab = mb_strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $className));
-
-        return $kebab;
+        return Str::kebab($className);
     }
 
     /**
@@ -48,11 +46,7 @@ final class ActionRegistry
      */
     public static function handleToClassName(string $handle): string
     {
-        return str_replace(
-            ' ',
-            '',
-            ucwords(str_replace('-', ' ', $handle))
-        );
+        return Str::studly($handle);
     }
 
     /**

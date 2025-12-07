@@ -43,6 +43,7 @@ return [
             'actions' => [
                 ExtractTags::class,
                 AssignTagsFromTaxonomies::class,
+                ExtractAssetsTags::class,
             ],
         ],
 
@@ -56,6 +57,7 @@ return [
         'Statamic\Fieldtypes\Textarea' => [
             'actions' => [
                 ExtractMetaDescription::class,
+                TranscribeAudio::class,
             ],
         ],
 
