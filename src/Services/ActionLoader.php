@@ -74,11 +74,7 @@ final class ActionLoader
      */
     private function convertActionNameToClassName(string $action): string
     {
-        return str_replace(
-            ' ',
-            '',
-            ucwords(str_replace('-', ' ', $action))
-        );
+        return ActionRegistry::handleToClassName($action);
     }
 
     /**

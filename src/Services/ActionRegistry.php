@@ -107,4 +107,34 @@ final class ActionRegistry
 
         return $this->instances;
     }
+
+    /**
+     * Convert a class name to a handle (kebab-case).
+     *
+     * Example: ProposeTitle -> propose-title
+     */
+    public static function classNameToHandle(string $className): string
+    {
+        // Remove any namespace
+        $className = basename(str_replace('\\', '/', $className));
+
+        // Convert PascalCase to kebab-case
+        $kebab = strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $className));
+
+        return $kebab;
+    }
+
+    /**
+     * Convert a handle to a class name (PascalCase).
+     *
+     * Example: propose-title -> ProposeTitle
+     */
+    public static function handleToClassName(string $handle): string
+    {
+        return str_replace(
+            ' ',
+            '',
+            ucwords(str_replace('-', ' ', $handle))
+        );
+    }
 }

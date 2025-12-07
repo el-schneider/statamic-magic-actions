@@ -66,10 +66,6 @@ abstract class BaseMagicAction implements MagicAction
 
     private function deriveHandle(): string
     {
-        $className = class_basename(static::class);
-        // Convert CamelCase to kebab-case
-        $handle = preg_replace('/([a-z])([A-Z])/', '$1-$2', $className);
-
-        return mb_strtolower($handle);
+        return \ElSchneider\StatamicMagicActions\Services\ActionRegistry::classNameToHandle(static::class);
     }
 }
