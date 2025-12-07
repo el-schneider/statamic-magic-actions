@@ -758,3 +758,40 @@ it('handles missing asset gracefully', function () {
     $cached = Cache::get('magic_actions_job_test-job-789');
     expect($cached['status'])->toBe('completed');
 });
+
+it('alt text vision action with asset integration', function () {
+    // Full integration test: asset resolution -> template rendering -> Prism response
+
+    // Mock a real asset
+    $assetMock = Mockery::mock();
+    $assetMock->shouldReceive('url')->andReturn('https://example.test/images/18546.jpg');
+
+    Asset::shouldReceive('find')
+        ->with('assets::18546.jpg')
+        ->andReturn($assetMock);
+
+    // Mock ActionLoader to verify it receives proper variables
+    Prism::fake([
+        StructuredResponseFake::make()->withStructured([
+            'alt_text' => 'A colorful sunset over mountains with trees in foreground',
+        ]),
+    ]);
+
+    $loader = app(ActionLoader::class);
+
+    // Execute job with asset path
+    $job = new ProcessPromptJob(
+        'integration-test-alt-text',
+        'alt-text',
+        ['text' => 'Context about image'],
+        'assets::18546.jpg'
+    );
+
+    $job->handle($loader);
+
+    // Verify result is cached correctly
+    $cached = Cache::get('magic_actions_job_integration-test-alt-text');
+    expect($cached['status'])->toBe('completed');
+    expect($cached['data'])->toHaveKey('alt_text');
+    expect($cached['data']['alt_text'])->toContain('sunset');
+});
