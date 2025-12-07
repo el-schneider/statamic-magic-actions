@@ -722,3 +722,39 @@ it('explicit image variable takes precedence over asset path', function () {
     $cached = Cache::get('magic_actions_job_test-job-456');
     expect($cached['status'])->toBe('completed');
 });
+
+it('handles missing asset gracefully', function () {
+    // When asset path is provided but asset doesn't exist,
+    // the asset resolution returns null and doesn't override explicit variables
+
+    // Mock Asset facade to return null (not found)
+    Asset::shouldReceive('find')
+        ->with('assets::nonexistent.jpg')
+        ->andReturn(null);
+
+    Prism::fake([
+        StructuredResponseFake::make()->withStructured([
+            'alt_text' => 'Generated text without image',
+        ]),
+    ]);
+
+    $loader = app(ActionLoader::class);
+
+    // Create job with both explicit image AND missing asset path
+    // The explicit image prevents the failure, and missing asset doesn't crash
+    $job = new ProcessPromptJob(
+        'test-job-789',
+        'alt-text',
+        [
+            'text' => 'Describe',
+            'image' => 'https://fallback.test/image.jpg'  // Explicit image provided
+        ],
+        'assets::nonexistent.jpg'  // Asset doesn't exist, but we have explicit image
+    );
+
+    $job->handle($loader);
+
+    // Verify job completed (with the explicit image variable)
+    $cached = Cache::get('magic_actions_job_test-job-789');
+    expect($cached['status'])->toBe('completed');
+});
