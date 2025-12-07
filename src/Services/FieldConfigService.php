@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use Illuminate\Support\Facades\Config;
-use Statamic\Facades\File;
 
 final class FieldConfigService
 {
@@ -13,9 +12,12 @@ final class FieldConfigService
 
     private array $defaultFieldConfig;
 
-    public function __construct()
+    private ActionLoader $actionLoader;
+
+    public function __construct(ActionLoader $actionLoader)
     {
         $this->config = Config::get('statamic.magic-actions', []);
+        $this->actionLoader = $actionLoader;
 
         $this->defaultFieldConfig = [
             'magic_actions' => [
@@ -58,7 +60,7 @@ final class FieldConfigService
                 $config['magic_actions_action'] = [
                     'type' => 'select',
                     'display' => 'Action',
-                    'options' => collect($settings['actions'])->pluck('title', 'handle')->toArray(),
+                    'options' => collect($settings['actions'])->pluck('title', 'action')->toArray(),
                     'sometimes' => ['magic_actions_enabled' => true],
                     'if' => ['magic_actions_enabled' => true],
                 ];
@@ -81,10 +83,7 @@ final class FieldConfigService
             $actionsWithPrompts = [];
 
             foreach ($settings['actions'] ?? [] as $action) {
-                $publishedPromptPath = resource_path('prompts/'.$action['handle'].'.md');
-                $addonPromptPath = __DIR__.'/../../resources/prompts/'.$action['handle'].'.md';
-
-                if (File::exists($publishedPromptPath) || File::exists($addonPromptPath)) {
+                if ($this->actionLoader->exists($action['action'])) {
                     $actionsWithPrompts[] = $action;
                 }
             }

@@ -6,7 +6,6 @@ namespace ElSchneider\StatamicMagicActions;
 
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
-use ElSchneider\StatamicMagicActions\Services\PromptParserService;
 use ElSchneider\StatamicMagicActions\Services\PromptsService;
 use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
@@ -32,9 +31,10 @@ final class ServiceProvider extends AddonServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
         $this->app->singleton(ActionLoader::class, fn() => new ActionLoader());
-        $this->app->singleton(FieldConfigService::class);
+        $this->app->singleton(FieldConfigService::class, function ($app) {
+            return new FieldConfigService($app->make(ActionLoader::class));
+        });
         $this->app->singleton(PromptsService::class);
-        $this->app->singleton(PromptParserService::class);
     }
 
     public function boot(): void
@@ -80,15 +80,14 @@ final class ServiceProvider extends AddonServiceProvider
         })->map(function ($field) {
             $fieldtype = get_class($field->fieldtype());
             $action = $field->config()['magic_actions_action'];
-            $title = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'])->firstWhere('handle', $action)['title'];
-            $actionType = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'])->firstWhere('handle', $action)['type'] ?? 'completion';
+            $actionConfig = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [])->firstWhere('action', $action);
+            $title = $actionConfig['title'] ?? $action;
 
             // We no longer need to pass full prompt content to the frontend
-            // Just pass the action handle which will be used to identify the prompt on the backend
+            // Just pass the action name which will be used to identify the prompt on the backend
             return [
                 'type' => $field->type(),
                 'action' => $action,
-                'actionType' => $actionType,
                 'component' => $field->fieldtype()->component(),
                 'title' => $title,
             ];
