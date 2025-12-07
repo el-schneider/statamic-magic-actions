@@ -65,6 +65,14 @@ final class ActionLoader
     }
 
     /**
+     * Check if an action exists in configuration
+     */
+    public function exists(string $action): bool
+    {
+        return $this->findActionConfig($action) !== null;
+    }
+
+    /**
      * Find action configuration across all capabilities
      */
     private function findActionConfig(string $action): ?array

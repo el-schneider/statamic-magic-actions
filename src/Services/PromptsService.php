@@ -126,10 +126,7 @@ final class PromptsService
      */
     public function promptExists(string $handle): bool
     {
-        $publishedPromptPath = resource_path('prompts/'.$handle.'.md');
-        $addonPromptPath = dirname(__DIR__, 2).'/resources/prompts/'.$handle.'.md';
-
-        return File::exists($publishedPromptPath) || File::exists($addonPromptPath);
+        return app(ActionLoader::class)->exists($handle);
     }
 
     /**
