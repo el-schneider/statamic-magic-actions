@@ -52,6 +52,14 @@ beforeEach(function () {
                         'temperature' => 0.5,
                     ],
                 ],
+                'extract-assets-tags' => [
+                    'provider' => 'openai',
+                    'model' => 'gpt-4-vision-preview',
+                    'parameters' => [
+                        'temperature' => 0.5,
+                        'max_tokens' => 500,
+                    ],
+                ],
             ],
             'audio' => [
                 'transcribe-audio' => [
@@ -105,6 +113,27 @@ return new ObjectSchema(
         new StringSchema("alt_text", "Alt text description"),
     ],
     requiredFields: ["alt_text"]
+);'
+    );
+
+    $extractTagsSchemaPath = resource_path('actions/extract-assets-tags');
+    if (!is_dir($extractTagsSchemaPath)) {
+        mkdir($extractTagsSchemaPath, 0755, true);
+    }
+    file_put_contents(
+        resource_path('actions/extract-assets-tags/schema.php'),
+        '<?php
+use Prism\Prism\Schema\ArraySchema;
+use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\Schema\StringSchema;
+
+return new ObjectSchema(
+    name: "asset_tags_response",
+    description: "Tags extracted from image asset",
+    properties: [
+        new ArraySchema("tags", "Array of image tag strings", new StringSchema("tag", "A single descriptive tag")),
+    ],
+    requiredFields: ["tags"]
 );'
     );
 
@@ -794,4 +823,41 @@ it('alt text vision action with asset integration', function () {
     expect($cached['status'])->toBe('completed');
     expect($cached['data'])->toHaveKey('alt_text');
     expect($cached['data']['alt_text'])->toContain('sunset');
+});
+
+it('extract assets tags vision action with asset integration', function () {
+    // Full integration test for tag extraction from image
+
+    // Mock asset
+    $assetMock = Mockery::mock();
+    $assetMock->shouldReceive('url')->andReturn('https://example.test/sunset.jpg');
+
+    Asset::shouldReceive('find')
+        ->with('assets::sunset.jpg')
+        ->andReturn($assetMock);
+
+    // Mock Prism response with tags array
+    Prism::fake([
+        StructuredResponseFake::make()->withStructured([
+            'tags' => ['sunset', 'landscape', 'mountains', 'nature', 'golden hour'],
+        ]),
+    ]);
+
+    $loader = app(ActionLoader::class);
+
+    // Execute job - provide empty text to let template work
+    $job = new ProcessPromptJob(
+        'integration-test-tags',
+        'extract-assets-tags',
+        ['text' => 'Extract image tags'],
+        'assets::sunset.jpg'
+    );
+
+    $job->handle($loader);
+
+    // Verify result
+    $cached = Cache::get('magic_actions_job_integration-test-tags');
+    expect($cached['status'])->toBe('completed');
+    expect($cached['data'])->toHaveKey('tags');
+    expect($cached['data']['tags'])->toContain('sunset');
 });
