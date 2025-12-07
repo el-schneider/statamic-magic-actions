@@ -63,16 +63,6 @@ beforeEach(function () {
                 ],
             ],
         ],
-        'fieldtypes' => [
-            'Statamic\Fieldtypes\Text' => [
-                'actions' => [
-                    [
-                        'title' => 'Propose Title',
-                        'handle' => 'propose-title',
-                    ],
-                ],
-            ],
-        ],
     ]);
 
     // Create schema files for actions that have them
@@ -660,4 +650,42 @@ it('handles MissingApiKeyException', function () {
     expect($cachedData['status'])->toBe('failed');
     expect($cachedData['error'])->toBeString();
     expect($cachedData['error'])->not()->toBeEmpty();
+});
+
+// ============================================================================
+// Vision action asset resolution tests
+// ============================================================================
+
+it('resolves asset path to url for vision actions', function () {
+    // Mock an asset that can be found
+    $assetMock = Mockery::mock();
+    $assetMock->shouldReceive('url')->andReturn('https://example.test/assets/18546.jpg');
+
+    // Mock the Asset facade to return our mock
+    Asset::shouldReceive('find')
+        ->with('assets::18546.jpg')
+        ->andReturn($assetMock);
+
+    Prism::fake([
+        StructuredResponseFake::make()->withStructured([
+            'alt_text' => 'Generated alt text',
+        ]),
+    ]);
+
+    $loader = app(ActionLoader::class);
+
+    // Create job with assetPath as 4th parameter
+    $job = new ProcessPromptJob(
+        'test-job-123',
+        'alt-text',
+        ['text' => 'Describe this image'],
+        'assets::18546.jpg'
+    );
+
+    $job->handle($loader);
+
+    // Verify cache has successful result
+    $cached = Cache::get('magic_actions_job_test-job-123');
+    expect($cached['status'])->toBe('completed');
+    expect($cached['data'])->toHaveKey('alt_text');
 });

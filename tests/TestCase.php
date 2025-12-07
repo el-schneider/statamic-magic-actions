@@ -59,13 +59,17 @@ abstract class TestCase extends AddonTestCase
     {
         parent::resolveApplicationConfiguration($app);
 
-        // Override config to fix action/handle mismatch in FieldConfigService
+        // Set config to match addon structure
         $app['config']->set('statamic.magic-actions.fieldtypes', [
             'Statamic\Fieldtypes\Text' => [
                 'actions' => [
                     [
                         'title' => 'Propose Title',
-                        'handle' => 'propose-title',
+                        'action' => 'propose-title',
+                    ],
+                    [
+                        'title' => 'Alt Text',
+                        'action' => 'alt-text',
                     ],
                 ],
             ],
@@ -73,7 +77,7 @@ abstract class TestCase extends AddonTestCase
                 'actions' => [
                     [
                         'title' => 'Extract Meta Description',
-                        'handle' => 'extract-meta-description',
+                        'action' => 'extract-meta-description',
                     ],
                 ],
             ],
@@ -81,7 +85,19 @@ abstract class TestCase extends AddonTestCase
                 'actions' => [
                     [
                         'title' => 'Transcribe Audio',
-                        'handle' => 'transcribe-audio',
+                        'action' => 'transcribe-audio',
+                    ],
+                    [
+                        'title' => 'Create Teaser',
+                        'action' => 'create-teaser',
+                    ],
+                ],
+            ],
+            'Statamic\Fieldtypes\Assets' => [
+                'actions' => [
+                    [
+                        'title' => 'Extract Tags',
+                        'action' => 'extract-assets-tags',
                     ],
                 ],
             ],
