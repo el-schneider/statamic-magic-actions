@@ -240,7 +240,7 @@ final class ProcessPromptJob implements ShouldQueue
         throw new Exception("Unable to determine document format for: {$documentData}");
     }
 
-    private function handleAudioPrompt(array $promptData): array
+    private function handleAudioPrompt(array $promptData): string
     {
         if (! $this->assetPath) {
             throw new Exception('Asset path required for audio prompts');
@@ -256,7 +256,8 @@ final class ProcessPromptJob implements ShouldQueue
             throw new Exception('Audio asset not found');
         }
 
-        $audioFile = Audio::fromUrl($asset->url());
+        // Load audio from storage (works for both public and private disks)
+        $audioFile = Audio::fromStoragePath($asset->path(), $asset->container()->diskHandle());
 
         $response = Prism::audio()
             ->using($provider, $model)
@@ -268,7 +269,7 @@ final class ProcessPromptJob implements ShouldQueue
 
         $result = $response->asText();
 
-        return ['text' => $result->text];
+        return $result->text;
     }
 
     /**
