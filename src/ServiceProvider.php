@@ -55,6 +55,23 @@ final class ServiceProvider extends AddonServiceProvider
     {
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
 
+        $blueprint = $this->extractBlueprintFromRequest();
+        $magicFields = $this->buildMagicFieldsConfig($blueprint);
+
+        $providers = config('statamic.magic-actions.providers');
+
+        Statamic::provideToScript([
+            'providers' => $providers,
+            'magicFields' => $magicFields ?? [],
+        ]);
+    }
+
+    /**
+     * Extract blueprint from the current request path.
+     * Handles both entry and asset blueprints.
+     */
+    private function extractBlueprintFromRequest(): ?\Statamic\CP\Contracts\Blueprint
+    {
         $blueprint = null;
         $requestPath = request()->path();
 
@@ -62,7 +79,6 @@ final class ServiceProvider extends AddonServiceProvider
         if (str_contains($requestPath, '/collections/')) {
             if (preg_match('/entries\/([^\/]+)$/', $requestPath, $matches)) {
                 $entryId = $matches[1];
-
                 if ($entry = Entry::find($entryId)) {
                     $blueprint = $entry->blueprint();
                 }
@@ -73,66 +89,65 @@ final class ServiceProvider extends AddonServiceProvider
         if (! $blueprint && str_contains($requestPath, 'assets')) {
             if (preg_match('/cp\/assets\/browse\/(.+?)\/edit/', $requestPath, $matches)) {
                 $assetFilename = '/'.$matches[1];
-
                 if ($asset = \Statamic\Facades\Asset::find($assetFilename)) {
                     $blueprint = $asset->blueprint();
                 }
             }
         }
 
-        $magicFields = null;
-        if ($blueprint) {
-            $magicFields = $blueprint->fields()->all()->filter(function ($field) {
-                return $field->config()['magic_actions_enabled'] ?? false;
-            })->map(function ($field) {
-                $fieldtype = get_class($field->fieldtype());
-                $action = $field->config()['magic_actions_action'];
+        return $blueprint;
+    }
 
-                // Find the action class by its handle
-                $actionClass = null;
-                foreach (config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [] as $actionData) {
-                    // Handle both FQCN strings and pre-formatted arrays
-                    $classPath = null;
-                    $actionHandle = null;
-
-                    if (is_string($actionData) && class_exists($actionData)) {
-                        $classPath = $actionData;
-                    } elseif (is_array($actionData) && isset($actionData['action'])) {
-                        // Pre-formatted array from FieldConfigService
-                        $actionHandle = $actionData['action'];
-                        // Try to find the class by handle
-                        $explodedHandle = str_replace('-', ' ', $actionHandle);
-                        $className = str_replace(' ', '', ucwords($explodedHandle));
-                        $classPath = "ElSchneider\\StatamicMagicActions\\MagicActions\\{$className}";
-                    }
-
-                    if ($classPath && class_exists($classPath)) {
-                        $instance = new $classPath();
-                        if ($instance->getHandle() === $action) {
-                            $actionClass = $instance;
-                            break;
-                        }
-                    }
-                }
-
-                $title = $actionClass ? $actionClass->getTitle() : $action;
-                $promptType = $actionClass ? $actionClass->config()['type'] : 'text';
-
-                return [
-                    'type' => $field->type(),
-                    'action' => $action,
-                    'component' => $field->fieldtype()->component(),
-                    'title' => $title,
-                    'promptType' => $promptType,
-                ];
-            });
+    /**
+     * Build magic fields configuration from blueprint.
+     */
+    private function buildMagicFieldsConfig(?\Statamic\CP\Contracts\Blueprint $blueprint): ?array
+    {
+        if (! $blueprint) {
+            return null;
         }
 
-        $providers = config('statamic.magic-actions.providers');
+        return $blueprint->fields()->all()->filter(function ($field) {
+            return $field->config()['magic_actions_enabled'] ?? false;
+        })->map(function ($field) {
+            $fieldtype = get_class($field->fieldtype());
+            $action = $field->config()['magic_actions_action'];
 
-        Statamic::provideToScript([
-            'providers' => $providers,
-            'magicFields' => $magicFields ? $magicFields->values()->toArray() : [],
-        ]);
+            // Find the action class by its handle
+            $actionClass = null;
+            foreach (config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [] as $actionData) {
+                // Handle both FQCN strings and pre-formatted arrays
+                $classPath = null;
+                $actionHandle = null;
+
+                if (is_string($actionData) && class_exists($actionData)) {
+                    $classPath = $actionData;
+                } elseif (is_array($actionData) && isset($actionData['action'])) {
+                    $actionHandle = $actionData['action'];
+                    $explodedHandle = str_replace('-', ' ', $actionHandle);
+                    $className = str_replace(' ', '', ucwords($explodedHandle));
+                    $classPath = "ElSchneider\\StatamicMagicActions\\MagicActions\\{$className}";
+                }
+
+                if ($classPath && class_exists($classPath)) {
+                    $instance = new $classPath();
+                    if ($instance->getHandle() === $action) {
+                        $actionClass = $instance;
+                        break;
+                    }
+                }
+            }
+
+            $title = $actionClass ? $actionClass->getTitle() : $action;
+            $promptType = $actionClass ? $actionClass->config()['type'] : 'text';
+
+            return [
+                'type' => $field->type(),
+                'action' => $action,
+                'component' => $field->fieldtype()->component(),
+                'title' => $title,
+                'promptType' => $promptType,
+            ];
+        })->values()->toArray();
     }
 }
