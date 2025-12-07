@@ -17,6 +17,26 @@ abstract class TestCase extends AddonTestCase
 
     protected string $addonServiceProvider = ServiceProvider::class;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Register view namespace for testing (after services are booted)
+        app('view')->addNamespace('magic-actions', __DIR__.'/../resources/actions');
+    }
+
+    protected function tearDown(): void
+    {
+        // Override to create directory with proper permissions
+        if (isset($this->fakeStacheDirectory) && is_string($this->fakeStacheDirectory)) {
+            app('files')->deleteDirectory($this->fakeStacheDirectory);
+            mkdir($this->fakeStacheDirectory, 0755, true);
+            touch($this->fakeStacheDirectory.'/.gitkeep');
+        }
+
+        parent::tearDown();
+    }
+
     final public function actingAsSuperAdmin()
     {
         $admin = User::make()
@@ -32,5 +52,32 @@ abstract class TestCase extends AddonTestCase
     {
         parent::resolveApplicationConfiguration($app);
 
+        // Override config to fix action/handle mismatch in FieldConfigService
+        $app['config']->set('statamic.magic-actions.fieldtypes', [
+            'Statamic\Fieldtypes\Text' => [
+                'actions' => [
+                    [
+                        'title' => 'Propose Title',
+                        'handle' => 'propose-title',
+                    ],
+                ],
+            ],
+            'Statamic\Fieldtypes\Textarea' => [
+                'actions' => [
+                    [
+                        'title' => 'Extract Meta Description',
+                        'handle' => 'extract-meta-description',
+                    ],
+                ],
+            ],
+            'Statamic\Fieldtypes\Bard' => [
+                'actions' => [
+                    [
+                        'title' => 'Transcribe Audio',
+                        'handle' => 'transcribe-audio',
+                    ],
+                ],
+            ],
+        ]);
     }
 }
