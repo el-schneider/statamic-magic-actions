@@ -50,6 +50,14 @@ final class ProcessPromptJob implements ShouldQueue
                 'message' => 'Processing request...',
             ], 3600);
 
+            // Resolve asset path to URL if this is a vision action with an asset path
+            if ($this->assetPath && !isset($this->variables['image'])) {
+                $imageUrl = $this->resolveAssetUrl($this->assetPath);
+                if ($imageUrl) {
+                    $this->variables['image'] = $imageUrl;
+                }
+            }
+
             $promptData = $actionLoader->load($this->action, $this->variables);
 
             // Route to appropriate Prism method based on prompt type
@@ -246,6 +254,39 @@ final class ProcessPromptJob implements ShouldQueue
 
         $result = $response->asText();
         return ['text' => $result->text];
+    }
+
+    /**
+     * Resolve an asset path to its public URL
+     *
+     * Converts Statamic asset paths (format: container::filename) to public URLs.
+     * Returns null if asset cannot be found.
+     *
+     * @param string $assetPath Asset path in format "container::filename"
+     * @return string|null The public URL of the asset, or null if not found
+     */
+    private function resolveAssetUrl(string $assetPath): ?string
+    {
+        try {
+            $asset = Asset::find($assetPath);
+
+            if (!$asset) {
+                Log::warning('Asset not found for vision action', [
+                    'asset_path' => $assetPath,
+                    'job_id' => $this->jobId,
+                ]);
+                return null;
+            }
+
+            return $asset->url();
+        } catch (Exception $e) {
+            Log::warning('Error resolving asset URL for vision action', [
+                'asset_path' => $assetPath,
+                'job_id' => $this->jobId,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
 
     private function handleError(string $message): void
