@@ -92,7 +92,7 @@ it('updates cache to completed with structured data on success', function () {
 
     $cachedData = Cache::get('magic_actions_job_test-job-id');
     expect($cachedData['status'])->toBe('completed');
-    expect($cachedData['data']['title'])->toBe('Generated Title');
+    expect($cachedData['data'])->toBe('Generated Title');
 });
 
 it('updates cache to failed with error on exception', function () {
@@ -298,7 +298,7 @@ it('resolves asset path to url for vision actions', function () {
 
     $cached = Cache::get('magic_actions_job_test-job-123');
     expect($cached['status'])->toBe('completed');
-    expect($cached['data'])->toHaveKey('alt_text');
+    expect($cached['data'])->toBe('Generated alt text');
 });
 
 it('explicit image variable takes precedence over asset path', function () {
