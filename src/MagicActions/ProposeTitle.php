@@ -10,7 +10,6 @@ use Prism\Prism\Schema\StringSchema;
 final class ProposeTitle extends BaseMagicAction
 {
     public const string TITLE = 'Propose Title';
-    public const string HANDLE = 'propose-title';
 
     public function config(): array
     {

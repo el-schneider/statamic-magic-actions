@@ -11,7 +11,6 @@ use Prism\Prism\Schema\StringSchema;
 final class AssignTagsFromTaxonomies extends BaseMagicAction
 {
     public const string TITLE = 'Assign Tags from Taxonomies';
-    public const string HANDLE = 'assign-tags-from-taxonomies';
 
     public function config(): array
     {

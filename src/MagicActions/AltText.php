@@ -10,7 +10,6 @@ use Prism\Prism\Schema\StringSchema;
 final class AltText extends BaseMagicAction
 {
     public const string TITLE = 'Alt Text';
-    public const string HANDLE = 'alt-text';
 
     public function config(): array
     {

@@ -10,7 +10,6 @@ use Prism\Prism\Schema\StringSchema;
 final class ExtractMetaDescription extends BaseMagicAction
 {
     public const string TITLE = 'Extract Meta Description';
-    public const string HANDLE = 'extract-meta-description';
 
     public function config(): array
     {

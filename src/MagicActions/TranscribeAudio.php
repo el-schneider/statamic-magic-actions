@@ -9,7 +9,6 @@ use Prism\Prism\Schema\ObjectSchema;
 final class TranscribeAudio extends BaseMagicAction
 {
     public const string TITLE = 'Transcribe Audio';
-    public const string HANDLE = 'transcribe-audio';
 
     public function config(): array
     {

@@ -11,7 +11,6 @@ use Prism\Prism\Schema\StringSchema;
 final class ExtractTags extends BaseMagicAction
 {
     public const string TITLE = 'Extract Tags';
-    public const string HANDLE = 'extract-tags';
 
     public function config(): array
     {

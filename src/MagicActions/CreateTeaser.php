@@ -10,7 +10,6 @@ use Prism\Prism\Schema\StringSchema;
 final class CreateTeaser extends BaseMagicAction
 {
     public const string TITLE = 'Create Teaser';
-    public const string HANDLE = 'create-teaser';
 
     public function config(): array
     {

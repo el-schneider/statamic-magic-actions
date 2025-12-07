@@ -10,7 +10,6 @@ use Prism\Prism\Schema\ObjectSchema;
 abstract class BaseMagicAction implements MagicAction
 {
     public const string TITLE = '';
-    public const string HANDLE = '';
 
     public function getTitle(): string
     {
@@ -19,7 +18,15 @@ abstract class BaseMagicAction implements MagicAction
 
     public function getHandle(): string
     {
-        return static::HANDLE;
+        return $this->deriveHandle();
+    }
+
+    private function deriveHandle(): string
+    {
+        $className = class_basename(static::class);
+        // Convert CamelCase to kebab-case
+        $handle = preg_replace('/([a-z])([A-Z])/', '$1-$2', $className);
+        return strtolower($handle);
     }
 
     abstract public function config(): array;
