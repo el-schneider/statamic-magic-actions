@@ -14,6 +14,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class ActionsController extends Controller
 {
@@ -42,7 +43,7 @@ final class ActionsController extends Controller
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Completion');
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             Log::warning('Completion request validation failed', [
                 'action' => $request->input('action'),
                 'error' => $e->getMessage(),
@@ -79,7 +80,7 @@ final class ActionsController extends Controller
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Vision');
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             Log::warning('Vision request validation failed', [
                 'action' => $request->input('action'),
                 'error' => $e->getMessage(),

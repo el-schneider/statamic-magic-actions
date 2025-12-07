@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use ElSchneider\StatamicMagicActions\MagicActions\BaseMagicAction;
-use ReflectionClass;
+use Throwable;
 
 /**
  * Registry for managing Magic Action metadata and discovery.
@@ -24,32 +26,62 @@ final class ActionRegistry
     private array $instances = [];
 
     /**
+     * Convert a class name to a handle (kebab-case).
+     *
+     * Example: ProposeTitle -> propose-title
+     */
+    public static function classNameToHandle(string $className): string
+    {
+        // Remove any namespace
+        $className = basename(str_replace('\\', '/', $className));
+
+        // Convert PascalCase to kebab-case
+        $kebab = mb_strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $className));
+
+        return $kebab;
+    }
+
+    /**
+     * Convert a handle to a class name (PascalCase).
+     *
+     * Example: propose-title -> ProposeTitle
+     */
+    public static function handleToClassName(string $handle): string
+    {
+        return str_replace(
+            ' ',
+            '',
+            ucwords(str_replace('-', ' ', $handle))
+        );
+    }
+
+    /**
      * Discover and register all MagicAction classes from a given namespace.
      *
-     * @param string $namespace The namespace to scan (e.g., 'ElSchneider\\StatamicMagicActions\\MagicActions')
+     * @param  string  $namespace  The namespace to scan (e.g., 'ElSchneider\\StatamicMagicActions\\MagicActions')
      */
     public function discoverFromNamespace(string $namespace): void
     {
         // Try vendor path first (production), then local path (development)
         $baseDir = base_path('vendor/el-schneider/statamic-magic-actions/src/MagicActions');
-        if (!is_dir($baseDir)) {
-            $baseDir = __DIR__ . '/../MagicActions';
+        if (! is_dir($baseDir)) {
+            $baseDir = __DIR__.'/../MagicActions';
         }
-        $files = glob($baseDir . '/*.php');
+        $files = glob($baseDir.'/*.php');
 
         foreach ($files ?? [] as $file) {
-            if ($file === dirname($file) . '/BaseMagicAction.php') {
+            if ($file === dirname($file).'/BaseMagicAction.php') {
                 continue;
             }
 
             $className = basename($file, '.php');
-            $fqcn = $namespace . '\\' . $className;
+            $fqcn = $namespace.'\\'.$className;
 
             if (class_exists($fqcn) && is_subclass_of($fqcn, BaseMagicAction::class)) {
                 try {
                     $instance = new $fqcn();
                     $this->handles[$instance->getHandle()] = $fqcn;
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // Skip actions that fail to instantiate
                     continue;
                 }
@@ -70,11 +102,11 @@ final class ActionRegistry
      */
     public function getInstance(string $handle): ?BaseMagicAction
     {
-        if (!isset($this->handles[$handle])) {
+        if (! isset($this->handles[$handle])) {
             return null;
         }
 
-        if (!isset($this->instances[$handle])) {
+        if (! isset($this->instances[$handle])) {
             $class = $this->handles[$handle];
             $this->instances[$handle] = new $class();
         }
@@ -100,41 +132,11 @@ final class ActionRegistry
     public function getAllInstances(): array
     {
         foreach ($this->handles as $handle => $class) {
-            if (!isset($this->instances[$handle])) {
+            if (! isset($this->instances[$handle])) {
                 $this->instances[$handle] = new $class();
             }
         }
 
         return $this->instances;
-    }
-
-    /**
-     * Convert a class name to a handle (kebab-case).
-     *
-     * Example: ProposeTitle -> propose-title
-     */
-    public static function classNameToHandle(string $className): string
-    {
-        // Remove any namespace
-        $className = basename(str_replace('\\', '/', $className));
-
-        // Convert PascalCase to kebab-case
-        $kebab = strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $className));
-
-        return $kebab;
-    }
-
-    /**
-     * Convert a handle to a class name (PascalCase).
-     *
-     * Example: propose-title -> ProposeTitle
-     */
-    public static function handleToClassName(string $handle): string
-    {
-        return str_replace(
-            ' ',
-            '',
-            ucwords(str_replace('-', ' ', $handle))
-        );
     }
 }

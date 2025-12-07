@@ -37,6 +37,7 @@ final class ServiceProvider extends AddonServiceProvider
         $this->app->singleton(ActionRegistry::class, function () {
             $registry = new ActionRegistry();
             $registry->discoverFromNamespace('ElSchneider\\StatamicMagicActions\\MagicActions');
+
             return $registry;
         });
     }

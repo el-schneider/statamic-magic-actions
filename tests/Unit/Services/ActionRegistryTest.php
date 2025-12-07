@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ElSchneider\StatamicMagicActions\Tests\Unit\Services;
 
-use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\MagicActions\ProposeTitle;
+use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use Tests\TestCase;
 
-class ActionRegistryTest extends TestCase
+final class ActionRegistryTest extends TestCase
 {
     private ActionRegistry $registry;
 
