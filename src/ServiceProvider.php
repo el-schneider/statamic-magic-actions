@@ -8,6 +8,7 @@ use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
 use Statamic\Facades\Entry;
+use Statamic\Fields\Blueprint;
 use Statamic\Providers\AddonServiceProvider;
 use Statamic\Statamic;
 
@@ -71,7 +72,7 @@ final class ServiceProvider extends AddonServiceProvider
      * Extract blueprint from the current request path.
      * Handles both entry and asset blueprints.
      */
-    private function extractBlueprintFromRequest(): ?\Statamic\CP\Contracts\Blueprint
+    private function extractBlueprintFromRequest(): ?Blueprint
     {
         $blueprint = null;
         $requestPath = request()->path();
@@ -102,7 +103,7 @@ final class ServiceProvider extends AddonServiceProvider
     /**
      * Build magic fields configuration from blueprint.
      */
-    private function buildMagicFieldsConfig(?\Statamic\CP\Contracts\Blueprint $blueprint): ?array
+    private function buildMagicFieldsConfig(?Blueprint $blueprint): ?array
     {
         if (! $blueprint) {
             return null;
