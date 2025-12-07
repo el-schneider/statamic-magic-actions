@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions;
 
+use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
-use ElSchneider\StatamicMagicActions\Services\OpenAIService;
 use ElSchneider\StatamicMagicActions\Services\PromptParserService;
 use ElSchneider\StatamicMagicActions\Services\PromptsService;
 use Statamic\Facades\Entry;
@@ -31,10 +31,23 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
+        $this->app->singleton(ActionLoader::class, function ($app) {
+            return new ActionLoader();
+        });
         $this->app->singleton(FieldConfigService::class);
         $this->app->singleton(PromptsService::class);
-        $this->app->singleton(OpenAIService::class);
         $this->app->singleton(PromptParserService::class);
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        // Register views from resources/actions with namespace 'magic-actions'
+        $this->loadViewsFrom(
+            resource_path('actions'),
+            'magic-actions'
+        );
     }
 
     public function bootAddon()
