@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions;
 
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
+use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
 use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
@@ -33,6 +34,11 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
         $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
+        $this->app->singleton(ActionRegistry::class, function () {
+            $registry = new ActionRegistry();
+            $registry->discoverFromNamespace('ElSchneider\\StatamicMagicActions\\MagicActions');
+            return $registry;
+        });
     }
 
     public function boot(): void
