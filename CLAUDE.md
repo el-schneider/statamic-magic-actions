@@ -83,3 +83,5 @@ You can test the addon in the Statamic control panel using these credentials. Fo
 
 - Obtain a session cookie via login, then use curl to test API endpoints
 - Example: `curl -b "cookies.txt" http://statamic-magic-actions-test.test/api/magic-actions/...`
+
+See the logs at `../statamic-magic-actions-test/storage/logs/laravel.log` when debugging errors.
