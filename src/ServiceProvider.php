@@ -6,7 +6,6 @@ namespace ElSchneider\StatamicMagicActions;
 
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
-use ElSchneider\StatamicMagicActions\Services\PromptsService;
 use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
 use Statamic\Statamic;
@@ -34,7 +33,6 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
         $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
-        $this->app->singleton(PromptsService::class);
     }
 
     public function boot(): void
