@@ -3,20 +3,99 @@
 declare(strict_types=1);
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Providers
     |--------------------------------------------------------------------------
     |
-    | Providers that should be enabled for magic tags.
+    | Provider credentials for Prism. API keys loaded from environment.
     |
     */
-
     'providers' => [
         'openai' => [
-            'name' => 'OpenAI',
             'api_key' => env('OPENAI_API_KEY'),
+        ],
+        'anthropic' => [
+            'api_key' => env('ANTHROPIC_API_KEY'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Actions
+    |--------------------------------------------------------------------------
+    |
+    | Actions organized by capability (text, audio, image).
+    | Each action references a folder in resources/actions/{action}
+    |
+    */
+    'actions' => [
+        'text' => [
+            'alt-text' => [
+                'provider' => 'openai',
+                'model' => 'gpt-4-vision-preview',
+                'parameters' => [
+                    'temperature' => 0.7,
+                    'max_tokens' => 1000,
+                ],
+            ],
+            'propose-title' => [
+                'provider' => 'openai',
+                'model' => 'gpt-4',
+                'parameters' => [
+                    'temperature' => 0.7,
+                    'max_tokens' => 200,
+                ],
+            ],
+            'extract-tags' => [
+                'provider' => 'openai',
+                'model' => 'gpt-4',
+                'parameters' => [
+                    'temperature' => 0.5,
+                    'max_tokens' => 500,
+                ],
+            ],
+            'assign-tags-from-taxonomies' => [
+                'provider' => 'openai',
+                'model' => 'gpt-4',
+                'parameters' => [
+                    'temperature' => 0.5,
+                    'max_tokens' => 500,
+                ],
+            ],
+            'extract-meta-description' => [
+                'provider' => 'openai',
+                'model' => 'gpt-4',
+                'parameters' => [
+                    'temperature' => 0.7,
+                    'max_tokens' => 300,
+                ],
+            ],
+            'create-teaser' => [
+                'provider' => 'openai',
+                'model' => 'gpt-4',
+                'parameters' => [
+                    'temperature' => 0.8,
+                    'max_tokens' => 500,
+                ],
+            ],
+            'extract-assets-tags' => [
+                'provider' => 'openai',
+                'model' => 'gpt-4-vision-preview',
+                'parameters' => [
+                    'temperature' => 0.5,
+                    'max_tokens' => 500,
+                ],
+            ],
+        ],
+        'audio' => [
+            'transcribe-audio' => [
+                'provider' => 'openai',
+                'model' => 'whisper-1',
+                'parameters' => [
+                    'language' => 'en',
+                ],
+            ],
         ],
     ],
 
@@ -25,22 +104,20 @@ return [
     | Fieldtypes
     |--------------------------------------------------------------------------
     |
-    | Fieldtypes that should be enabled for magic tags.
+    | Fieldtypes and their magic actions.
+    | Each action references its configuration by action.
     |
     */
-
     'fieldtypes' => [
         'Statamic\Fieldtypes\Terms' => [
             'actions' => [
                 [
                     'title' => 'Extract Tags',
-                    'handle' => 'extract-tags',
-                    'type' => 'completion',
+                    'action' => 'extract-tags',
                 ],
                 [
                     'title' => 'Assign Tags from Taxonomies',
-                    'handle' => 'assign-tags-from-taxonomies',
-                    'type' => 'completion',
+                    'action' => 'assign-tags-from-taxonomies',
                 ],
             ],
         ],
@@ -49,13 +126,11 @@ return [
             'actions' => [
                 [
                     'title' => 'Propose Title',
-                    'handle' => 'propose-title',
-                    'type' => 'completion',
+                    'action' => 'propose-title',
                 ],
                 [
                     'title' => 'Alt Text',
-                    'handle' => 'alt-text',
-                    'type' => 'vision',
+                    'action' => 'alt-text',
                 ],
             ],
         ],
@@ -64,8 +139,7 @@ return [
             'actions' => [
                 [
                     'title' => 'Extract Meta Description',
-                    'handle' => 'extract-meta-description',
-                    'type' => 'completion',
+                    'action' => 'extract-meta-description',
                 ],
             ],
         ],
@@ -74,13 +148,11 @@ return [
             'actions' => [
                 [
                     'title' => 'Create Teaser',
-                    'handle' => 'create-teaser',
-                    'type' => 'completion',
+                    'action' => 'create-teaser',
                 ],
                 [
                     'title' => 'Transcribe Audio',
-                    'handle' => 'transcribe-audio',
-                    'type' => 'transcription',
+                    'action' => 'transcribe-audio',
                 ],
             ],
         ],
@@ -89,8 +161,7 @@ return [
             'actions' => [
                 [
                     'title' => 'Extract Tags',
-                    'handle' => 'extract-assets-tags',
-                    'type' => 'vision',
+                    'action' => 'extract-assets-tags',
                 ],
             ],
         ],
