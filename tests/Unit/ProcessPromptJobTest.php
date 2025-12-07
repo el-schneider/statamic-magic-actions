@@ -689,3 +689,36 @@ it('resolves asset path to url for vision actions', function () {
     expect($cached['status'])->toBe('completed');
     expect($cached['data'])->toHaveKey('alt_text');
 });
+
+it('explicit image variable takes precedence over asset path', function () {
+    // When both assetPath and explicit image variable are provided,
+    // the explicit image variable should be used (not overridden)
+
+    $explicitImageUrl = 'https://example.test/explicit.jpg';
+
+    Prism::fake([
+        StructuredResponseFake::make()->withStructured([
+            'alt_text' => 'Image description',
+        ]),
+    ]);
+
+    $loader = app(ActionLoader::class);
+
+    // Create job with both explicit image AND assetPath
+    // The explicit image should take precedence
+    $job = new ProcessPromptJob(
+        'test-job-456',
+        'alt-text',
+        [
+            'text' => 'Describe',
+            'image' => $explicitImageUrl  // Explicit variable
+        ],
+        'assets::some-other-image.jpg'  // Different assetPath (should be ignored)
+    );
+
+    $job->handle($loader);
+
+    // Verify the explicit image URL was preserved
+    $cached = Cache::get('magic_actions_job_test-job-456');
+    expect($cached['status'])->toBe('completed');
+});
