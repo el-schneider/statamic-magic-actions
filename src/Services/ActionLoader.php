@@ -66,6 +66,9 @@ final class ActionLoader
 
     /**
      * Check if an action exists in configuration
+     *
+     * @param string $action The action identifier to check
+     * @return bool True if action exists in configuration, false otherwise
      */
     public function exists(string $action): bool
     {
