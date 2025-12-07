@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
