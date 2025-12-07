@@ -6,10 +6,8 @@ namespace ElSchneider\StatamicMagicActions\Http\Controllers;
 
 use Closure;
 use ElSchneider\StatamicMagicActions\Exceptions\MissingApiKeyException;
-use ElSchneider\StatamicMagicActions\Jobs\ProcessCompletionJob;
-use ElSchneider\StatamicMagicActions\Jobs\ProcessTranscriptionJob;
-use ElSchneider\StatamicMagicActions\Jobs\ProcessVisionJob;
-use ElSchneider\StatamicMagicActions\Services\PromptsService;
+use ElSchneider\StatamicMagicActions\Jobs\ProcessPromptJob;
+use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -19,13 +17,6 @@ use Illuminate\Support\Str;
 
 final class ActionsController extends Controller
 {
-    private PromptsService $promptsService;
-
-    public function __construct(PromptsService $promptsService)
-    {
-        $this->promptsService = $promptsService;
-    }
-
     /**
      * Start a completion job
      */
@@ -34,22 +25,20 @@ final class ActionsController extends Controller
         try {
             $request->validate([
                 'text' => 'required|string',
-                'prompt' => 'required|string',
+                'action' => 'required|string',
             ]);
 
             $text = $request->input('text');
-            $promptHandle = $request->input('prompt');
+            $action = $request->input('action');
 
-            if (! $this->promptsService->promptExists($promptHandle)) {
-                return response()->json(['error' => 'Prompt not found'], 404);
+            if (! app(ActionLoader::class)->exists($action)) {
+                return response()->json(['error' => 'Action not found'], 404);
             }
 
             $jobId = (string) Str::uuid();
 
-            return $this->queueBackgroundJob($jobId, $promptHandle, function () use ($jobId, $promptHandle, $text) {
-                ProcessCompletionJob::dispatch($jobId, $promptHandle, [
-                    'text' => $text,
-                ]);
+            return $this->queueBackgroundJob($jobId, $action, function () use ($jobId, $action, $text) {
+                ProcessPromptJob::dispatch($jobId, $action, ['text' => $text]);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Completion');
@@ -64,22 +53,22 @@ final class ActionsController extends Controller
         try {
             $request->validate([
                 'asset_path' => 'required|string',
-                'prompt' => 'required|string',
+                'action' => 'required|string',
                 'variables' => 'sometimes|array',
             ]);
 
             $assetPath = $request->input('asset_path');
-            $promptHandle = $request->input('prompt');
+            $action = $request->input('action');
             $variables = $request->input('variables', []);
 
-            if (! $this->promptsService->promptExists($promptHandle)) {
-                return response()->json(['error' => 'Prompt not found'], 404);
+            if (! app(ActionLoader::class)->exists($action)) {
+                return response()->json(['error' => 'Action not found'], 404);
             }
 
             $jobId = (string) Str::uuid();
 
-            return $this->queueBackgroundJob($jobId, $promptHandle, function () use ($jobId, $promptHandle, $assetPath, $variables) {
-                ProcessVisionJob::dispatch($jobId, $promptHandle, $assetPath, $variables);
+            return $this->queueBackgroundJob($jobId, $action, function () use ($jobId, $action, $assetPath, $variables) {
+                ProcessPromptJob::dispatch($jobId, $action, $variables, $assetPath);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Vision');
@@ -94,20 +83,20 @@ final class ActionsController extends Controller
         try {
             $request->validate([
                 'asset_path' => 'required|string',
-                'prompt' => 'required|string',
+                'action' => 'required|string',
             ]);
 
             $assetPath = $request->input('asset_path');
-            $promptHandle = $request->input('prompt');
+            $action = $request->input('action');
 
-            if (! $this->promptsService->promptExists($promptHandle)) {
-                return response()->json(['error' => 'Prompt not found'], 404);
+            if (! app(ActionLoader::class)->exists($action)) {
+                return response()->json(['error' => 'Action not found'], 404);
             }
 
             $jobId = (string) Str::uuid();
 
-            return $this->queueBackgroundJob($jobId, $promptHandle, function () use ($jobId, $promptHandle, $assetPath) {
-                ProcessTranscriptionJob::dispatch($jobId, $promptHandle, $assetPath);
+            return $this->queueBackgroundJob($jobId, $action, function () use ($jobId, $action, $assetPath) {
+                ProcessPromptJob::dispatch($jobId, $action, [], $assetPath);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Transcription');
@@ -151,11 +140,11 @@ final class ActionsController extends Controller
         ], 500);
     }
 
-    private function queueBackgroundJob(string $jobId, string $promptHandle, Closure $dispatch): JsonResponse
+    private function queueBackgroundJob(string $jobId, string $action, Closure $dispatch): JsonResponse
     {
         Log::info('Job created', [
             'job_id' => $jobId,
-            'prompt_handle' => $promptHandle,
+            'action' => $action,
         ]);
 
         Cache::put('magic_actions_job_'.$jobId, [
@@ -174,7 +163,7 @@ final class ActionsController extends Controller
 
         Log::info('Job dispatched', [
             'job_id' => $jobId,
-            'prompt_handle' => $promptHandle,
+            'action' => $action,
         ]);
 
         return response()->json([
