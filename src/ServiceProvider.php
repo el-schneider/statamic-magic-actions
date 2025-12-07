@@ -11,6 +11,8 @@ use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
 use Statamic\Statamic;
 
+use function get_class;
+
 final class ServiceProvider extends AddonServiceProvider
 {
     protected $vite = [
@@ -30,8 +32,8 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
-        $this->app->singleton(ActionLoader::class, fn() => new ActionLoader());
-        $this->app->singleton(FieldConfigService::class, fn() => new FieldConfigService());
+        $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
+        $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
         $this->app->singleton(PromptsService::class);
     }
 
@@ -79,7 +81,7 @@ final class ServiceProvider extends AddonServiceProvider
             $magicFields = $blueprint->fields()->all()->filter(function ($field) {
                 return $field->config()['magic_actions_enabled'] ?? false;
             })->map(function ($field) {
-                $fieldtype = \get_class($field->fieldtype());
+                $fieldtype = get_class($field->fieldtype());
                 $action = $field->config()['magic_actions_action'];
 
                 // Find the action class by its handle

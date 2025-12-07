@@ -7,27 +7,12 @@ namespace ElSchneider\StatamicMagicActions\MagicActions;
 use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Prism\Prism\Schema\ObjectSchema;
 
+use function count;
+use function reset;
+
 abstract class BaseMagicAction implements MagicAction
 {
     public const string TITLE = '';
-
-    public function getTitle(): string
-    {
-        return static::TITLE;
-    }
-
-    public function getHandle(): string
-    {
-        return $this->deriveHandle();
-    }
-
-    private function deriveHandle(): string
-    {
-        $className = class_basename(static::class);
-        // Convert CamelCase to kebab-case
-        $handle = preg_replace('/([a-z])([A-Z])/', '$1-$2', $className);
-        return strtolower($handle);
-    }
 
     abstract public function config(): array;
 
@@ -38,4 +23,53 @@ abstract class BaseMagicAction implements MagicAction
     abstract public function schema(): ?ObjectSchema;
 
     abstract public function rules(): array;
+
+    final public function getTitle(): string
+    {
+        return static::TITLE;
+    }
+
+    final public function getHandle(): string
+    {
+        return $this->deriveHandle();
+    }
+
+    /**
+     * Unwrap structured responses from Prism.
+     *
+     * When using ObjectSchema with a name, Prism wraps the response fields in that object.
+     * For example, ObjectSchema named 'meta_description_response' returns:
+     * ['meta_description_response' => ['description' => '...']]
+     *
+     * This method extracts the inner value so the frontend receives clean data.
+     * Default behavior for single-field responses returns just the field value.
+     * For multi-field responses, returns the unwrapped fields object.
+     * Override this method in subclasses for custom unwrapping logic.
+     *
+     * @param  array  $structured  The structured response from Prism
+     * @return mixed The unwrapped response (value for single fields, array for multiple fields)
+     */
+    final public function unwrap(array $structured): mixed
+    {
+        // Prism returns the fields object directly
+        // For single-field schemas, extract just the field value
+        // e.g., ['description' => 'text'] becomes 'text'
+        // e.g., ['tags' => ['tag1', 'tag2']] becomes ['tag1', 'tag2']
+
+        if (count($structured) === 1) {
+            return reset($structured);
+        }
+
+        // Multiple fields - return as is
+        return $structured;
+    }
+
+    private function deriveHandle(): string
+    {
+        $className = class_basename(static::class);
+        // Convert CamelCase to kebab-case
+        $handle = preg_replace('/([a-z])([A-Z])/', '$1-$2', $className);
+
+        return mb_strtolower($handle);
+    }
 }

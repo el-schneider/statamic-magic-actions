@@ -42,7 +42,15 @@ interface MagicAction
      * Validation rules for expected prompt variables
      *
      * @return array Laravel validation rules keyed by variable name
-     * Example: ['text' => 'required|string', 'image' => 'required|string']
+     *               Example: ['text' => 'required|string', 'image' => 'required|string']
      */
     public function rules(): array;
+
+    /**
+     * Unwrap structured responses from Prism
+     *
+     * @param  array  $structured  The structured response from Prism
+     * @return mixed The unwrapped response (value for single fields, array for multiple fields)
+     */
+    public function unwrap(array $structured): mixed;
 }

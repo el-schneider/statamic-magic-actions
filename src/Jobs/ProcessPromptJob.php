@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\Jobs;
 
-use ElSchneider\StatamicMagicActions\Exceptions\OpenAIApiException;
+use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -14,7 +14,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Prism\Prism\Enums\Provider;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\ValueObjects\Media\Audio;
 use Prism\Prism\ValueObjects\Media\Document;
@@ -26,8 +25,11 @@ final class ProcessPromptJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     private string $jobId;
+
     private string $action;
+
     private array $variables;
+
     private ?string $assetPath = null;
 
     public function __construct(
@@ -51,7 +53,7 @@ final class ProcessPromptJob implements ShouldQueue
             ], 3600);
 
             // Resolve asset path to URL if this is a vision action with an asset path
-            if ($this->assetPath && !isset($this->variables['image'])) {
+            if ($this->assetPath && ! isset($this->variables['image'])) {
                 $imageUrl = $this->resolveAssetUrl($this->assetPath);
                 if ($imageUrl) {
                     $this->variables['image'] = $imageUrl;
@@ -59,10 +61,11 @@ final class ProcessPromptJob implements ShouldQueue
             }
 
             $promptData = $actionLoader->load($this->action, $this->variables);
+            $action = $promptData['action'];
 
             // Route to appropriate Prism method based on prompt type
             if ($promptData['type'] === 'text') {
-                $response = $this->handleTextPrompt($promptData);
+                $response = $this->handleTextPrompt($promptData, $action);
             } elseif ($promptData['type'] === 'audio') {
                 $response = $this->handleAudioPrompt($promptData);
             } else {
@@ -84,7 +87,7 @@ final class ProcessPromptJob implements ShouldQueue
         }
     }
 
-    private function handleTextPrompt(array $promptData): array
+    private function handleTextPrompt(array $promptData, MagicAction $action): mixed
     {
         $provider = $promptData['provider'];
         $model = $promptData['model'];
@@ -99,7 +102,7 @@ final class ProcessPromptJob implements ShouldQueue
             ->withSystemPrompt($promptData['systemPrompt']);
 
         // Add prompt with media if present
-        if (!empty($media)) {
+        if (! empty($media)) {
             $prismRequest->withPrompt($promptData['userPrompt'], $media);
         } else {
             $prismRequest->withPrompt($promptData['userPrompt']);
@@ -119,7 +122,7 @@ final class ProcessPromptJob implements ShouldQueue
                 ->using($provider, $model)
                 ->withSystemPrompt($promptData['systemPrompt']);
 
-            if (!empty($media)) {
+            if (! empty($media)) {
                 $response->withPrompt($promptData['userPrompt'], $media);
             } else {
                 $response->withPrompt($promptData['userPrompt']);
@@ -135,11 +138,21 @@ final class ProcessPromptJob implements ShouldQueue
             }
 
             $result = $response->asStructured();
-            return $result->structured;
-        } else {
-            $result = $prismRequest->asText();
-            return ['text' => $result->text];
+            $structured = $result->structured;
+
+            $unwrapped = $action->unwrap($structured);
+            Log::info('Unwrapped response', [
+                'action' => get_class($action),
+                'structured' => $structured,
+                'unwrapped' => $unwrapped,
+            ]);
+
+            return $unwrapped;
         }
+        $result = $prismRequest->asText();
+
+        return ['text' => $result->text];
+
     }
 
     /**
@@ -151,7 +164,7 @@ final class ProcessPromptJob implements ShouldQueue
         $media = [];
 
         // Handle vision assets - load from Statamic asset path
-        if ($this->assetPath && !isset($variables['image']) && !isset($variables['images'])) {
+        if ($this->assetPath && ! isset($variables['image']) && ! isset($variables['images'])) {
             $asset = Asset::find($this->assetPath);
             if ($asset) {
                 $variables['image'] = $asset->url();
@@ -193,8 +206,9 @@ final class ProcessPromptJob implements ShouldQueue
                 return Image::fromUrl($imageData);
             }
             // Check if it's base64
-            if (strpos($imageData, 'data:image/') === 0) {
+            if (mb_strpos($imageData, 'data:image/') === 0) {
                 $base64 = preg_replace('/^data:image\/[^;]+;base64,/', '', $imageData);
+
                 return Image::fromBase64($base64);
             }
             // Treat as local path
@@ -228,7 +242,7 @@ final class ProcessPromptJob implements ShouldQueue
 
     private function handleAudioPrompt(array $promptData): array
     {
-        if (!$this->assetPath) {
+        if (! $this->assetPath) {
             throw new Exception('Asset path required for audio prompts');
         }
 
@@ -238,7 +252,7 @@ final class ProcessPromptJob implements ShouldQueue
 
         // Get asset file path
         $asset = Asset::find($this->assetPath);
-        if (!$asset) {
+        if (! $asset) {
             throw new Exception('Audio asset not found');
         }
 
@@ -248,11 +262,12 @@ final class ProcessPromptJob implements ShouldQueue
             ->using($provider, $model)
             ->withInput($audioFile);
 
-        if (!empty($parameters)) {
+        if (! empty($parameters)) {
             $response->withProviderOptions($parameters);
         }
 
         $result = $response->asText();
+
         return ['text' => $result->text];
     }
 
@@ -262,7 +277,7 @@ final class ProcessPromptJob implements ShouldQueue
      * Converts Statamic asset paths (format: container::filename) to public URLs.
      * Returns null if asset cannot be found.
      *
-     * @param string $assetPath Asset path in format "container::filename"
+     * @param  string  $assetPath  Asset path in format "container::filename"
      * @return string|null The public URL of the asset, or null if not found
      */
     private function resolveAssetUrl(string $assetPath): ?string
@@ -270,11 +285,12 @@ final class ProcessPromptJob implements ShouldQueue
         try {
             $asset = Asset::find($assetPath);
 
-            if (!$asset) {
+            if (! $asset) {
                 Log::warning('Asset not found for vision action', [
                     'asset_path' => $assetPath,
                     'job_id' => $this->jobId,
                 ]);
+
                 return null;
             }
 
@@ -285,6 +301,7 @@ final class ProcessPromptJob implements ShouldQueue
                 'job_id' => $this->jobId,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

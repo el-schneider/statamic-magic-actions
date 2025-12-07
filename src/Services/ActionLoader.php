@@ -9,31 +9,37 @@ use ElSchneider\StatamicMagicActions\Exceptions\MissingApiKeyException;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
+use RuntimeException;
 
 final class ActionLoader
 {
     /**
      * Load an action with variables rendered
      *
-     * @param string $action The action identifier
-     * @param array $variables Variables to render in templates
-     * @return array Contains: provider, model, parameters, systemPrompt, userPrompt, schema (if exists)
-     * @throws \RuntimeException If action config not found
+     * @param  string  $action  The action identifier
+     * @param  array  $variables  Variables to render in templates
+     * @return array Contains: action, provider, model, parameters, systemPrompt, userPrompt, schema (if exists)
+     *
+     * @throws RuntimeException If action config not found
      */
     public function load(string $action, array $variables = []): array
     {
         $magicAction = $this->loadMagicAction($action);
         if ($magicAction === null) {
-            throw new \RuntimeException("Action '{$action}' not found");
+            throw new RuntimeException("Action '{$action}' not found");
         }
 
-        return $this->buildResultFromMagicAction($magicAction, $variables);
+        $result = $this->buildResultFromMagicAction($magicAction, $variables);
+        $result['action'] = $magicAction;
+
+        return $result;
     }
 
     /**
      * Check if an action exists
      *
-     * @param string $action The action identifier to check
+     * @param  string  $action  The action identifier to check
      * @return bool True if action exists, false otherwise
      */
     public function exists(string $action): bool
@@ -83,7 +89,7 @@ final class ActionLoader
         // Validate variables against action rules
         $validator = Validator::make($variables, $action->rules());
         if ($validator->fails()) {
-            throw new \InvalidArgumentException('Invalid variables: ' . implode(', ', $validator->errors()->all()));
+            throw new InvalidArgumentException('Invalid variables: '.implode(', ', $validator->errors()->all()));
         }
 
         $config = $action->config();
@@ -95,7 +101,7 @@ final class ActionLoader
         // Validate provider API key
         if ($provider) {
             $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key");
-            if (!$apiKey) {
+            if (! $apiKey) {
                 throw new MissingApiKeyException("API key not configured for provider '{$provider}'");
             }
         }
@@ -134,7 +140,8 @@ final class ActionLoader
         $compiled = Blade::compileString($template);
         extract($variables, EXTR_SKIP);
         ob_start();
-        eval('?>' . $compiled);
+        eval('?>'.$compiled);
+
         return ob_get_clean();
     }
 }
