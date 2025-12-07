@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ElSchneider\StatamicMagicActions\Contracts;
+
+use Prism\Prism\Schema\ObjectSchema;
+
+interface MagicAction
+{
+    /**
+     * Human-readable title for display in the UI
+     */
+    public function getTitle(): string;
+
+    /**
+     * Kebab-case handle used to identify the action
+     */
+    public function getHandle(): string;
+
+    /**
+     * Configuration for the magic action
+     *
+     * @return array Contains: type, provider, model, parameters
+     */
+    public function config(): array;
+
+    /**
+     * System prompt for the AI model
+     *
+     * Can contain Blade syntax and will be rendered with provided variables
+     */
+    public function system(): string;
+
+    /**
+     * User prompt template for the AI model
+     *
+     * Can contain Blade syntax and will be rendered with provided variables
+     */
+    public function prompt(): string;
+
+    /**
+     * Optional schema for structured output from the AI model
+     */
+    public function schema(): ?ObjectSchema;
+
+    /**
+     * Validation rules for expected prompt variables
+     *
+     * @return array Laravel validation rules keyed by variable name
+     * Example: ['text' => 'required|string', 'image' => 'required|string']
+     */
+    public function rules(): array;
+}

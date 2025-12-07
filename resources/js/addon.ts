@@ -349,12 +349,15 @@ const registerFieldActions = async () => {
 
                             // For vision and transcription, we need the asset ID
                             if (type === 'vision' || type === 'transcription') {
-                                // Extract asset path from URL
+                                // Extract asset path from URL and convert to container::filename format
                                 const url = window.location.pathname
-                                const match = url.match(/browse(.+?)\/edit/)
-                                assetPath = match
-                                    ? match[1]
-                                    : state.values[config.magic_actions_source]?.[0] || undefined
+                                const match = url.match(/browse\/([^/]+)\/(.+?)\/edit/)
+                                if (match) {
+                                    // match[1] = container, match[2] = filename
+                                    assetPath = `${match[1]}::${match[2]}`
+                                } else {
+                                    assetPath = state.values[config.magic_actions_source]?.[0] || undefined
+                                }
 
                                 console.log(`Asset ID:`, assetPath)
                                 if (!assetPath) {
@@ -378,12 +381,16 @@ const registerFieldActions = async () => {
                                 assetPath,
                             })
 
-                            const data = await magicActionsService.generateFromPrompt(
-                                sourceValue,
-                                field.action,
-                                type,
-                                assetPath,
-                            )
+                            let data
+                            if (type === 'vision') {
+                                data = await magicActionsService.executeVision(assetPath, field.action, {
+                                    text: sourceValue,
+                                })
+                            } else if (type === 'transcription') {
+                                data = await magicActionsService.executeTranscription(assetPath, field.action)
+                            } else {
+                                data = await magicActionsService.executeCompletion(sourceValue, field.action)
+                            }
 
                             console.log(`API response data:`, data)
                             const transformer = transformerMap[field.type] || transformerMap.text

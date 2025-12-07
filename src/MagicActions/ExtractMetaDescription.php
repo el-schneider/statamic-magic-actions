@@ -1,3 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ElSchneider\StatamicMagicActions\MagicActions;
+
+use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
+use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\Schema\StringSchema;
+
+final class ExtractMetaDescription implements MagicAction
+{
+    public function getTitle(): string
+    {
+        return 'Extract Meta Description';
+    }
+
+    public function getHandle(): string
+    {
+        return 'extract-meta-description';
+    }
+
+    public function config(): array
+    {
+        return [
+            'type' => 'text',
+            'provider' => 'openai',
+            'model' => 'gpt-4',
+            'parameters' => [
+                'temperature' => 0.7,
+                'max_tokens' => 300,
+            ],
+        ];
+    }
+
+    public function schema(): ?ObjectSchema
+    {
+        return new ObjectSchema(
+            name: 'meta_description_response',
+            description: 'SEO-optimized meta description for content',
+            properties: [
+                new StringSchema('description', 'Meta description (max 160 characters)'),
+            ],
+            requiredFields: ['description']
+        );
+    }
+
+    public function rules(): array
+    {
+        return [
+            'text' => 'required|string',
+        ];
+    }
+
+    public function system(): string
+    {
+        return <<<'BLADE'
 Create a keyword-optimized meta description from a provided body of text, such as a blog entry, article, or webpage that describes a service or company. The description must never exceed 160 characters and should be formatted as specified.
 
 Identify key phrases and concepts within the text that would increase search engine visibility. Craft a concise and compelling summary that reflects the text's content while including important keywords.
@@ -29,3 +86,13 @@ Identify key phrases and concepts within the text that would increase search eng
 - **Output:** "Schützen Sie kleine Unternehmen: Wichtige Cybersicherheitsstrategien sichern Daten und Vertrauen."
 
 (Note: Outputs should be up to 160 characters and integrate important keywords from the content.)
+BLADE;
+    }
+
+    public function prompt(): string
+    {
+        return <<<'BLADE'
+{{ $text }}
+BLADE;
+    }
+}

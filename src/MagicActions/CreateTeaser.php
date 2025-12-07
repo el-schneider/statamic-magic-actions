@@ -1,3 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ElSchneider\StatamicMagicActions\MagicActions;
+
+use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
+use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\Schema\StringSchema;
+
+final class CreateTeaser implements MagicAction
+{
+    public function getTitle(): string
+    {
+        return 'Create Teaser';
+    }
+
+    public function getHandle(): string
+    {
+        return 'create-teaser';
+    }
+
+    public function config(): array
+    {
+        return [
+            'type' => 'text',
+            'provider' => 'openai',
+            'model' => 'gpt-4',
+            'parameters' => [
+                'temperature' => 0.8,
+                'max_tokens' => 500,
+            ],
+        ];
+    }
+
+    public function schema(): ?ObjectSchema
+    {
+        return new ObjectSchema(
+            name: 'teaser_response',
+            description: 'Generated teaser text for content preview',
+            properties: [
+                new StringSchema('teaser', 'Teaser text (approximately 300 characters)'),
+            ],
+            requiredFields: ['teaser']
+        );
+    }
+
+    public function rules(): array
+    {
+        return [
+            'text' => 'required|string',
+        ];
+    }
+
+    public function system(): string
+    {
+        return <<<'BLADE'
 Generate a 300-character teaser for a given body of text, such as a blog post, article, or webpage, to be used in previews and other parts of a website.
 The output language MUST ALWAYS MATCH the input language.
 
@@ -30,3 +87,13 @@ The teaser should be approximately 300 characters or less.
 - Ensure the teaser is enticing without revealing too much detail.
 - Maintain a captivating tone to maintain reader interest.
 - Remember to tailor the teaser to suit the target audience's interests and preferences.
+BLADE;
+    }
+
+    public function prompt(): string
+    {
+        return <<<'BLADE'
+{{ $text }}
+BLADE;
+    }
+}

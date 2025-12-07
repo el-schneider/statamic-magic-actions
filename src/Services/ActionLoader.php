@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\Services;
 
+use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use ElSchneider\StatamicMagicActions\Exceptions\MissingApiKeyException;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Validator;
 
 final class ActionLoader
 {
@@ -20,21 +22,82 @@ final class ActionLoader
      */
     public function load(string $action, array $variables = []): array
     {
-        $actionConfig = $this->findActionConfig($action);
-
-        if (!$actionConfig) {
-            throw new \RuntimeException("Action '{$action}' not found in configuration");
+        $magicAction = $this->loadMagicAction($action);
+        if ($magicAction === null) {
+            throw new \RuntimeException("Action '{$action}' not found");
         }
 
-        $actionType = $actionConfig['type'];
-        $provider = $actionConfig['provider'];
-        $model = $actionConfig['model'];
-        $parameters = $actionConfig['parameters'] ?? [];
+        return $this->buildResultFromMagicAction($magicAction, $variables);
+    }
+
+    /**
+     * Check if an action exists
+     *
+     * @param string $action The action identifier to check
+     * @return bool True if action exists, false otherwise
+     */
+    public function exists(string $action): bool
+    {
+        return $this->loadMagicAction($action) !== null;
+    }
+
+    /**
+     * Load MagicAction from user's app or addon's src directory
+     */
+    private function loadMagicAction(string $action): ?MagicAction
+    {
+        $className = $this->convertActionNameToClassName($action);
+
+        // Try user's published version first
+        $userClass = "App\\MagicActions\\{$className}";
+        if (class_exists($userClass)) {
+            return new $userClass();
+        }
+
+        // Fall back to addon's default
+        $addonClass = "ElSchneider\\StatamicMagicActions\\MagicActions\\{$className}";
+        if (class_exists($addonClass)) {
+            return new $addonClass();
+        }
+
+        return null;
+    }
+
+    /**
+     * Convert kebab-case action name to PascalCase class name
+     */
+    private function convertActionNameToClassName(string $action): string
+    {
+        return str_replace(
+            ' ',
+            '',
+            ucwords(str_replace('-', ' ', $action))
+        );
+    }
+
+    /**
+     * Build result array from MagicAction instance
+     */
+    private function buildResultFromMagicAction(MagicAction $action, array $variables): array
+    {
+        // Validate variables against action rules
+        $validator = Validator::make($variables, $action->rules());
+        if ($validator->fails()) {
+            throw new \InvalidArgumentException('Invalid variables: ' . implode(', ', $validator->errors()->all()));
+        }
+
+        $config = $action->config();
+        $actionType = $config['type'] ?? null;
+        $provider = $config['provider'] ?? null;
+        $model = $config['model'] ?? null;
+        $parameters = $config['parameters'] ?? [];
 
         // Validate provider API key
-        $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key");
-        if (!$apiKey) {
-            throw new MissingApiKeyException("API key not configured for provider '{$provider}'");
+        if ($provider) {
+            $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key");
+            if (!$apiKey) {
+                throw new MissingApiKeyException("API key not configured for provider '{$provider}'");
+            }
         }
 
         $result = [
@@ -44,15 +107,14 @@ final class ActionLoader
             'parameters' => $parameters,
         ];
 
-        // Load prompts for text actions
+        // Render prompts for text actions
         if ($actionType === 'text') {
-            $result['systemPrompt'] = $this->loadView("magic-actions::{$action}.system", $variables);
-            $result['userPrompt'] = $this->loadView("magic-actions::{$action}.prompt", $variables);
+            $result['systemPrompt'] = $this->renderBladeString($action->system(), $variables);
+            $result['userPrompt'] = $this->renderBladeString($action->prompt(), $variables);
 
-            // Load schema if it exists
-            $schemaPath = resource_path("actions/{$action}/schema.php");
-            if (file_exists($schemaPath)) {
-                $result['schema'] = require $schemaPath;
+            $schema = $action->schema();
+            if ($schema !== null) {
+                $result['schema'] = $schema;
             }
         }
 
@@ -65,40 +127,14 @@ final class ActionLoader
     }
 
     /**
-     * Check if an action exists in configuration
-     *
-     * @param string $action The action identifier to check
-     * @return bool True if action exists in configuration, false otherwise
+     * Render a Blade template string with variables
      */
-    public function exists(string $action): bool
+    private function renderBladeString(string $template, array $variables): string
     {
-        return $this->findActionConfig($action) !== null;
-    }
-
-    /**
-     * Find action configuration across all capabilities
-     */
-    private function findActionConfig(string $action): ?array
-    {
-        $actions = Config::get('statamic.magic-actions.actions', []);
-
-        foreach ($actions as $type => $typeActions) {
-            if (isset($typeActions[$action])) {
-                return array_merge(
-                    ['type' => $type],
-                    $typeActions[$action]
-                );
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Load and render a view with variables
-     */
-    private function loadView(string $viewName, array $variables): string
-    {
-        return View::make($viewName, $variables)->render();
+        $compiled = Blade::compileString($template);
+        extract($variables, EXTR_SKIP);
+        ob_start();
+        eval('?>' . $compiled);
+        return ob_get_clean();
     }
 }

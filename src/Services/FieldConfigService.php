@@ -12,12 +12,9 @@ final class FieldConfigService
 
     private array $defaultFieldConfig;
 
-    private ActionLoader $actionLoader;
-
-    public function __construct(ActionLoader $actionLoader)
+    public function __construct()
     {
         $this->config = Config::get('statamic.magic-actions', []);
-        $this->actionLoader = $actionLoader;
 
         $this->defaultFieldConfig = [
             'magic_actions' => [
@@ -82,9 +79,27 @@ final class FieldConfigService
         foreach ($this->config['fieldtypes'] ?? [] as $fieldtype => $settings) {
             $actionsWithPrompts = [];
 
-            foreach ($settings['actions'] ?? [] as $action) {
-                if ($this->actionLoader->exists($action['action'])) {
-                    $actionsWithPrompts[] = $action;
+            foreach ($settings['actions'] ?? [] as $actionData) {
+                // $actionData is either a FQCN string or already-transformed array with title/action
+                $title = null;
+                $handle = null;
+
+                if (is_string($actionData) && class_exists($actionData)) {
+                    // It's a FQCN string - instantiate and get metadata
+                    $action = new $actionData();
+                    $title = $action->getTitle();
+                    $handle = $action->getHandle();
+                } elseif (is_array($actionData) && isset($actionData['title'], $actionData['action'])) {
+                    // It's already an array with title/action (from previous transformation)
+                    $title = $actionData['title'];
+                    $handle = $actionData['action'];
+                }
+
+                if ($title && $handle) {
+                    $actionsWithPrompts[] = [
+                        'title' => $title,
+                        'action' => $handle,
+                    ];
                 }
             }
 

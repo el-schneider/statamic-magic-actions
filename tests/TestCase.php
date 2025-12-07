@@ -27,9 +27,6 @@ abstract class TestCase extends AddonTestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Register view namespace for testing (after services are booted)
-        app('view')->addNamespace('magic-actions', __DIR__.'/../resources/actions');
     }
 
     protected function tearDown(): void

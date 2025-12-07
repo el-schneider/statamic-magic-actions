@@ -31,9 +31,7 @@ final class ServiceProvider extends AddonServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
         $this->app->singleton(ActionLoader::class, fn() => new ActionLoader());
-        $this->app->singleton(FieldConfigService::class, function ($app) {
-            return new FieldConfigService($app->make(ActionLoader::class));
-        });
+        $this->app->singleton(FieldConfigService::class, fn() => new FieldConfigService());
         $this->app->singleton(PromptsService::class);
     }
 
@@ -41,11 +39,10 @@ final class ServiceProvider extends AddonServiceProvider
     {
         parent::boot();
 
-        // Register views from addon's resources/actions with namespace 'magic-actions'
-        $this->loadViewsFrom(
-            __DIR__.'/../resources/actions',
-            'magic-actions'
-        );
+        // Publish magic action classes for user customization
+        $this->publishes([
+            __DIR__.'/MagicActions' => app_path('MagicActions'),
+        ], 'magic-actions');
     }
 
     public function bootAddon()
@@ -84,11 +81,36 @@ final class ServiceProvider extends AddonServiceProvider
             })->map(function ($field) {
                 $fieldtype = \get_class($field->fieldtype());
                 $action = $field->config()['magic_actions_action'];
-                $actionConfig = collect(config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [])->firstWhere('action', $action);
-                $title = $actionConfig['title'] ?? $action;
 
-                // We no longer need to pass full prompt content to the frontend
-                // Just pass the action name which will be used to identify the prompt on the backend
+                // Find the action class by its handle
+                $actionClass = null;
+                foreach (config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [] as $actionData) {
+                    // Handle both FQCN strings and pre-formatted arrays
+                    $classPath = null;
+                    $actionHandle = null;
+
+                    if (is_string($actionData) && class_exists($actionData)) {
+                        $classPath = $actionData;
+                    } elseif (is_array($actionData) && isset($actionData['action'])) {
+                        // Pre-formatted array from FieldConfigService
+                        $actionHandle = $actionData['action'];
+                        // Try to find the class by handle
+                        $explodedHandle = str_replace('-', ' ', $actionHandle);
+                        $className = str_replace(' ', '', ucwords($explodedHandle));
+                        $classPath = "ElSchneider\\StatamicMagicActions\\MagicActions\\{$className}";
+                    }
+
+                    if ($classPath && class_exists($classPath)) {
+                        $instance = new $classPath();
+                        if ($instance->getHandle() === $action) {
+                            $actionClass = $instance;
+                            break;
+                        }
+                    }
+                }
+
+                $title = $actionClass ? $actionClass->getTitle() : $action;
+
                 return [
                     'type' => $field->type(),
                     'action' => $action,

@@ -16,50 +16,6 @@ beforeEach(function () {
                 'api_key' => 'test-anthropic-key',
             ],
         ],
-        'actions' => [
-            'text' => [
-                'propose-title' => [
-                    'provider' => 'openai',
-                    'model' => 'gpt-4',
-                    'parameters' => [
-                        'temperature' => 0.7,
-                        'max_tokens' => 200,
-                    ],
-                ],
-                'extract-meta-description' => [
-                    'provider' => 'openai',
-                    'model' => 'gpt-4',
-                    'parameters' => [
-                        'temperature' => 0.7,
-                        'max_tokens' => 300,
-                    ],
-                ],
-                'alt-text' => [
-                    'provider' => 'openai',
-                    'model' => 'gpt-4-vision-preview',
-                    'parameters' => [
-                        'temperature' => 0.7,
-                        'max_tokens' => 1000,
-                    ],
-                ],
-            ],
-            'audio' => [
-                'transcribe-audio' => [
-                    'provider' => 'openai',
-                    'model' => 'whisper-1',
-                    'parameters' => [
-                        'language' => 'en',
-                    ],
-                ],
-            ],
-        ],
-        'fieldtypes' => [
-            'Statamic\Fieldtypes\Text' => [
-                'actions' => [
-                    ['title' => 'Propose Title', 'handle' => 'propose-title'],
-                ],
-            ],
-        ],
     ]);
 });
 
@@ -104,13 +60,12 @@ it('renders template variables in prompts', function () {
     expect($result['userPrompt'])->toContain('My custom article content');
 });
 
-it('loads action with empty parameters when none are configured', function () {
-    Config::set('statamic.magic-actions.actions.text.propose-title.parameters', null);
-
+it('loads action with parameters from MagicAction config', function () {
     $loader = app(ActionLoader::class);
     $result = $loader->load('propose-title', ['text' => 'Sample content']);
 
-    expect($result['parameters'])->toBeArray()->toBeEmpty();
+    expect($result['parameters'])->toBeArray();
+    expect($result['parameters'])->toHaveKeys(['temperature', 'max_tokens']);
 });
 
 // ============================================================================
@@ -156,7 +111,7 @@ it('throws RuntimeException for non-existent action', function () {
     $loader = app(ActionLoader::class);
 
     expect(fn () => $loader->load('non-existent-action', []))
-        ->toThrow(RuntimeException::class, "Action 'non-existent-action' not found in configuration");
+        ->toThrow(RuntimeException::class, "Action 'non-existent-action' not found");
 });
 
 it('throws MissingApiKeyException when provider API key is not configured', function () {
@@ -164,6 +119,6 @@ it('throws MissingApiKeyException when provider API key is not configured', func
 
     $loader = app(ActionLoader::class);
 
-    expect(fn () => $loader->load('propose-title', []))
+    expect(fn () => $loader->load('propose-title', ['text' => 'Sample content']))
         ->toThrow(MissingApiKeyException::class, "API key not configured for provider 'openai'");
 });

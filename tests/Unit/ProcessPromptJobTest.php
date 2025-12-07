@@ -34,7 +34,7 @@ beforeEach(function () {
                 ],
                 'alt-text' => [
                     'provider' => 'openai',
-                    'model' => 'gpt-4-vision-preview',
+                    'model' => 'gpt-4o',
                     'parameters' => [
                         'temperature' => 0.7,
                         'max_tokens' => 1000,
