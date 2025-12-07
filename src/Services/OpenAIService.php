@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\Services;
 
+use ElSchneider\StatamicMagicActions\Exceptions\MissingApiKeyException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +16,13 @@ final class OpenAIService
 
     public function __construct()
     {
-        $this->apiKey = Config::get('statamic.magic-actions.providers.openai.api_key', '');
+        $apiKey = Config::get('statamic.magic-actions.providers.openai.api_key');
+
+        if (! is_string($apiKey) || empty($apiKey)) {
+            throw new MissingApiKeyException();
+        }
+
+        $this->apiKey = $apiKey;
     }
 
     /**
