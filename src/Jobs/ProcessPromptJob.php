@@ -28,20 +28,17 @@ final class ProcessPromptJob implements ShouldQueue
     private string $jobId;
     private string $action;
     private array $variables;
-    private ?string $assetId = null;
     private ?string $assetPath = null;
 
     public function __construct(
         string $jobId,
         string $action,
         array $variables,
-        ?string $assetId = null,
         ?string $assetPath = null
     ) {
         $this->jobId = $jobId;
         $this->action = $action;
         $this->variables = $variables;
-        $this->assetId = $assetId;
         $this->assetPath = $assetPath;
     }
 
@@ -144,6 +141,14 @@ final class ProcessPromptJob implements ShouldQueue
     private function extractMedia(array $variables): array
     {
         $media = [];
+
+        // Handle vision assets - load from Statamic asset path
+        if ($this->assetPath && !isset($variables['image']) && !isset($variables['images'])) {
+            $asset = Asset::find($this->assetPath);
+            if ($asset) {
+                $variables['image'] = $asset->url();
+            }
+        }
 
         // Handle image data
         if (isset($variables['image'])) {
