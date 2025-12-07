@@ -31,9 +31,7 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
-        $this->app->singleton(ActionLoader::class, function ($app) {
-            return new ActionLoader();
-        });
+        $this->app->singleton(ActionLoader::class, fn() => new ActionLoader());
         $this->app->singleton(FieldConfigService::class);
         $this->app->singleton(PromptsService::class);
         $this->app->singleton(PromptParserService::class);
