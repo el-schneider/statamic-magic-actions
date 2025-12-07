@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\Jobs;
 
+use ElSchneider\StatamicMagicActions\Exceptions\OpenAIApiException;
 use ElSchneider\StatamicMagicActions\Services\AssetsService;
 use ElSchneider\StatamicMagicActions\Services\OpenAIService;
 use ElSchneider\StatamicMagicActions\Services\PromptsService;
@@ -87,8 +88,12 @@ final class ProcessTranscriptionJob implements ShouldQueue
                 'status' => 'completed',
                 'data' => $response['text'],
             ], 3600);
+        } catch (OpenAIApiException $e) {
+            Log::error('OpenAI API error', ['error' => $e->getMessage()]);
+            $this->handleError('An error occurred with the API request. Please check the logs for details.');
         } catch (Exception $e) {
-            $this->handleError('Error processing transcription: '.$e->getMessage());
+            Log::error('Job error', ['error' => $e->getMessage()]);
+            $this->handleError($e->getMessage());
         }
     }
 
@@ -97,8 +102,6 @@ final class ProcessTranscriptionJob implements ShouldQueue
      */
     private function handleError(string $message): void
     {
-        Log::error($message);
-
         Cache::put('magic_actions_job_'.$this->jobId, [
             'status' => 'failed',
             'error' => $message,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use ElSchneider\StatamicMagicActions\Exceptions\MissingApiKeyException;
+use ElSchneider\StatamicMagicActions\Exceptions\OpenAIApiException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -48,16 +49,17 @@ final class OpenAIService
                 ]);
 
             if ($response->failed()) {
-                Log::error('OpenAI API error: '.$response->body());
-
-                return null;
+                $error = $response->json('error.message') ?? $response->body();
+                Log::error('OpenAI API error: '.$error);
+                throw new OpenAIApiException($error);
             }
 
             return $this->parseResponse($response->json());
+        } catch (OpenAIApiException $e) {
+            throw $e;
         } catch (Throwable $e) {
             Log::error('OpenAI API error: '.$e->getMessage());
-
-            return null;
+            throw new OpenAIApiException($e->getMessage());
         }
     }
 
@@ -143,20 +145,21 @@ final class OpenAIService
                 ]);
 
             if ($response->failed()) {
-                Log::error('OpenAI Vision API error: '.$response->body());
-
-                return null;
+                $error = $response->json('error.message') ?? $response->body();
+                Log::error('OpenAI Vision API error: '.$error);
+                throw new OpenAIApiException($error);
             }
 
             return $response->json();
+        } catch (OpenAIApiException $e) {
+            throw $e;
         } catch (Throwable $e) {
             Log::error('OpenAI Vision API error: '.$e->getMessage(), [
                 'exception' => $e,
                 'messages' => $messages,
                 'image_url' => $imageUrl,
             ]);
-
-            return null;
+            throw new OpenAIApiException($e->getMessage());
         }
     }
 
@@ -223,22 +226,26 @@ final class OpenAIService
             $assetsService->cleanupTempFile($audioFilePath);
 
             if ($response->failed()) {
-                Log::error('OpenAI Transcription API error: '.$response->body());
-
-                return null;
+                $error = $response->json('error.message') ?? $response->body();
+                Log::error('OpenAI Transcription API error: '.$error);
+                throw new OpenAIApiException($error);
             }
 
             return [
                 'text' => $response->body(),
             ];
 
+        } catch (OpenAIApiException $e) {
+            // Clean up temp file in case of error
+            $assetsService->cleanupTempFile($audioFilePath);
+            throw $e;
         } catch (Throwable $e) {
             Log::error('OpenAI Transcription API error: '.$e->getMessage());
 
             // Clean up temp file in case of error
             $assetsService->cleanupTempFile($audioFilePath);
 
-            return null;
+            throw new OpenAIApiException($e->getMessage());
         }
     }
 
