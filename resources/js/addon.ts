@@ -212,7 +212,7 @@ const service = new MagicActionsService()
 
 // Utility functions
 const extractText = (content: any): string => {
-    if (!content || typeof content !== 'object') return ''
+    if (!content || typeof content === 'string') return content
 
     if (content.type === 'text' && content.text) {
         return content.text
