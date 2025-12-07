@@ -7,6 +7,7 @@ declare global {
                 type: string
                 action: string
                 prompt: string
+                promptType?: string
             }>
             providers: {
                 openai?: {
@@ -120,14 +121,30 @@ class MagicActionsService {
     // Vision endpoint
     async executeVision(assetPath: string, promptHandle: string, variables: Record<string, string> = {}): Promise<any> {
         try {
-            const { data } = await window.Statamic.$axios.post(this.endpoints.vision, {
+            console.log(`Starting vision request for prompt: ${promptHandle}`)
+            console.log(`Request payload:`, { asset_path: assetPath, action: promptHandle, variables })
+
+            const response = await window.Statamic.$axios.post(this.endpoints.vision, {
                 asset_path: assetPath,
                 action: promptHandle,
                 variables,
             })
 
+            console.log(`Vision full response:`, response)
+            console.log(`Vision response.data:`, response.data)
+            const { data } = response
+
+            console.log(`Vision response after destructure:`, data)
+
+            if (!data.job_id) {
+                console.error('No job_id returned from vision API')
+                throw new Error('No job ID returned from the server')
+            }
+
+            console.log(`Starting polling for vision job: ${data.job_id}`)
             return this.pollJobStatus(data.job_id)
         } catch (error) {
+            console.error('Error in executeVision:', error)
             throw new Error(error.response?.data?.error || error.message)
         }
     }
@@ -337,14 +354,31 @@ const registerFieldActions = async () => {
                             console.log(`State:`, state)
                             console.log(`State values:`, state.values)
 
-                            const type = field.action.includes('vision')
-                                ? 'vision'
-                                : field.action.includes('transcribe')
-                                  ? 'transcription'
-                                  : 'completion'
+                            // Determine endpoint type based on promptType
+                            let type: string = 'completion'
+                            if (field.promptType === 'audio') {
+                                type = 'transcription'
+                            } else if (field.promptType === 'text') {
+                                // Check if source field is an asset to determine if this is a vision action
+                                const sourceValue = state.values[config.magic_actions_source]
+                                let isAssetField = false
+
+                                // Check if it's a string with :: (asset path format)
+                                if (typeof sourceValue === 'string' && sourceValue.includes('::')) {
+                                    isAssetField = true
+                                }
+                                // Check if it's an array with asset paths
+                                else if (Array.isArray(sourceValue) && sourceValue.length > 0 && typeof sourceValue[0] === 'string' && sourceValue[0].includes('::')) {
+                                    isAssetField = true
+                                }
+
+                                if (isAssetField) {
+                                    type = 'vision'
+                                }
+                            }
 
                             console.log(`Action type: ${type}, Action handle: ${field.action}`)
-                            let sourceValue
+                            let sourceValue: string
                             let assetPath: string | undefined = undefined
 
                             // For vision and transcription, we need the asset ID
@@ -383,11 +417,9 @@ const registerFieldActions = async () => {
 
                             let data
                             if (type === 'vision') {
-                                data = await magicActionsService.executeVision(assetPath, field.action, {
-                                    text: sourceValue,
-                                })
+                                data = await magicActionsService.executeVision(assetPath!, field.action, {})
                             } else if (type === 'transcription') {
-                                data = await magicActionsService.executeTranscription(assetPath, field.action)
+                                data = await magicActionsService.executeTranscription(assetPath!, field.action)
                             } else {
                                 data = await magicActionsService.executeCompletion(sourceValue, field.action)
                             }

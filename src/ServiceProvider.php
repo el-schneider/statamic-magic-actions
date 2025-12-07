@@ -112,12 +112,14 @@ final class ServiceProvider extends AddonServiceProvider
                 }
 
                 $title = $actionClass ? $actionClass->getTitle() : $action;
+                $promptType = $actionClass ? $actionClass->config()['type'] : 'text';
 
                 return [
                     'type' => $field->type(),
                     'action' => $action,
                     'component' => $field->fieldtype()->component(),
                     'title' => $title,
+                    'promptType' => $promptType,
                 ];
             });
         }

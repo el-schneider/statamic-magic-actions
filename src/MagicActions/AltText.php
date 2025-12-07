@@ -39,7 +39,7 @@ final class AltText extends BaseMagicAction
     public function rules(): array
     {
         return [
-            'text' => 'required|string',
+            'text' => 'sometimes|string',
         ];
     }
 
@@ -69,8 +69,6 @@ BLADE;
 
     public function prompt(): string
     {
-        return <<<'BLADE'
-{{ $text }}
-BLADE;
+        return 'Analyze the provided image.';
     }
 }

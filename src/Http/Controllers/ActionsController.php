@@ -42,6 +42,13 @@ final class ActionsController extends Controller
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Completion');
+        } catch (\InvalidArgumentException $e) {
+            Log::warning('Completion request validation failed', [
+                'action' => $request->input('action'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => $e->getMessage()], 400);
         }
     }
 
@@ -72,6 +79,13 @@ final class ActionsController extends Controller
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Vision');
+        } catch (\InvalidArgumentException $e) {
+            Log::warning('Vision request validation failed', [
+                'action' => $request->input('action'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => $e->getMessage()], 400);
         }
     }
 
