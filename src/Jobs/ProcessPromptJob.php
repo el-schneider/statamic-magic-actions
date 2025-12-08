@@ -18,31 +18,18 @@ use Prism\Prism\Facades\Prism;
 use Prism\Prism\ValueObjects\Media\Audio;
 use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
-use Statamic\Facades\Asset;
+use Statamic\Facades\Asset as AssetFacade;
 
 final class ProcessPromptJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private string $jobId;
-
-    private string $action;
-
-    private array $variables;
-
-    private ?string $assetPath = null;
-
     public function __construct(
-        string $jobId,
-        string $action,
-        array $variables,
-        ?string $assetPath = null
-    ) {
-        $this->jobId = $jobId;
-        $this->action = $action;
-        $this->variables = $variables;
-        $this->assetPath = $assetPath;
-    }
+        private string $jobId,
+        private string $action,
+        private array $variables,
+        private ?string $assetPath = null
+    ) {}
 
     public function handle(ActionLoader $actionLoader): void
     {
@@ -52,25 +39,14 @@ final class ProcessPromptJob implements ShouldQueue
                 'message' => 'Processing request...',
             ], 3600);
 
-            // Resolve asset path to URL if this is a vision action with an asset path
-            if ($this->assetPath && ! isset($this->variables['image'])) {
-                $imageUrl = $this->resolveAssetUrl($this->assetPath);
-                if ($imageUrl) {
-                    $this->variables['image'] = $imageUrl;
-                }
-            }
-
             $promptData = $actionLoader->load($this->action, $this->variables);
             $action = $promptData['action'];
 
-            // Route to appropriate Prism method based on prompt type
-            if ($promptData['type'] === 'text') {
-                $response = $this->handleTextPrompt($promptData, $action);
-            } elseif ($promptData['type'] === 'audio') {
-                $response = $this->handleAudioPrompt($promptData);
-            } else {
-                throw new Exception("Unknown prompt type: {$promptData['type']}");
-            }
+            $response = match ($promptData['type']) {
+                'text' => $this->handleTextPrompt($promptData, $action),
+                'audio' => $this->handleAudioPrompt($promptData),
+                default => throw new Exception("Unknown prompt type: {$promptData['type']}"),
+            };
 
             Cache::put("magic_actions_job_{$this->jobId}", [
                 'status' => 'completed',
@@ -89,222 +65,112 @@ final class ProcessPromptJob implements ShouldQueue
 
     private function handleTextPrompt(array $promptData, MagicAction $action): mixed
     {
-        $provider = $promptData['provider'];
-        $model = $promptData['model'];
-        $parameters = $promptData['parameters'];
+        $media = $this->loadMediaFromAsset();
+        $hasSchema = isset($promptData['schema']);
 
-        // Collect media (images, documents, etc.) from variables
-        $media = $this->extractMedia($this->variables);
+        $request = $this->createTextRequest(
+            $hasSchema ? Prism::structured() : Prism::text(),
+            $promptData,
+            $media
+        );
 
-        // Build Prism request
-        $prismRequest = Prism::text()
-            ->using($provider, $model)
+        if ($hasSchema) {
+            $result = $request->withSchema($promptData['schema'])->asStructured();
+
+            return $action->unwrap($result->structured);
+        }
+
+        return ['text' => $request->asText()->text];
+    }
+
+    private function createTextRequest(mixed $builder, array $promptData, array $media): mixed
+    {
+        $builder
+            ->using($promptData['provider'], $promptData['model'])
             ->withSystemPrompt($promptData['systemPrompt']);
 
-        // Add prompt with media if present
-        if (! empty($media)) {
-            $prismRequest->withPrompt($promptData['userPrompt'], $media);
-        } else {
-            $prismRequest->withPrompt($promptData['userPrompt']);
+        empty($media)
+            ? $builder->withPrompt($promptData['userPrompt'])
+            : $builder->withPrompt($promptData['userPrompt'], $media);
+
+        if (isset($promptData['parameters']['temperature'])) {
+            $builder->usingTemperature($promptData['parameters']['temperature']);
+        }
+        if (isset($promptData['parameters']['max_tokens'])) {
+            $builder->withMaxTokens($promptData['parameters']['max_tokens']);
         }
 
-        // Apply parameters
-        if (isset($parameters['temperature'])) {
-            $prismRequest->usingTemperature($parameters['temperature']);
-        }
-        if (isset($parameters['max_tokens'])) {
-            $prismRequest->withMaxTokens($parameters['max_tokens']);
-        }
-
-        // Use structured output if schema exists
-        if (isset($promptData['schema'])) {
-            $response = Prism::structured()
-                ->using($provider, $model)
-                ->withSystemPrompt($promptData['systemPrompt']);
-
-            if (! empty($media)) {
-                $response->withPrompt($promptData['userPrompt'], $media);
-            } else {
-                $response->withPrompt($promptData['userPrompt']);
-            }
-
-            $response->withSchema($promptData['schema']);
-
-            if (isset($parameters['temperature'])) {
-                $response->usingTemperature($parameters['temperature']);
-            }
-            if (isset($parameters['max_tokens'])) {
-                $response->withMaxTokens($parameters['max_tokens']);
-            }
-
-            $result = $response->asStructured();
-            $structured = $result->structured;
-
-            $unwrapped = $action->unwrap($structured);
-            Log::info('Unwrapped response', [
-                'action' => get_class($action),
-                'structured' => $structured,
-                'unwrapped' => $unwrapped,
-            ]);
-
-            return $unwrapped;
-        }
-        $result = $prismRequest->asText();
-
-        return ['text' => $result->text];
-
+        return $builder;
     }
 
     /**
-     * Extract media objects from variables
-     * Supports: image, images, document, documents, audio, video
+     * Load media from Statamic asset using fromStoragePath
      */
-    private function extractMedia(array $variables): array
+    private function loadMediaFromAsset(): array
     {
-        $media = [];
-
-        // Handle vision assets - load from Statamic asset path
-        if ($this->assetPath && ! isset($variables['image']) && ! isset($variables['images'])) {
-            $asset = Asset::find($this->assetPath);
-            if ($asset) {
-                $variables['image'] = $asset->url();
-            }
+        $asset = $this->resolveAsset();
+        if (! $asset) {
+            return [];
         }
 
-        // Handle image data
-        if (isset($variables['image'])) {
-            $media[] = $this->createImage($variables['image']);
-        }
-        if (isset($variables['images']) && is_array($variables['images'])) {
-            foreach ($variables['images'] as $image) {
-                $media[] = $this->createImage($image);
-            }
+        $path = $asset->path();
+        $disk = $asset->container()->diskHandle();
+
+        if ($asset->isImage()) {
+            return [Image::fromStoragePath($path, $disk)];
         }
 
-        // Handle document data
-        if (isset($variables['document'])) {
-            $media[] = $this->createDocument($variables['document']);
-        }
-        if (isset($variables['documents']) && is_array($variables['documents'])) {
-            foreach ($variables['documents'] as $doc) {
-                $media[] = $this->createDocument($doc);
-            }
+        if ($this->isDocument($asset)) {
+            return [Document::fromStoragePath($path, $disk)];
         }
 
-        return $media;
-    }
-
-    /**
-     * Create Image object from various formats
-     * Supports: URL, base64, file path
-     */
-    private function createImage($imageData): Image
-    {
-        if (is_string($imageData)) {
-            // Check if it's a URL
-            if (filter_var($imageData, FILTER_VALIDATE_URL)) {
-                return Image::fromUrl($imageData);
-            }
-            // Check if it's base64
-            if (mb_strpos($imageData, 'data:image/') === 0) {
-                $base64 = preg_replace('/^data:image\/[^;]+;base64,/', '', $imageData);
-
-                return Image::fromBase64($base64);
-            }
-            // Treat as local path
-            if (file_exists($imageData)) {
-                return Image::fromLocalPath($imageData);
-            }
-        }
-
-        throw new Exception("Unable to determine image format for: {$imageData}");
-    }
-
-    /**
-     * Create Document object from various formats
-     * Supports: local path, URL
-     */
-    private function createDocument($documentData): Document
-    {
-        if (is_string($documentData)) {
-            // Check if it's a URL
-            if (filter_var($documentData, FILTER_VALIDATE_URL)) {
-                return Document::fromUrl($documentData);
-            }
-            // Treat as local path
-            if (file_exists($documentData)) {
-                return Document::fromLocalPath($documentData);
-            }
-        }
-
-        throw new Exception("Unable to determine document format for: {$documentData}");
+        return [];
     }
 
     private function handleAudioPrompt(array $promptData): string
     {
-        if (! $this->assetPath) {
-            throw new Exception('Asset path required for audio prompts');
-        }
-
-        $provider = $promptData['provider'];
-        $model = $promptData['model'];
-        $parameters = $promptData['parameters'];
-
-        // Get asset file path
-        $asset = Asset::find($this->assetPath);
+        $asset = $this->resolveAsset();
         if (! $asset) {
             throw new Exception('Audio asset not found');
         }
 
-        // Load audio from storage (works for both public and private disks)
-        $audioFile = Audio::fromStoragePath($asset->path(), $asset->container()->diskHandle());
+        $audioFile = Audio::fromStoragePath(
+            $asset->path(),
+            $asset->container()->diskHandle()
+        );
 
-        $response = Prism::audio()
-            ->using($provider, $model)
+        $request = Prism::audio()
+            ->using($promptData['provider'], $promptData['model'])
             ->withInput($audioFile);
 
-        if (! empty($parameters)) {
-            $response->withProviderOptions($parameters);
+        if (! empty($promptData['parameters'])) {
+            $request->withProviderOptions($promptData['parameters']);
         }
 
-        $result = $response->asText();
-
-        return $result->text;
+        return $request->asText()->text;
     }
 
     /**
-     * Resolve an asset path to its public URL
-     *
-     * Converts Statamic asset paths (format: container::filename) to public URLs.
-     * Returns null if asset cannot be found.
-     *
-     * @param  string  $assetPath  Asset path in format "container::filename"
-     * @return string|null The public URL of the asset, or null if not found
+     * @return \Statamic\Assets\Asset|null
      */
-    private function resolveAssetUrl(string $assetPath): ?string
+    private function resolveAsset(): mixed
     {
-        try {
-            $asset = Asset::find($assetPath);
-
-            if (! $asset) {
-                Log::warning('Asset not found for vision action', [
-                    'asset_path' => $assetPath,
-                    'job_id' => $this->jobId,
-                ]);
-
-                return null;
-            }
-
-            return $asset->url();
-        } catch (Exception $e) {
-            Log::warning('Error resolving asset URL for vision action', [
-                'asset_path' => $assetPath,
-                'job_id' => $this->jobId,
-                'error' => $e->getMessage(),
-            ]);
-
+        if (! $this->assetPath) {
             return null;
         }
+
+        return AssetFacade::find($this->assetPath);
+    }
+
+    /**
+     * @param  \Statamic\Assets\Asset  $asset
+     */
+    private function isDocument(mixed $asset): bool
+    {
+        return in_array(
+            $asset->extension(),
+            ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt']
+        );
     }
 
     private function handleError(string $message): void

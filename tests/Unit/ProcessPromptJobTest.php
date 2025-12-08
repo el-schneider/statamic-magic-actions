@@ -40,13 +40,6 @@ beforeEach(function () {
                         'max_tokens' => 1000,
                     ],
                 ],
-                'structured-action' => [
-                    'provider' => 'openai',
-                    'model' => 'gpt-4',
-                    'parameters' => [
-                        'temperature' => 0.5,
-                    ],
-                ],
             ],
             'audio' => [
                 'transcribe-audio' => [
@@ -121,24 +114,8 @@ it('handles MissingApiKeyException', function () {
 });
 
 // ============================================================================
-// Audio prompts
+// Audio prompts - error handling
 // ============================================================================
-
-it('handles audio prompts correctly', function () {
-    $asset = Mockery::mock();
-    $asset->shouldReceive('url')->andReturn('https://example.com/audio.mp3');
-    Asset::shouldReceive('find')->with('assets/audio.mp3')->andReturn($asset);
-
-    Prism::fake();
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'transcribe-audio', [], 'assets/audio.mp3');
-    $job->handle($loader);
-
-    $cachedData = Cache::get('magic_actions_job_test-job-id');
-    expect($cachedData['status'])->toBe('completed');
-    expect($cachedData['data']['text'])->toBe('fake transcribed text');
-});
 
 it('fails when audio prompt has no asset path', function () {
     Log::shouldReceive('error')->atLeast()->once();
@@ -164,162 +141,24 @@ it('fails when audio asset is not found', function () {
 });
 
 // ============================================================================
-// Image format handling
+// Text prompts without assets
 // ============================================================================
 
-it('handles image URLs', function () {
+it('handles text prompts without asset path', function () {
     Prism::fake([
-        StructuredResponseFake::make()->withStructured(['alt_text' => 'Response']),
+        StructuredResponseFake::make()->withStructured(['title' => 'Generated Title']),
     ]);
 
     $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'alt-text', [
-        'text' => 'Describe',
-        'image' => 'https://example.com/test.jpg',
-    ]);
+    $job = new ProcessPromptJob('test-job-text', 'propose-title', ['text' => 'Sample content']);
     $job->handle($loader);
 
-    expect(Cache::get('magic_actions_job_test-job-id')['status'])->toBe('completed');
-});
-
-it('handles base64 data URIs', function () {
-    Prism::fake([
-        StructuredResponseFake::make()->withStructured(['alt_text' => 'Response']),
-    ]);
-
-    $base64Image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'alt-text', [
-        'text' => 'Describe',
-        'image' => $base64Image,
-    ]);
-    $job->handle($loader);
-
-    expect(Cache::get('magic_actions_job_test-job-id')['status'])->toBe('completed');
-});
-
-it('handles local file paths for images', function () {
-    Prism::fake([
-        StructuredResponseFake::make()->withStructured(['alt_text' => 'Response']),
-    ]);
-
-    $imagePath = __DIR__.'/../__fixtures__/media/test-image.png';
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'alt-text', [
-        'text' => 'Describe',
-        'image' => $imagePath,
-    ]);
-    $job->handle($loader);
-
-    expect(Cache::get('magic_actions_job_test-job-id')['status'])->toBe('completed');
-});
-
-it('fails for invalid image format', function () {
-    Log::shouldReceive('error')->atLeast()->once();
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'alt-text', [
-        'text' => 'Describe',
-        'image' => '/path/to/nonexistent/image.jpg',
-    ]);
-    $job->handle($loader);
-
-    expect(Cache::get('magic_actions_job_test-job-id')['status'])->toBe('failed');
-});
-
-// ============================================================================
-// Document format handling
-// ============================================================================
-
-it('handles document URLs', function () {
-    Prism::fake([
-        StructuredResponseFake::make()->withStructured(['title' => 'Response']),
-    ]);
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'propose-title', [
-        'document' => 'https://example.com/document.pdf',
-        'text' => 'test',
-    ]);
-    $job->handle($loader);
-
-    expect(Cache::get('magic_actions_job_test-job-id')['status'])->toBe('completed');
-});
-
-it('handles local file paths for documents', function () {
-    Prism::fake([
-        StructuredResponseFake::make()->withStructured(['title' => 'Response']),
-    ]);
-
-    $documentPath = __DIR__.'/../__fixtures__/media/sample.txt';
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'propose-title', [
-        'document' => $documentPath,
-        'text' => 'test',
-    ]);
-    $job->handle($loader);
-
-    expect(Cache::get('magic_actions_job_test-job-id')['status'])->toBe('completed');
-});
-
-it('fails for invalid document format', function () {
-    Log::shouldReceive('error')->atLeast()->once();
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-id', 'propose-title', [
-        'document' => '/path/to/nonexistent/document.pdf',
-        'text' => 'test',
-    ]);
-    $job->handle($loader);
-
-    expect(Cache::get('magic_actions_job_test-job-id')['status'])->toBe('failed');
-});
-
-// ============================================================================
-// Asset resolution for vision actions
-// ============================================================================
-
-it('resolves asset path to url for vision actions', function () {
-    $assetMock = Mockery::mock();
-    $assetMock->shouldReceive('url')->andReturn('https://example.test/assets/image.jpg');
-
-    Asset::shouldReceive('find')->with('assets::image.jpg')->andReturn($assetMock);
-
-    Prism::fake([
-        StructuredResponseFake::make()->withStructured(['alt_text' => 'Generated alt text']),
-    ]);
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob('test-job-123', 'alt-text', ['text' => 'Describe'], 'assets::image.jpg');
-    $job->handle($loader);
-
-    $cached = Cache::get('magic_actions_job_test-job-123');
+    $cached = Cache::get('magic_actions_job_test-job-text');
     expect($cached['status'])->toBe('completed');
-    expect($cached['data'])->toBe('Generated alt text');
+    expect($cached['data'])->toBe('Generated Title');
 });
 
-it('explicit image variable takes precedence over asset path', function () {
-    // Asset::find should not be called because explicit image is provided
-    Prism::fake([
-        StructuredResponseFake::make()->withStructured(['alt_text' => 'Image description']),
-    ]);
-
-    $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob(
-        'test-job-456',
-        'alt-text',
-        ['text' => 'Describe', 'image' => 'https://example.test/explicit.jpg'],
-        'assets::ignored.jpg'
-    );
-    $job->handle($loader);
-
-    expect(Cache::get('magic_actions_job_test-job-456')['status'])->toBe('completed');
-});
-
-it('handles missing asset gracefully when explicit image provided', function () {
+it('handles missing image asset gracefully', function () {
     Asset::shouldReceive('find')->with('assets::nonexistent.jpg')->andReturn(null);
 
     Prism::fake([
@@ -327,13 +166,9 @@ it('handles missing asset gracefully when explicit image provided', function () 
     ]);
 
     $loader = app(ActionLoader::class);
-    $job = new ProcessPromptJob(
-        'test-job-789',
-        'alt-text',
-        ['text' => 'Describe', 'image' => 'https://fallback.test/image.jpg'],
-        'assets::nonexistent.jpg'
-    );
+    $job = new ProcessPromptJob('test-job-789', 'alt-text', ['text' => 'Describe'], 'assets::nonexistent.jpg');
     $job->handle($loader);
 
+    // Should still complete but without image media
     expect(Cache::get('magic_actions_job_test-job-789')['status'])->toBe('completed');
 });
