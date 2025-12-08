@@ -6,6 +6,7 @@ namespace ElSchneider\StatamicMagicActions\Jobs;
 
 use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
+use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,13 +32,10 @@ final class ProcessPromptJob implements ShouldQueue
         private ?string $assetPath = null
     ) {}
 
-    public function handle(ActionLoader $actionLoader): void
+    public function handle(ActionLoader $actionLoader, JobTracker $jobTracker): void
     {
         try {
-            Cache::put("magic_actions_job_{$this->jobId}", [
-                'status' => 'processing',
-                'message' => 'Processing request...',
-            ], 3600);
+            $this->updateJobStatus($jobTracker, 'processing', 'Processing request...');
 
             $promptData = $actionLoader->load($this->action, $this->variables);
             $action = $promptData['action'];
@@ -48,10 +46,7 @@ final class ProcessPromptJob implements ShouldQueue
                 default => throw new Exception("Unknown prompt type: {$promptData['type']}"),
             };
 
-            Cache::put("magic_actions_job_{$this->jobId}", [
-                'status' => 'completed',
-                'data' => $response,
-            ], 3600);
+            $this->updateJobStatus($jobTracker, 'completed', null, $response);
 
         } catch (Exception $e) {
             Log::error('Job error', [
@@ -59,7 +54,34 @@ final class ProcessPromptJob implements ShouldQueue
                 'action' => $this->action,
                 'error' => $e->getMessage(),
             ]);
-            $this->handleError($e->getMessage());
+            $this->handleError($jobTracker, $e->getMessage());
+        }
+    }
+
+    /**
+     * Update job status using JobTracker if job has context, otherwise use simple cache.
+     */
+    private function updateJobStatus(JobTracker $jobTracker, string $status, ?string $message = null, mixed $data = null): void
+    {
+        // Try to get existing job from JobTracker first (has context)
+        $existingJob = $jobTracker->getJob($this->jobId);
+
+        if ($existingJob && isset($existingJob['context'])) {
+            // Job was created with context, use JobTracker
+            $jobTracker->updateStatus($this->jobId, $status, $message, $data);
+        } else {
+            // Fallback to simple cache for backwards compatibility
+            $cacheData = ['status' => $status];
+
+            if ($message !== null) {
+                $cacheData['message'] = $message;
+            }
+
+            if ($data !== null) {
+                $cacheData['data'] = $data;
+            }
+
+            Cache::put("magic_actions_job_{$this->jobId}", $cacheData, 3600);
         }
     }
 
@@ -173,11 +195,20 @@ final class ProcessPromptJob implements ShouldQueue
         );
     }
 
-    private function handleError(string $message): void
+    private function handleError(JobTracker $jobTracker, string $message): void
     {
-        Cache::put("magic_actions_job_{$this->jobId}", [
-            'status' => 'failed',
-            'error' => $message,
-        ], 3600);
+        // Try to get existing job from JobTracker first (has context)
+        $existingJob = $jobTracker->getJob($this->jobId);
+
+        if ($existingJob && isset($existingJob['context'])) {
+            // Job was created with context, use JobTracker
+            $jobTracker->updateStatus($this->jobId, 'failed', $message);
+        } else {
+            // Fallback to simple cache for backwards compatibility
+            Cache::put("magic_actions_job_{$this->jobId}", [
+                'status' => 'failed',
+                'error' => $message,
+            ], 3600);
+        }
     }
 }
