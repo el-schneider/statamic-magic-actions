@@ -90,8 +90,12 @@ final class ServiceProvider extends AddonServiceProvider
         // Try to get blueprint from Asset
         if (! $blueprint && str_contains($requestPath, 'assets')) {
             if (preg_match('/cp\/assets\/browse\/(.+?)\/edit/', $requestPath, $matches)) {
-                $assetFilename = '/'.$matches[1];
-                if ($asset = \Statamic\Facades\Asset::find($assetFilename)) {
+                $assetFilename = $matches[1];
+
+                // replace the first / with ::
+                $assetFilename = preg_replace('/\//', '::', $assetFilename, 1);
+
+                if ($asset = \Statamic\Facades\Asset::findById($assetFilename)) {
                     $blueprint = $asset->blueprint();
                 }
             }

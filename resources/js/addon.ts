@@ -3,12 +3,7 @@
 declare global {
     interface Window {
         StatamicConfig: {
-            magicFields: Array<{
-                type: string
-                action: string
-                prompt: string
-                promptType?: string
-            }>
+            magicFields: Array
             providers: {
                 openai?: {
                     api_key: string
@@ -26,13 +21,13 @@ declare global {
                 error: (message: string) => void
             }
             $axios: {
-                get: (url: string) => Promise<{ data: any }>
-                post: (url: string, data: any) => Promise<{ data: any }>
+                get: (url: string) => Promise
+                post: (url: string, data: any) => Promise
             }
             Store: {
                 store: {
                     state: {
-                        publish: Record<string, any>
+                        publish: Record
                     }
                 }
             }
@@ -51,7 +46,7 @@ class MagicActionsService {
     constructor() {}
 
     // Poll for job status until it's completed or failed
-    async pollJobStatus(jobId: string, maxAttempts = 60, interval = 1000): Promise<any> {
+    async pollJobStatus(jobId: string, maxAttempts = 60, interval = 1000): Promise {
         let attempts = 0
 
         console.log(`Starting to poll job status for job ID: ${jobId}`)
@@ -92,7 +87,7 @@ class MagicActionsService {
     }
 
     // Completion endpoint
-    async executeCompletion(text: string, promptHandle: string): Promise<any> {
+    async executeCompletion(text: string, promptHandle: string): Promise {
         try {
             console.log(`Starting completion request for prompt: ${promptHandle}`)
             console.log(`Request payload:`, { text, action: promptHandle })
@@ -119,7 +114,7 @@ class MagicActionsService {
     }
 
     // Vision endpoint
-    async executeVision(assetPath: string, promptHandle: string, variables: Record<string, string> = {}): Promise<any> {
+    async executeVision(assetPath: string, promptHandle: string, variables: Record = {}): Promise {
         try {
             console.log(`Starting vision request for prompt: ${promptHandle}`)
             console.log(`Request payload:`, { asset_path: assetPath, action: promptHandle, variables })
@@ -150,7 +145,7 @@ class MagicActionsService {
     }
 
     // Transcription endpoint
-    async executeTranscription(assetPath: string, promptHandle: string): Promise<any> {
+    async executeTranscription(assetPath: string, promptHandle: string): Promise {
         try {
             const { data } = await window.Statamic.$axios.post(this.endpoints.transcription, {
                 asset_path: assetPath,
@@ -162,75 +157,7 @@ class MagicActionsService {
             throw new Error(error.response?.data?.error || error.message)
         }
     }
-
-    // Extract content from API response
-    processApiResponse(response: any): any {
-        // Handle direct string in data property (from job response)
-        if (response.data && typeof response.data === 'string') {
-            return response.data
-        }
-
-        // Handling different response formats
-        if (response.content) {
-            // Try to parse JSON content if it exists
-            try {
-                const jsonMatch = response.content.match(/(\[.*\]|\{.*\})/s)?.[0]
-                if (jsonMatch) {
-                    return JSON.parse(jsonMatch)
-                }
-            } catch {
-                // If not JSON, return as is
-            }
-
-            return { data: response.content }
-        }
-
-        if (response.text) {
-            return { data: response.text }
-        }
-
-        return response
-    }
-
-    // Main method to route to the correct endpoint
-    async generateFromPrompt(
-        text: string,
-        promptHandle: string,
-        type: string = 'completion',
-        assetPath?: string,
-    ): Promise<any> {
-        try {
-            let response
-
-            switch (type) {
-                case 'completion':
-                    response = await this.executeCompletion(text, promptHandle)
-                    break
-                case 'vision':
-                    if (!assetPath) {
-                        throw new Error('Asset ID is required for vision requests')
-                    }
-                    response = await this.executeVision(assetPath, promptHandle, { text })
-                    break
-                case 'transcription':
-                    if (!assetPath) {
-                        throw new Error('Asset ID is required for transcription requests')
-                    }
-                    response = await this.executeTranscription(assetPath, promptHandle)
-                    break
-                default:
-                    throw new Error(`Unsupported type: ${type}`)
-            }
-
-            return this.processApiResponse(response)
-        } catch (error) {
-            console.error('Magic Actions error:', error)
-            throw error
-        }
-    }
 }
-
-const service = new MagicActionsService()
 
 // Utility functions
 const extractText = (content: any): string => {
@@ -250,84 +177,13 @@ const extractText = (content: any): string => {
 // Register field actions for each fieldtype with magic tags enabled
 const magicActionsService = new MagicActionsService()
 
-const transformerMap = {
-    text: (data: any) => {
-        // Extract string from data property if it exists, otherwise return as-is
-        if (data && typeof data === 'object' && data.data && typeof data.data === 'string') {
-            return data.data
-        }
-        return typeof data === 'string' ? data : String(data)
-    },
-    tags: (data: any) => {
-        // Extract string from data property if it exists
-        let content = data
-        if (data && typeof data === 'object' && data.data && typeof data.data === 'string') {
-            content = data.data
-        }
-        if (Array.isArray(content)) {
-            return content.slice(0, 10)
-        }
-        if (typeof content === 'string') {
-            // Parse quoted CSV format: "tag1", "tag2", "tag3"
-            const matches = content.match(/"([^"]*)"/g)
-            if (matches) {
-                return matches.map((m) => m.replace(/"/g, '')).slice(0, 10)
-            }
-            // Fallback to comma-separated
-            return content
-                .split(',')
-                .map((t) => t.trim())
-                .slice(0, 10)
-        }
-        return [content]
-    },
-    terms: (data: any) => {
-        // Extract string from data property if it exists
-        let content = data
-        if (data && typeof data === 'object' && data.data && typeof data.data === 'string') {
-            content = data.data
-        }
-        if (Array.isArray(content)) {
-            return content.slice(0, 10)
-        }
-        if (typeof content === 'string') {
-            // Parse quoted CSV format: "tag1", "tag2", "tag3"
-            const matches = content.match(/"([^"]*)"/g)
-            if (matches) {
-                return matches.map((m) => m.replace(/"/g, '')).slice(0, 10)
-            }
-            // Fallback to comma-separated
-            return content
-                .split(',')
-                .map((t) => t.trim())
-                .slice(0, 10)
-        }
-        return [content]
-    },
-    bard: (data: string, value: any) => [
-        ...value,
-        {
-            type: 'paragraph',
-            content: [
-                {
-                    type: 'text',
-                    text: data,
-                },
-            ],
-        },
-    ],
-    assets: (data: string, value: any) => {
-        // Return data as is, this could be alt text or tags for assets
-        return data
-    },
-}
+const wrapInBardBlock = (text: string) => ({
+    type: 'paragraph',
+    content: [{ type: 'text', text }],
+})
 
 const registerFieldActions = async () => {
     try {
-        const map = {
-            terms: 'relationship-fieldtype',
-        }
-
         const magicFields = window.StatamicConfig?.magicFields
         if (!magicFields || !Array.isArray(magicFields)) {
             console.log('No magic fields configured for this page')
@@ -354,26 +210,39 @@ const registerFieldActions = async () => {
                             console.log(`State:`, state)
                             console.log(`State values:`, state.values)
 
+                            // Check if we're on an asset edit page
+                            const isAssetEditPage = window.location.pathname.match(/browse\/([^/]+)\/(.+?)\/edit/)
+
                             // Determine endpoint type based on promptType
                             let type: string = 'completion'
                             if (field.promptType === 'audio') {
                                 type = 'transcription'
                             } else if (field.promptType === 'text') {
-                                // Check if source field is an asset to determine if this is a vision action
-                                const sourceValue = state.values[config.magic_actions_source]
-                                let isAssetField = false
-
-                                // Check if it's a string with :: (asset path format)
-                                if (typeof sourceValue === 'string' && sourceValue.includes('::')) {
-                                    isAssetField = true
-                                }
-                                // Check if it's an array with asset paths
-                                else if (Array.isArray(sourceValue) && sourceValue.length > 0 && typeof sourceValue[0] === 'string' && sourceValue[0].includes('::')) {
-                                    isAssetField = true
-                                }
-
-                                if (isAssetField) {
+                                // If on asset edit page with no source configured, the asset itself is the source
+                                if (isAssetEditPage && !config.magic_actions_source) {
                                     type = 'vision'
+                                } else {
+                                    // Check if source field is an asset to determine if this is a vision action
+                                    const sourceValue = state.values[config.magic_actions_source]
+                                    let isAssetField = false
+
+                                    // Check if it's a string with :: (asset path format)
+                                    if (typeof sourceValue === 'string' && sourceValue.includes('::')) {
+                                        isAssetField = true
+                                    }
+                                    // Check if it's an array with asset paths
+                                    else if (
+                                        Array.isArray(sourceValue) &&
+                                        sourceValue.length > 0 &&
+                                        typeof sourceValue[0] === 'string' &&
+                                        sourceValue[0].includes('::')
+                                    ) {
+                                        isAssetField = true
+                                    }
+
+                                    if (isAssetField) {
+                                        type = 'vision'
+                                    }
                                 }
                             }
 
@@ -425,21 +294,22 @@ const registerFieldActions = async () => {
                             }
 
                             console.log(`API response data:`, data)
-                            const transformer = transformerMap[field.type] || transformerMap.text
 
-                            const mode = config.magic_actions_mode || 'append'
+                            // Wrap Bard content in block structure
+                            const fieldData = field.type === 'bard' ? wrapInBardBlock(data) : data
+
+                            // Apply mode logic
+                            const mode = config.magic_actions_mode || 'replace'
                             let newValue
 
                             if (mode === 'append') {
                                 if (Array.isArray(value)) {
-                                    newValue = [...value, ...transformer(data, value)]
-                                } else if (typeof value === 'object' && value !== null) {
-                                    newValue = [...(value?.length ? value : []), ...transformer(data, value)]
+                                    newValue = [...value, ...(Array.isArray(fieldData) ? fieldData : [fieldData])]
                                 } else {
-                                    newValue = transformer(data, value)
+                                    newValue = fieldData
                                 }
                             } else {
-                                newValue = transformer(data, Array.isArray(value) ? [] : value)
+                                newValue = fieldData
                             }
 
                             update(newValue)
