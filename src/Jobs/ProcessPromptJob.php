@@ -48,8 +48,8 @@ final class ProcessPromptJob implements ShouldQueue
                 default => throw new Exception("Unknown prompt type: {$promptData['type']}"),
             };
 
-            $this->persistResult($response);
-            $this->updateJobStatus($jobTracker, 'completed', null, $response);
+            $finalValue = $this->persistResult($response);
+            $this->updateJobStatus($jobTracker, 'completed', null, $finalValue ?? $response);
 
         } catch (Exception $e) {
             Log::error('Job error', [
@@ -61,20 +61,24 @@ final class ProcessPromptJob implements ShouldQueue
         }
     }
 
-    private function persistResult(mixed $response): void
+    private function persistResult(mixed $response): mixed
     {
         if (! $this->context) {
-            return;
+            return null;
         }
 
         $value = $this->extractResultValue($response);
         $fieldHandle = $this->context['field'];
 
         if ($this->context['type'] === 'entry') {
-            $this->persistToEntry($fieldHandle, $value);
-        } elseif ($this->context['type'] === 'asset') {
-            $this->persistToAsset($fieldHandle, $value);
+            return $this->persistToEntry($fieldHandle, $value);
         }
+
+        if ($this->context['type'] === 'asset') {
+            return $this->persistToAsset($fieldHandle, $value);
+        }
+
+        return null;
     }
 
     private function extractResultValue(mixed $response): mixed
@@ -90,7 +94,7 @@ final class ProcessPromptJob implements ShouldQueue
         return $response;
     }
 
-    private function persistToEntry(string $fieldHandle, mixed $value): void
+    private function persistToEntry(string $fieldHandle, mixed $value): mixed
     {
         $entry = Entry::find($this->context['id']);
 
@@ -100,10 +104,14 @@ final class ProcessPromptJob implements ShouldQueue
                 'entry_id' => $this->context['id'],
             ]);
 
-            return;
+            return null;
         }
 
-        $entry->set($fieldHandle, $value);
+        $blueprint = $entry->blueprint();
+        $field = $blueprint?->field($fieldHandle);
+        $finalValue = $this->prepareValueForField($field, $value, $entry->get($fieldHandle));
+
+        $entry->set($fieldHandle, $finalValue);
         $entry->saveQuietly();
 
         Log::info('Result persisted to entry', [
@@ -111,9 +119,11 @@ final class ProcessPromptJob implements ShouldQueue
             'entry_id' => $this->context['id'],
             'field' => $fieldHandle,
         ]);
+
+        return $finalValue;
     }
 
-    private function persistToAsset(string $fieldHandle, mixed $value): void
+    private function persistToAsset(string $fieldHandle, mixed $value): mixed
     {
         $asset = AssetFacade::find($this->context['id']);
 
@@ -123,10 +133,14 @@ final class ProcessPromptJob implements ShouldQueue
                 'asset_id' => $this->context['id'],
             ]);
 
-            return;
+            return null;
         }
 
-        $asset->set($fieldHandle, $value);
+        $blueprint = $asset->blueprint();
+        $field = $blueprint?->field($fieldHandle);
+        $finalValue = $this->prepareValueForField($field, $value, $asset->get($fieldHandle));
+
+        $asset->set($fieldHandle, $finalValue);
         $asset->saveQuietly();
 
         Log::info('Result persisted to asset', [
@@ -134,6 +148,61 @@ final class ProcessPromptJob implements ShouldQueue
             'asset_id' => $this->context['id'],
             'field' => $fieldHandle,
         ]);
+
+        return $finalValue;
+    }
+
+    private function prepareValueForField(mixed $field, mixed $value, mixed $currentValue): mixed
+    {
+        if (! $field) {
+            return $value;
+        }
+
+        $fieldType = $field->type();
+        $config = $field->config();
+        $mode = $config['magic_actions_mode'] ?? 'replace';
+
+        if ($fieldType === 'bard' && is_string($value)) {
+            $value = $this->wrapInBardBlock($value);
+        }
+
+        return $this->applyUpdateMode($currentValue, $value, $mode, $fieldType);
+    }
+
+    private function wrapInBardBlock(string $text): array
+    {
+        return [
+            [
+                'type' => 'paragraph',
+                'content' => [['type' => 'text', 'text' => $text]],
+            ],
+        ];
+    }
+
+    private function applyUpdateMode(mixed $currentValue, mixed $newValue, string $mode, string $fieldType): mixed
+    {
+        if ($mode !== 'append') {
+            return $newValue;
+        }
+
+        // Handle text-based fields (text, textarea)
+        if (in_array($fieldType, ['text', 'textarea'])) {
+            $current = is_string($currentValue) ? $currentValue : '';
+            $new = is_string($newValue) ? $newValue : '';
+
+            if ($current === '') {
+                return $new;
+            }
+
+            return $current."\n".$new;
+        }
+
+        // Handle array-based fields (terms, bard, etc.)
+        if (is_array($currentValue)) {
+            return array_merge($currentValue, is_array($newValue) ? $newValue : [$newValue]);
+        }
+
+        return $newValue;
     }
 
     /**

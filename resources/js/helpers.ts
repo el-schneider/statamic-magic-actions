@@ -25,13 +25,6 @@ export function extractText(content: unknown): string {
     return ''
 }
 
-export function wrapInBardBlock(text: string): { type: string; content: { type: string; text: string }[] } {
-    return {
-        type: 'paragraph',
-        content: [{ type: 'text', text }],
-    }
-}
-
 export function isAssetPath(value: unknown): boolean {
     if (typeof value === 'string') {
         return value.includes('::')
@@ -85,14 +78,6 @@ export function getAssetPath(config: FieldConfig, stateValues: Record, pathname:
     }
 
     throw new Error('No asset selected')
-}
-
-export function applyUpdateMode(currentValue: unknown, newData: unknown, mode: 'replace' | 'append'): unknown {
-    if (mode !== 'append' || !Array.isArray(currentValue)) {
-        return newData
-    }
-
-    return [...currentValue, ...(Array.isArray(newData) ? newData : [newData])]
 }
 
 export function extractPageContext(): JobContext | null {
