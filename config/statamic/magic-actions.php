@@ -67,11 +67,5 @@ return [
                 TranscribeAudio::class,
             ],
         ],
-
-        'Statamic\Fieldtypes\Assets' => [
-            'actions' => [
-                ExtractAssetsTags::class,
-            ],
-        ],
     ],
 ];
