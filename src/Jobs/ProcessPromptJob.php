@@ -13,7 +13,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\ValueObjects\Media\Audio;
@@ -30,8 +29,8 @@ final class ProcessPromptJob implements ShouldQueue
         private string $jobId,
         private string $action,
         private array $variables,
-        private ?string $assetPath = null,
-        private ?array $context = null
+        private ?string $assetPath,
+        private array $context
     ) {}
 
     public function handle(ActionLoader $actionLoader, JobTracker $jobTracker): void
@@ -63,10 +62,6 @@ final class ProcessPromptJob implements ShouldQueue
 
     private function persistResult(mixed $response): mixed
     {
-        if (! $this->context) {
-            return null;
-        }
-
         $value = $this->extractResultValue($response);
         $fieldHandle = $this->context['field'];
 
@@ -205,31 +200,9 @@ final class ProcessPromptJob implements ShouldQueue
         return $newValue;
     }
 
-    /**
-     * Update job status using JobTracker if job has context, otherwise use simple cache.
-     */
     private function updateJobStatus(JobTracker $jobTracker, string $status, ?string $message = null, mixed $data = null): void
     {
-        // Try to get existing job from JobTracker first (has context)
-        $existingJob = $jobTracker->getJob($this->jobId);
-
-        if ($existingJob && isset($existingJob['context'])) {
-            // Job was created with context, use JobTracker
-            $jobTracker->updateStatus($this->jobId, $status, $message, $data);
-        } else {
-            // Fallback to simple cache for backwards compatibility
-            $cacheData = ['status' => $status];
-
-            if ($message !== null) {
-                $cacheData['message'] = $message;
-            }
-
-            if ($data !== null) {
-                $cacheData['data'] = $data;
-            }
-
-            Cache::put(JobTracker::CACHE_PREFIX.$this->jobId, $cacheData, JobTracker::JOB_TTL);
-        }
+        $jobTracker->updateStatus($this->jobId, $status, $message, $data);
     }
 
     private function handleTextPrompt(array $promptData, MagicAction $action): mixed
@@ -344,18 +317,6 @@ final class ProcessPromptJob implements ShouldQueue
 
     private function handleError(JobTracker $jobTracker, string $message): void
     {
-        // Try to get existing job from JobTracker first (has context)
-        $existingJob = $jobTracker->getJob($this->jobId);
-
-        if ($existingJob && isset($existingJob['context'])) {
-            // Job was created with context, use JobTracker
-            $jobTracker->updateStatus($this->jobId, 'failed', $message);
-        } else {
-            // Fallback to simple cache for backwards compatibility
-            Cache::put(JobTracker::CACHE_PREFIX.$this->jobId, [
-                'status' => 'failed',
-                'error' => $message,
-            ], JobTracker::JOB_TTL);
-        }
+        $jobTracker->updateStatus($this->jobId, 'failed', $message);
     }
 }

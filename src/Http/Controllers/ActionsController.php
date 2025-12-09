@@ -12,7 +12,6 @@ use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -240,21 +239,17 @@ final class ActionsController extends Controller
             'context' => $context,
         ]);
 
-        // Use JobTracker if context is provided, otherwise fall back to simple cache
-        if ($context) {
-            $this->jobTracker->createJob(
-                $jobId,
-                $action,
-                $context['type'],
-                $context['id'],
-                $context['field']
-            );
-        } else {
-            Cache::put(JobTracker::CACHE_PREFIX.$jobId, [
-                'status' => 'queued',
-                'message' => 'Job has been queued',
-            ], JobTracker::JOB_TTL);
+        if (! $context) {
+            return response()->json(['error' => 'Context is required'], 400);
         }
+
+        $this->jobTracker->createJob(
+            $jobId,
+            $action,
+            $context['type'],
+            $context['id'],
+            $context['field']
+        );
 
         $dispatch();
 

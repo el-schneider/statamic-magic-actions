@@ -13,6 +13,21 @@ use Prism\Prism\Facades\Prism;
 use Prism\Prism\Testing\StructuredResponseFake;
 use Statamic\Facades\Asset;
 
+function testContext(): array
+{
+    return [
+        'type' => 'entry',
+        'id' => 'test-entry-id',
+        'field' => 'title',
+    ];
+}
+
+function createJobInTracker(JobTracker $tracker, string $jobId, string $action = 'propose-title'): void
+{
+    $ctx = testContext();
+    $tracker->createJob($jobId, $action, $ctx['type'], $ctx['id'], $ctx['field']);
+}
+
 beforeEach(function () {
     Config::set('statamic.magic-actions', [
         'providers' => [
@@ -64,7 +79,7 @@ beforeEach(function () {
 it('can be dispatched to the queue', function () {
     Queue::fake();
 
-    ProcessPromptJob::dispatch('test-job-id', 'propose-title', ['content' => 'test']);
+    ProcessPromptJob::dispatch('test-job-id', 'propose-title', ['content' => 'test'], null, testContext());
 
     Queue::assertPushed(ProcessPromptJob::class);
 });
@@ -82,10 +97,12 @@ it('updates cache to completed with structured data on success', function () {
 
     $loader = app(ActionLoader::class);
     $jobTracker = app(JobTracker::class);
-    $job = new ProcessPromptJob('test-job-id', 'propose-title', ['text' => 'Sample article']);
+    createJobInTracker($jobTracker, 'test-job-id', 'propose-title');
+
+    $job = new ProcessPromptJob('test-job-id', 'propose-title', ['text' => 'Sample article'], null, testContext());
     $job->handle($loader, $jobTracker);
 
-    $cachedData = Cache::get('magic_actions_job_test-job-id');
+    $cachedData = $jobTracker->getJob('test-job-id');
     expect($cachedData['status'])->toBe('completed');
     expect($cachedData['data'])->toBe('Generated Title');
 });
@@ -95,12 +112,14 @@ it('updates cache to failed with error on exception', function () {
 
     $loader = app(ActionLoader::class);
     $jobTracker = app(JobTracker::class);
-    $job = new ProcessPromptJob('test-job-id', 'non-existent-action', []);
+    createJobInTracker($jobTracker, 'test-job-id', 'non-existent-action');
+
+    $job = new ProcessPromptJob('test-job-id', 'non-existent-action', [], null, testContext());
     $job->handle($loader, $jobTracker);
 
-    $cachedData = Cache::get('magic_actions_job_test-job-id');
+    $cachedData = $jobTracker->getJob('test-job-id');
     expect($cachedData['status'])->toBe('failed');
-    expect($cachedData['error'])->toBeString()->not()->toBeEmpty();
+    expect($cachedData['message'])->toBeString()->not()->toBeEmpty();
 });
 
 it('handles MissingApiKeyException', function () {
@@ -109,12 +128,14 @@ it('handles MissingApiKeyException', function () {
 
     $loader = app(ActionLoader::class);
     $jobTracker = app(JobTracker::class);
-    $job = new ProcessPromptJob('test-job-id', 'propose-title', ['content' => 'test']);
+    createJobInTracker($jobTracker, 'test-job-id', 'propose-title');
+
+    $job = new ProcessPromptJob('test-job-id', 'propose-title', ['content' => 'test'], null, testContext());
     $job->handle($loader, $jobTracker);
 
-    $cachedData = Cache::get('magic_actions_job_test-job-id');
+    $cachedData = $jobTracker->getJob('test-job-id');
     expect($cachedData['status'])->toBe('failed');
-    expect($cachedData['error'])->toBeString()->not()->toBeEmpty();
+    expect($cachedData['message'])->toBeString()->not()->toBeEmpty();
 });
 
 // ============================================================================
@@ -126,10 +147,12 @@ it('fails when audio prompt has no asset path', function () {
 
     $loader = app(ActionLoader::class);
     $jobTracker = app(JobTracker::class);
-    $job = new ProcessPromptJob('test-job-id', 'transcribe-audio', []);
+    createJobInTracker($jobTracker, 'test-job-id', 'transcribe-audio');
+
+    $job = new ProcessPromptJob('test-job-id', 'transcribe-audio', [], null, testContext());
     $job->handle($loader, $jobTracker);
 
-    $cachedData = Cache::get('magic_actions_job_test-job-id');
+    $cachedData = $jobTracker->getJob('test-job-id');
     expect($cachedData['status'])->toBe('failed');
 });
 
@@ -139,10 +162,12 @@ it('fails when audio asset is not found', function () {
 
     $loader = app(ActionLoader::class);
     $jobTracker = app(JobTracker::class);
-    $job = new ProcessPromptJob('test-job-id', 'transcribe-audio', [], 'assets/missing.mp3');
+    createJobInTracker($jobTracker, 'test-job-id', 'transcribe-audio');
+
+    $job = new ProcessPromptJob('test-job-id', 'transcribe-audio', [], 'assets/missing.mp3', testContext());
     $job->handle($loader, $jobTracker);
 
-    $cachedData = Cache::get('magic_actions_job_test-job-id');
+    $cachedData = $jobTracker->getJob('test-job-id');
     expect($cachedData['status'])->toBe('failed');
 });
 
@@ -157,10 +182,12 @@ it('handles text prompts without asset path', function () {
 
     $loader = app(ActionLoader::class);
     $jobTracker = app(JobTracker::class);
-    $job = new ProcessPromptJob('test-job-text', 'propose-title', ['text' => 'Sample content']);
+    createJobInTracker($jobTracker, 'test-job-text', 'propose-title');
+
+    $job = new ProcessPromptJob('test-job-text', 'propose-title', ['text' => 'Sample content'], null, testContext());
     $job->handle($loader, $jobTracker);
 
-    $cached = Cache::get('magic_actions_job_test-job-text');
+    $cached = $jobTracker->getJob('test-job-text');
     expect($cached['status'])->toBe('completed');
     expect($cached['data'])->toBe('Generated Title');
 });
@@ -174,9 +201,11 @@ it('handles missing image asset gracefully', function () {
 
     $loader = app(ActionLoader::class);
     $jobTracker = app(JobTracker::class);
-    $job = new ProcessPromptJob('test-job-789', 'alt-text', ['text' => 'Describe'], 'assets::nonexistent.jpg');
+    createJobInTracker($jobTracker, 'test-job-789', 'alt-text');
+
+    $job = new ProcessPromptJob('test-job-789', 'alt-text', ['text' => 'Describe'], 'assets::nonexistent.jpg', testContext());
     $job->handle($loader, $jobTracker);
 
     // Should still complete but without image media
-    expect(Cache::get('magic_actions_job_test-job-789')['status'])->toBe('completed');
+    expect($jobTracker->getJob('test-job-789')['status'])->toBe('completed');
 });
