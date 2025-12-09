@@ -56,23 +56,6 @@ export interface JobContext {
     field: string
 }
 
-export interface TrackedJob {
-    jobId: string
-    action: string
-    fieldHandle: string
-    fieldType: string
-    startedAt: string
-    context: JobContext
-}
-
-export interface RecoverableJob {
-    job_id: string
-    status: JobStatusResponse['status']
-    data?: string
-    error?: string
-    context?: JobContext
-}
-
 declare global {
     interface Window {
         StatamicConfig: {

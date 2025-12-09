@@ -47,8 +47,8 @@ final class ActionsController extends Controller
             $jobId = (string) Str::uuid();
             $context = $this->extractContext($request);
 
-            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $text) {
-                ProcessPromptJob::dispatch($jobId, $action, ['text' => $text]);
+            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $text, $context) {
+                ProcessPromptJob::dispatch($jobId, $action, ['text' => $text], null, $context);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Completion');
@@ -88,8 +88,8 @@ final class ActionsController extends Controller
             $jobId = (string) Str::uuid();
             $context = $this->extractContext($request);
 
-            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath, $variables) {
-                ProcessPromptJob::dispatch($jobId, $action, $variables, $assetPath);
+            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath, $variables, $context) {
+                ProcessPromptJob::dispatch($jobId, $action, $variables, $assetPath, $context);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Vision');
@@ -127,8 +127,8 @@ final class ActionsController extends Controller
             $jobId = (string) Str::uuid();
             $context = $this->extractContext($request);
 
-            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath) {
-                ProcessPromptJob::dispatch($jobId, $action, [], $assetPath);
+            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath, $context) {
+                ProcessPromptJob::dispatch($jobId, $action, [], $assetPath, $context);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Transcription');

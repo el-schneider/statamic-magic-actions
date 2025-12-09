@@ -20,6 +20,7 @@ use Prism\Prism\ValueObjects\Media\Audio;
 use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
 use Statamic\Facades\Asset as AssetFacade;
+use Statamic\Facades\Entry;
 
 final class ProcessPromptJob implements ShouldQueue
 {
@@ -29,7 +30,8 @@ final class ProcessPromptJob implements ShouldQueue
         private string $jobId,
         private string $action,
         private array $variables,
-        private ?string $assetPath = null
+        private ?string $assetPath = null,
+        private ?array $context = null
     ) {}
 
     public function handle(ActionLoader $actionLoader, JobTracker $jobTracker): void
@@ -46,6 +48,7 @@ final class ProcessPromptJob implements ShouldQueue
                 default => throw new Exception("Unknown prompt type: {$promptData['type']}"),
             };
 
+            $this->persistResult($response);
             $this->updateJobStatus($jobTracker, 'completed', null, $response);
 
         } catch (Exception $e) {
@@ -56,6 +59,81 @@ final class ProcessPromptJob implements ShouldQueue
             ]);
             $this->handleError($jobTracker, $e->getMessage());
         }
+    }
+
+    private function persistResult(mixed $response): void
+    {
+        if (! $this->context) {
+            return;
+        }
+
+        $value = $this->extractResultValue($response);
+        $fieldHandle = $this->context['field'];
+
+        if ($this->context['type'] === 'entry') {
+            $this->persistToEntry($fieldHandle, $value);
+        } elseif ($this->context['type'] === 'asset') {
+            $this->persistToAsset($fieldHandle, $value);
+        }
+    }
+
+    private function extractResultValue(mixed $response): mixed
+    {
+        if (is_array($response) && isset($response['text'])) {
+            return $response['text'];
+        }
+
+        if (is_string($response)) {
+            return $response;
+        }
+
+        return $response;
+    }
+
+    private function persistToEntry(string $fieldHandle, mixed $value): void
+    {
+        $entry = Entry::find($this->context['id']);
+
+        if (! $entry) {
+            Log::warning('Entry not found for persistence', [
+                'job_id' => $this->jobId,
+                'entry_id' => $this->context['id'],
+            ]);
+
+            return;
+        }
+
+        $entry->set($fieldHandle, $value);
+        $entry->saveQuietly();
+
+        Log::info('Result persisted to entry', [
+            'job_id' => $this->jobId,
+            'entry_id' => $this->context['id'],
+            'field' => $fieldHandle,
+        ]);
+    }
+
+    private function persistToAsset(string $fieldHandle, mixed $value): void
+    {
+        $asset = AssetFacade::find($this->context['id']);
+
+        if (! $asset) {
+            Log::warning('Asset not found for persistence', [
+                'job_id' => $this->jobId,
+                'asset_id' => $this->context['id'],
+            ]);
+
+            return;
+        }
+
+        $asset->set($fieldHandle, $value);
+        $asset->saveQuietly();
+
+        Log::info('Result persisted to asset', [
+            'job_id' => $this->jobId,
+            'asset_id' => $this->context['id'],
+            'field' => $fieldHandle,
+        ]);
     }
 
     /**

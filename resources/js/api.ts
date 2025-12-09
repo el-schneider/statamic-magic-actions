@@ -1,23 +1,20 @@
 import { sleep } from './helpers'
-import type { JobContext, JobResponse, JobStatusResponse, RecoverableJob } from './types'
+import type { JobContext, JobResponse, JobStatusResponse } from './types'
 
 const ENDPOINTS = {
     completion: '/!/statamic-magic-actions/completion',
     vision: '/!/statamic-magic-actions/vision',
     transcription: '/!/statamic-magic-actions/transcribe',
     status: '/!/statamic-magic-actions/status',
-    jobs: '/!/statamic-magic-actions/jobs',
-    acknowledge: '/!/statamic-magic-actions/acknowledge',
-    dismiss: '/!/statamic-magic-actions/dismiss',
 } as const
 
-export async function pollJobStatus(jobId: string, maxAttempts = 60, intervalMs = 1000): Promise {
+export async function pollJobStatus(jobId: string, maxAttempts = 120, intervalMs = 1000): Promise {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const response = await window.Statamic.$axios.get<JobStatusResponse>(`${ENDPOINTS.status}/${jobId}`)
-        const { status, data, error } = response.data
+        const { status, error } = response.data
 
         if (status === 'completed') {
-            return response.data
+            return
         }
 
         if (status === 'failed') {
@@ -45,10 +42,7 @@ export async function executeCompletion(text: string, action: string, context?: 
         throw new Error('No job ID returned from the server')
     }
 
-    return {
-        jobId: response.data.job_id,
-        context: response.data.context,
-    }
+    return { jobId: response.data.job_id }
 }
 
 export async function executeVision(
@@ -75,10 +69,7 @@ export async function executeVision(
         throw new Error('No job ID returned from the server')
     }
 
-    return {
-        jobId: response.data.job_id,
-        context: response.data.context,
-    }
+    return { jobId: response.data.job_id }
 }
 
 export async function executeTranscription(assetPath: string, action: string, context?: JobContext): Promise {
@@ -99,27 +90,5 @@ export async function executeTranscription(assetPath: string, action: string, co
         throw new Error('No job ID returned from the server')
     }
 
-    return {
-        jobId: response.data.job_id,
-        context: response.data.context,
-    }
-}
-
-export async function getRecoverableJobs(context: JobContext): Promise {
-    try {
-        const response = await window.Statamic.$axios.get<{ jobs: RecoverableJob[] }>(
-            `${ENDPOINTS.jobs}/${context.type}/${encodeURIComponent(context.id)}`,
-        )
-        return response.data.jobs || []
-    } catch {
-        return []
-    }
-}
-
-export async function acknowledgeJob(jobId: string): Promise {
-    await window.Statamic.$axios.post(`${ENDPOINTS.acknowledge}/${jobId}`, {})
-}
-
-export async function dismissJob(jobId: string): Promise {
-    await window.Statamic.$axios.post(`${ENDPOINTS.dismiss}/${jobId}`, {})
+    return { jobId: response.data.job_id }
 }
