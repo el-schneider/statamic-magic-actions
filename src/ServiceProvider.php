@@ -150,6 +150,6 @@ final class ServiceProvider extends AddonServiceProvider
                 'title' => $title,
                 'promptType' => $promptType,
             ];
-        })->values()->toArray();
+        })->unique('action')->values()->toArray();
     }
 }
