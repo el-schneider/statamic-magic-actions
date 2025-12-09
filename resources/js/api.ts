@@ -8,13 +8,17 @@ const ENDPOINTS = {
     status: '/!/statamic-magic-actions/status',
 } as const
 
+export interface PollResult {
+    data: string
+}
+
 export async function pollJobStatus(jobId: string, maxAttempts = 120, intervalMs = 1000): Promise {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const response = await window.Statamic.$axios.get<JobStatusResponse>(`${ENDPOINTS.status}/${jobId}`)
-        const { status, error } = response.data
+        const { status, data, error } = response.data
 
         if (status === 'completed') {
-            return
+            return { data: data ?? '' }
         }
 
         if (status === 'failed') {

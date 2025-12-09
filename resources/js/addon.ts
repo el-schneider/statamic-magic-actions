@@ -1,9 +1,10 @@
-import { executeCompletion, executeTranscription, executeVision, pollJobStatus } from './api'
+import { executeCompletion, executeTranscription, executeVision } from './api'
 import { determineActionType, extractPageContext, extractText, getAssetPath } from './helpers'
 import magicIcon from './icons/magic.svg?raw'
+import { recoverTrackedJobs, setActiveStore, startBackgroundJob } from './job-tracker'
 import type { ActionType, FieldActionConfig, FieldConfig, JobContext, MagicField } from './types'
 
-async function executeAction(
+async function dispatchJob(
     type: ActionType,
     action: string,
     config: FieldConfig,
@@ -11,27 +12,24 @@ async function executeAction(
     pathname: string,
     context?: JobContext,
 ): Promise {
-    let jobId: string
-
     if (type === 'vision') {
         const assetPath = getAssetPath(config, stateValues, pathname)
         const result = await executeVision(assetPath, action, {}, context)
-        jobId = result.jobId
-    } else if (type === 'transcription') {
-        const assetPath = getAssetPath(config, stateValues, pathname)
-        const result = await executeTranscription(assetPath, action, context)
-        jobId = result.jobId
-    } else {
-        const sourceText = extractText(stateValues[config.magic_actions_source!])
-        if (!sourceText) {
-            throw new Error('Source field is empty')
-        }
-        const result = await executeCompletion(sourceText, action, context)
-        jobId = result.jobId
+        return result.jobId
     }
 
-    await pollJobStatus(jobId)
-    return jobId
+    if (type === 'transcription') {
+        const assetPath = getAssetPath(config, stateValues, pathname)
+        const result = await executeTranscription(assetPath, action, context)
+        return result.jobId
+    }
+
+    const sourceText = extractText(stateValues[config.magic_actions_source!])
+    if (!sourceText) {
+        throw new Error('Source field is empty')
+    }
+    const result = await executeCompletion(sourceText, action, context)
+    return result.jobId
 }
 
 function createFieldAction(field: MagicField, pageContext: JobContext | null): FieldActionConfig {
@@ -42,6 +40,8 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
             Boolean(config?.magic_actions_enabled && config?.magic_actions_action === field.action),
         icon: magicIcon,
         run: async ({ handle, store, storeName, config }) => {
+            setActiveStore(store, storeName)
+
             try {
                 const stateValues = store.state.publish[storeName].values
                 const pathname = window.location.pathname
@@ -49,13 +49,17 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
 
                 const fieldContext: JobContext | undefined = pageContext ? { ...pageContext, field: handle } : undefined
 
-                window.Statamic.$toast.info('Magic action started...')
+                if (!fieldContext) {
+                    throw new Error('Could not determine page context')
+                }
 
-                await executeAction(actionType, field.action, config, stateValues, pathname, fieldContext)
+                const jobId = await dispatchJob(actionType, field.action, config, stateValues, pathname, fieldContext)
 
-                window.Statamic.$toast.success('Magic action completed! Refresh the page to see changes.')
+                window.Statamic.$toast.info(`"${field.title}" started...`)
+
+                startBackgroundJob(fieldContext, jobId, handle, field.title)
             } catch (error) {
-                const message = error instanceof Error ? error.message : 'Failed to process the action'
+                const message = error instanceof Error ? error.message : 'Failed to start the action'
                 window.Statamic.$toast.error(message)
             }
         },
@@ -73,6 +77,14 @@ function registerFieldActions(): void {
     for (const field of magicFields) {
         const componentName = `${field.component}-fieldtype`
         window.Statamic.$fieldActions.add(componentName, createFieldAction(field, pageContext))
+    }
+
+    if (pageContext) {
+        const store = window.Statamic?.Store?.store
+        if (store) {
+            setActiveStore(store, 'base')
+        }
+        recoverTrackedJobs(pageContext)
     }
 }
 
