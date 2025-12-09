@@ -222,7 +222,7 @@ final class ProcessPromptJob implements ShouldQueue
             return $action->unwrap($result->structured);
         }
 
-        return ['text' => $request->asText()->text];
+        return $request->asText()->text;
     }
 
     private function createTextRequest(mixed $builder, array $promptData, array $media): mixed

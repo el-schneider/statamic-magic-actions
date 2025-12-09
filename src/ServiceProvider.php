@@ -90,8 +90,12 @@ final class ServiceProvider extends AddonServiceProvider
         // Try to get blueprint from Asset
         if (! $blueprint && str_contains($requestPath, 'assets')) {
             if (preg_match('/cp\/assets\/browse\/(.+?)\/edit/', $requestPath, $matches)) {
-                $assetFilename = '/'.$matches[1];
-                if ($asset = \Statamic\Facades\Asset::find($assetFilename)) {
+                $assetFilename = $matches[1];
+
+                // replace the first / with ::
+                $assetFilename = preg_replace('/\//', '::', $assetFilename, 1);
+
+                if ($asset = \Statamic\Facades\Asset::findById($assetFilename)) {
                     $blueprint = $asset->blueprint();
                 }
             }
@@ -113,9 +117,13 @@ final class ServiceProvider extends AddonServiceProvider
             return $field->config()['magic_actions_enabled'] ?? false;
         })->map(function ($field) {
             $fieldtype = get_class($field->fieldtype());
-            $action = $field->config()['magic_actions_action'];
+            $action = $field->config()['magic_actions_action'] ?? null;
 
-            // Find the action class by its handle
+            if (! $action) {
+                return null;
+            }
+
+            // Find the action class by its handle from enabled actions
             $actionClass = null;
             foreach (config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [] as $actionData) {
                 // Handle both FQCN strings and pre-formatted arrays
@@ -140,16 +148,18 @@ final class ServiceProvider extends AddonServiceProvider
                 }
             }
 
-            $title = $actionClass ? $actionClass->getTitle() : $action;
-            $promptType = $actionClass ? $actionClass->config()['type'] : 'text';
+            // Ignore field if action is not enabled in addon config
+            if (! $actionClass) {
+                return null;
+            }
 
             return [
                 'type' => $field->type(),
                 'action' => $action,
                 'component' => $field->fieldtype()->component(),
-                'title' => $title,
-                'promptType' => $promptType,
+                'title' => $actionClass->getTitle(),
+                'promptType' => $actionClass->config()['type'],
             ];
-        })->unique('action')->values()->toArray();
+        })->filter()->unique('action')->values()->toArray();
     }
 }
