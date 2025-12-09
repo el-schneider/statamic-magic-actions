@@ -15,11 +15,11 @@ use Illuminate\Support\Facades\Cache;
  */
 final class JobTracker
 {
-    private const CACHE_PREFIX = 'magic_actions_job_';
+    public const CACHE_PREFIX = 'magic_actions_job_';
+
+    public const JOB_TTL = 3600; // 1 hour
 
     private const INDEX_PREFIX = 'magic_actions_jobs_';
-
-    private const JOB_TTL = 3600; // 1 hour
 
     /**
      * Create a new job with context information.

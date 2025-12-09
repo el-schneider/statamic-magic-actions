@@ -140,10 +140,6 @@ final class ActionsController extends Controller
      */
     public function status(Request $request, string $jobId): JsonResponse
     {
-        Log::info('Job status request received', [
-            'job_id' => $jobId,
-        ]);
-
         $job = $this->jobTracker->getJob($jobId);
 
         if (! $job) {
@@ -151,11 +147,6 @@ final class ActionsController extends Controller
 
             return response()->json(['error' => 'Job not found'], 404);
         }
-
-        Log::info('Job status found', [
-            'job_id' => $jobId,
-            'status' => $job['status'],
-        ]);
 
         return response()->json($job);
     }
@@ -259,10 +250,10 @@ final class ActionsController extends Controller
                 $context['field']
             );
         } else {
-            Cache::put('magic_actions_job_'.$jobId, [
+            Cache::put(JobTracker::CACHE_PREFIX.$jobId, [
                 'status' => 'queued',
                 'message' => 'Job has been queued',
-            ], 3600);
+            ], JobTracker::JOB_TTL);
         }
 
         $dispatch();

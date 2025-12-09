@@ -228,7 +228,7 @@ final class ProcessPromptJob implements ShouldQueue
                 $cacheData['data'] = $data;
             }
 
-            Cache::put("magic_actions_job_{$this->jobId}", $cacheData, 3600);
+            Cache::put(JobTracker::CACHE_PREFIX.$this->jobId, $cacheData, JobTracker::JOB_TTL);
         }
     }
 
@@ -352,10 +352,10 @@ final class ProcessPromptJob implements ShouldQueue
             $jobTracker->updateStatus($this->jobId, 'failed', $message);
         } else {
             // Fallback to simple cache for backwards compatibility
-            Cache::put("magic_actions_job_{$this->jobId}", [
+            Cache::put(JobTracker::CACHE_PREFIX.$this->jobId, [
                 'status' => 'failed',
                 'error' => $message,
-            ], 3600);
+            ], JobTracker::JOB_TTL);
         }
     }
 }
