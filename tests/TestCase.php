@@ -55,5 +55,7 @@ abstract class TestCase extends AddonTestCase
     protected function resolveApplicationConfiguration($app)
     {
         parent::resolveApplicationConfiguration($app);
+
+        $app['config']->set('statamic.editions.pro', true);
     }
 }

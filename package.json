@@ -10,7 +10,12 @@
         "format:check": "prettier --check .",
         "format:fix": "prettier --write .",
         "pint:check": "./vendor/bin/pint --test",
-        "pint:fix": "./vendor/bin/pint"
+        "pint:fix": "./vendor/bin/pint",
+        "test": "./vendor/bin/pest",
+        "test:browser": "./vendor/bin/pest tests/Browser",
+        "test:browser:headed": "PEST_BROWSER_HEADED=true ./vendor/bin/pest tests/Browser",
+        "test:unit": "./vendor/bin/pest tests/Unit",
+        "test:feature": "./vendor/bin/pest tests/Feature"
     },
     "devDependencies": {
         "@playwright/test": "^1.57.0",

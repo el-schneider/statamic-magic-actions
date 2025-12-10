@@ -56,7 +56,7 @@ pint fix
 
 #### Unit & Feature Tests
 
-Use pest to run tests.
+Use pest to run automatic tests. If unsure always use context7 or web search to find the latest docs. Pest 4 is quite new.
 
 ```bash
 ./vendor/bin/pest       # Run all tests

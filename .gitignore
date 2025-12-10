@@ -6,3 +6,6 @@ composer.lock
 resources/dist
 .cursorrules
 .playwright-mcp
+
+# Browser testing screenshots
+tests/Browser/Screenshots
