@@ -53,4 +53,9 @@ interface MagicAction
      * @return mixed The unwrapped response (value for single fields, array for multiple fields)
      */
     public function unwrap(array $structured): mixed;
+
+    /**
+     * Optional icon for the action (Statamic icon name or SVG string)
+     */
+    public function icon(): ?string;
 }

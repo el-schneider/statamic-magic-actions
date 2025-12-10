@@ -159,6 +159,7 @@ final class ServiceProvider extends AddonServiceProvider
                 'component' => $field->fieldtype()->component(),
                 'title' => $actionClass->getTitle(),
                 'promptType' => $actionClass->config()['type'],
+                'icon' => $actionClass->icon(),
             ];
         })->filter()->unique('action')->values()->toArray();
     }

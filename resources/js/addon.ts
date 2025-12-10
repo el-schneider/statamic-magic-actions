@@ -38,7 +38,7 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
         quick: true,
         visible: ({ config }) =>
             Boolean(config?.magic_actions_enabled && config?.magic_actions_action === field.action),
-        icon: magicIcon,
+        icon: field.icon ?? magicIcon,
         run: async ({ handle, update, store, storeName, config }) => {
             try {
                 const stateValues = store.state.publish[storeName].values

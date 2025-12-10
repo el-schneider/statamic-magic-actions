@@ -6,6 +6,7 @@ export interface MagicField {
     action: string
     promptType: 'text' | 'audio'
     type: string
+    icon: string | null
 }
 
 export interface PublishState {

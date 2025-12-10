@@ -64,6 +64,11 @@ abstract class BaseMagicAction implements MagicAction
         return $structured;
     }
 
+    public function icon(): ?string
+    {
+        return null;
+    }
+
     private function deriveHandle(): string
     {
         return \ElSchneider\StatamicMagicActions\Services\ActionRegistry::classNameToHandle(static::class);
