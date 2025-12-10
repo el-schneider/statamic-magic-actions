@@ -9,7 +9,7 @@ dataset('configured fieldtypes', [
     ],
     'textarea' => [
         'type' => 'textarea',
-        'expectedActions' => ['extract-meta-description', 'transcribe-audio'],
+        'expectedActions' => ['extract-meta-description', 'create-teaser', 'transcribe-audio'],
     ],
     'bard' => [
         'type' => 'bard',

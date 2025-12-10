@@ -56,6 +56,7 @@ return [
 
         'Statamic\Fieldtypes\Textarea' => [
             'actions' => [
+                CreateTeaser::class,
                 ExtractMetaDescription::class,
                 TranscribeAudio::class,
             ],
