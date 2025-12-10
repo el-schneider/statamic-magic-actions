@@ -37,16 +37,24 @@ export interface RunContext {
 }
 
 export interface JobStatusResponse {
-    status: 'completed' | 'failed' | 'processing'
+    status: 'queued' | 'processing' | 'completed' | 'failed'
     data?: string
     error?: string
+    context?: JobContext
 }
 
 export interface JobResponse {
     job_id: string
+    context?: JobContext
 }
 
 export type ActionType = 'completion' | 'vision' | 'transcription'
+
+export interface JobContext {
+    type: string // 'entry' or 'asset'
+    id: string
+    field: string
+}
 
 declare global {
     interface Window {
@@ -63,6 +71,8 @@ declare global {
             }
             $toast: {
                 error: (message: string) => void
+                success: (message: string) => void
+                info: (message: string) => void
             }
             $axios: {
                 get: <T>(url: string) => Promise

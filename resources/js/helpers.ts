@@ -1,4 +1,4 @@
-import type { ActionType, FieldConfig, MagicField } from './types'
+import type { ActionType, FieldConfig, JobContext, MagicField } from './types'
 
 export function sleep(ms: number): Promise {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -23,13 +23,6 @@ export function extractText(content: unknown): string {
     }
 
     return ''
-}
-
-export function wrapInBardBlock(text: string): { type: string; content: { type: string; text: string }[] } {
-    return {
-        type: 'paragraph',
-        content: [{ type: 'text', text }],
-    }
 }
 
 export function isAssetPath(value: unknown): boolean {
@@ -87,10 +80,28 @@ export function getAssetPath(config: FieldConfig, stateValues: Record, pathname:
     throw new Error('No asset selected')
 }
 
-export function applyUpdateMode(currentValue: unknown, newData: unknown, mode: 'replace' | 'append'): unknown {
-    if (mode !== 'append' || !Array.isArray(currentValue)) {
-        return newData
+export function extractPageContext(): JobContext | null {
+    const url = window.location.pathname
+
+    // Entry context: /cp/collections/{collection}/entries/{entryId}
+    const entryMatch = url.match(/\/cp\/collections\/([^/]+)\/entries\/([^/]+)/)
+    if (entryMatch) {
+        return {
+            type: 'entry',
+            id: entryMatch[2],
+            field: '',
+        }
     }
 
-    return [...currentValue, ...(Array.isArray(newData) ? newData : [newData])]
+    // Asset context: /cp/assets/browse/{container}/{path}/edit
+    const assetMatch = url.match(/\/cp\/assets\/browse\/(.+?)\/edit/)
+    if (assetMatch) {
+        return {
+            type: 'asset',
+            id: assetMatch[1],
+            field: '',
+        }
+    }
+
+    return null
 }

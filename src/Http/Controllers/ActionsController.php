@@ -8,16 +8,20 @@ use Closure;
 use ElSchneider\StatamicMagicActions\Exceptions\MissingApiKeyException;
 use ElSchneider\StatamicMagicActions\Jobs\ProcessPromptJob;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
+use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class ActionsController extends Controller
 {
+    public function __construct(
+        private readonly JobTracker $jobTracker
+    ) {}
+
     /**
      * Start a completion job
      */
@@ -27,6 +31,9 @@ final class ActionsController extends Controller
             $request->validate([
                 'text' => 'required|string',
                 'action' => 'required|string',
+                'context_type' => 'sometimes|string',
+                'context_id' => 'sometimes|string',
+                'field_handle' => 'sometimes|string',
             ]);
 
             $text = $request->input('text');
@@ -37,9 +44,10 @@ final class ActionsController extends Controller
             }
 
             $jobId = (string) Str::uuid();
+            $context = $this->extractContext($request);
 
-            return $this->queueBackgroundJob($jobId, $action, function () use ($jobId, $action, $text) {
-                ProcessPromptJob::dispatch($jobId, $action, ['text' => $text]);
+            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $text, $context) {
+                ProcessPromptJob::dispatch($jobId, $action, ['text' => $text], null, $context);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Completion');
@@ -63,6 +71,9 @@ final class ActionsController extends Controller
                 'asset_path' => 'required|string',
                 'action' => 'required|string',
                 'variables' => 'sometimes|array',
+                'context_type' => 'sometimes|string',
+                'context_id' => 'sometimes|string',
+                'field_handle' => 'sometimes|string',
             ]);
 
             $assetPath = $request->input('asset_path');
@@ -74,9 +85,10 @@ final class ActionsController extends Controller
             }
 
             $jobId = (string) Str::uuid();
+            $context = $this->extractContext($request);
 
-            return $this->queueBackgroundJob($jobId, $action, function () use ($jobId, $action, $assetPath, $variables) {
-                ProcessPromptJob::dispatch($jobId, $action, $variables, $assetPath);
+            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath, $variables, $context) {
+                ProcessPromptJob::dispatch($jobId, $action, $variables, $assetPath, $context);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Vision');
@@ -99,6 +111,9 @@ final class ActionsController extends Controller
             $request->validate([
                 'asset_path' => 'required|string',
                 'action' => 'required|string',
+                'context_type' => 'sometimes|string',
+                'context_id' => 'sometimes|string',
+                'field_handle' => 'sometimes|string',
             ]);
 
             $assetPath = $request->input('asset_path');
@@ -109,9 +124,10 @@ final class ActionsController extends Controller
             }
 
             $jobId = (string) Str::uuid();
+            $context = $this->extractContext($request);
 
-            return $this->queueBackgroundJob($jobId, $action, function () use ($jobId, $action, $assetPath) {
-                ProcessPromptJob::dispatch($jobId, $action, [], $assetPath);
+            return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath, $context) {
+                ProcessPromptJob::dispatch($jobId, $action, [], $assetPath, $context);
             });
         } catch (MissingApiKeyException) {
             return $this->apiKeyNotConfiguredError('Transcription');
@@ -123,13 +139,7 @@ final class ActionsController extends Controller
      */
     public function status(Request $request, string $jobId): JsonResponse
     {
-        // Log the request for debugging
-        Log::info('Job status request received', [
-            'job_id' => $jobId,
-            'cache_key' => 'magic_actions_job_'.$jobId,
-        ]);
-
-        $job = Cache::get('magic_actions_job_'.$jobId);
+        $job = $this->jobTracker->getJob($jobId);
 
         if (! $job) {
             Log::warning('Job not found in cache', ['job_id' => $jobId]);
@@ -137,12 +147,58 @@ final class ActionsController extends Controller
             return response()->json(['error' => 'Job not found'], 404);
         }
 
-        Log::info('Job status found', [
-            'job_id' => $jobId,
-            'status' => $job['status'],
-        ]);
-
         return response()->json($job);
+    }
+
+    /**
+     * Get all recoverable jobs for a specific context (entry or asset).
+     */
+    public function jobs(Request $request, string $contextType, string $contextId): JsonResponse
+    {
+        // Clean up expired jobs first
+        $this->jobTracker->cleanupContext($contextType, $contextId);
+
+        $jobs = $this->jobTracker->getRecoverableJobs($contextType, $contextId);
+
+        return response()->json([
+            'jobs' => $jobs->toArray(),
+        ]);
+    }
+
+    /**
+     * Acknowledge a job (mark as seen/applied by user).
+     */
+    public function acknowledge(Request $request, string $jobId): JsonResponse
+    {
+        $job = $this->jobTracker->getJob($jobId);
+
+        if (! $job) {
+            return response()->json(['error' => 'Job not found'], 404);
+        }
+
+        $this->jobTracker->acknowledgeJob($jobId);
+
+        Log::info('Job acknowledged', ['job_id' => $jobId]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Dismiss a job without applying the result.
+     */
+    public function dismiss(Request $request, string $jobId): JsonResponse
+    {
+        $job = $this->jobTracker->getJob($jobId);
+
+        if (! $job) {
+            return response()->json(['error' => 'Job not found'], 404);
+        }
+
+        $this->jobTracker->removeJob($jobId);
+
+        Log::info('Job dismissed', ['job_id' => $jobId]);
+
+        return response()->json(['success' => true]);
     }
 
     private function apiKeyNotConfiguredError(string $action): JsonResponse
@@ -155,24 +211,45 @@ final class ActionsController extends Controller
         ], 500);
     }
 
-    private function queueBackgroundJob(string $jobId, string $action, Closure $dispatch): JsonResponse
+    /**
+     * Extract context information from the request.
+     */
+    private function extractContext(Request $request): ?array
+    {
+        $contextType = $request->input('context_type');
+        $contextId = $request->input('context_id');
+        $fieldHandle = $request->input('field_handle');
+
+        if ($contextType && $contextId && $fieldHandle) {
+            return [
+                'type' => $contextType,
+                'id' => $contextId,
+                'field' => $fieldHandle,
+            ];
+        }
+
+        return null;
+    }
+
+    private function queueBackgroundJob(string $jobId, string $action, ?array $context, Closure $dispatch): JsonResponse
     {
         Log::info('Job created', [
             'job_id' => $jobId,
             'action' => $action,
+            'context' => $context,
         ]);
 
-        Cache::put('magic_actions_job_'.$jobId, [
-            'status' => 'queued',
-            'message' => 'Job has been queued',
-        ], 3600);
+        if (! $context) {
+            return response()->json(['error' => 'Context is required'], 400);
+        }
 
-        $cachedJob = Cache::get('magic_actions_job_'.$jobId);
-        Log::info('Job cache status', [
-            'job_id' => $jobId,
-            'cache_exists' => $cachedJob !== null,
-            'cache_data' => $cachedJob,
-        ]);
+        $this->jobTracker->createJob(
+            $jobId,
+            $action,
+            $context['type'],
+            $context['id'],
+            $context['field']
+        );
 
         $dispatch();
 
@@ -184,6 +261,7 @@ final class ActionsController extends Controller
         return response()->json([
             'job_id' => $jobId,
             'status' => 'queued',
+            'context' => $context,
         ]);
     }
 }

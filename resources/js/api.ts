@@ -1,5 +1,5 @@
 import { sleep } from './helpers'
-import type { JobResponse, JobStatusResponse } from './types'
+import type { JobContext, JobResponse, JobStatusResponse } from './types'
 
 const ENDPOINTS = {
     completion: '/!/statamic-magic-actions/completion',
@@ -8,13 +8,17 @@ const ENDPOINTS = {
     status: '/!/statamic-magic-actions/status',
 } as const
 
-async function pollJobStatus(jobId: string, maxAttempts = 60, intervalMs = 1000): Promise {
+export interface PollResult {
+    data: string
+}
+
+export async function pollJobStatus(jobId: string, maxAttempts = 120, intervalMs = 1000): Promise {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const response = await window.Statamic.$axios.get<JobStatusResponse>(`${ENDPOINTS.status}/${jobId}`)
         const { status, data, error } = response.data
 
         if (status === 'completed') {
-            return data!
+            return { data: data ?? '' }
         }
 
         if (status === 'failed') {
@@ -27,38 +31,68 @@ async function pollJobStatus(jobId: string, maxAttempts = 60, intervalMs = 1000)
     throw new Error('Timed out waiting for job to complete')
 }
 
-export async function executeCompletion(text: string, action: string): Promise {
-    const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.completion, {
-        text,
-        action,
-    })
+export async function executeCompletion(text: string, action: string, context?: JobContext): Promise {
+    const payload: Record = { text, action }
+
+    if (context) {
+        payload.context_type = context.type
+        payload.context_id = context.id
+        payload.field_handle = context.field
+    }
+
+    const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.completion, payload)
 
     if (!response.data.job_id) {
         throw new Error('No job ID returned from the server')
     }
 
-    return pollJobStatus(response.data.job_id)
+    return { jobId: response.data.job_id }
 }
 
-export async function executeVision(assetPath: string, action: string, variables: Record = {}): Promise {
-    const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.vision, {
+export async function executeVision(
+    assetPath: string,
+    action: string,
+    variables: Record = {},
+    context?: JobContext,
+): Promise {
+    const payload: Record = {
         asset_path: assetPath,
         action,
         variables,
-    })
+    }
+
+    if (context) {
+        payload.context_type = context.type
+        payload.context_id = context.id
+        payload.field_handle = context.field
+    }
+
+    const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.vision, payload)
 
     if (!response.data.job_id) {
         throw new Error('No job ID returned from the server')
     }
 
-    return pollJobStatus(response.data.job_id)
+    return { jobId: response.data.job_id }
 }
 
-export async function executeTranscription(assetPath: string, action: string): Promise {
-    const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.transcription, {
+export async function executeTranscription(assetPath: string, action: string, context?: JobContext): Promise {
+    const payload: Record = {
         asset_path: assetPath,
         action,
-    })
+    }
 
-    return pollJobStatus(response.data.job_id)
+    if (context) {
+        payload.context_type = context.type
+        payload.context_id = context.id
+        payload.field_handle = context.field
+    }
+
+    const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.transcription, payload)
+
+    if (!response.data.job_id) {
+        throw new Error('No job ID returned from the server')
+    }
+
+    return { jobId: response.data.job_id }
 }

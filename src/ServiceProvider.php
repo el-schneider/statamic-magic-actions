@@ -160,6 +160,6 @@ final class ServiceProvider extends AddonServiceProvider
                 'title' => $actionClass->getTitle(),
                 'promptType' => $actionClass->config()['type'],
             ];
-        })->filter()->values()->toArray();
+        })->filter()->unique('action')->values()->toArray();
     }
 }
