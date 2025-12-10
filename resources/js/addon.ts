@@ -1,7 +1,7 @@
 import { executeCompletion, executeTranscription, executeVision } from './api'
 import { determineActionType, extractPageContext, extractText, getAssetPath } from './helpers'
 import magicIcon from './icons/magic.svg?raw'
-import { recoverTrackedJobs, setActiveStore, startBackgroundJob } from './job-tracker'
+import { recoverTrackedJobs, startBackgroundJob } from './job-tracker'
 import type { ActionType, FieldActionConfig, FieldConfig, JobContext, MagicField } from './types'
 
 async function dispatchJob(
@@ -39,9 +39,7 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
         visible: ({ config }) =>
             Boolean(config?.magic_actions_enabled && config?.magic_actions_action === field.action),
         icon: magicIcon,
-        run: async ({ handle, store, storeName, config }) => {
-            setActiveStore(store, storeName)
-
+        run: async ({ handle, update, store, storeName, config }) => {
             try {
                 const stateValues = store.state.publish[storeName].values
                 const pathname = window.location.pathname
@@ -57,7 +55,7 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
 
                 window.Statamic.$toast.info(`"${field.title}" started...`)
 
-                startBackgroundJob(fieldContext, jobId, handle, field.title)
+                startBackgroundJob(fieldContext, jobId, handle, field.title, update)
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Failed to start the action'
                 window.Statamic.$toast.error(message)
@@ -80,10 +78,6 @@ function registerFieldActions(): void {
     }
 
     if (pageContext) {
-        const store = window.Statamic?.Store?.store
-        if (store) {
-            setActiveStore(store, 'base')
-        }
         recoverTrackedJobs(pageContext)
     }
 }

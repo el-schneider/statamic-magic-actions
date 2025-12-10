@@ -7,18 +7,11 @@ interface TrackedJob {
     fieldTitle: string
 }
 
-interface StoreRef {
-    store: Window['Statamic']['Store']['store']
-    storeName: string
-}
+type UpdateFn = (value: unknown) => void
 
 const STORAGE_KEY_PREFIX = 'magic_actions_jobs_'
 
-let activeStore: StoreRef | null = null
-
-export function setActiveStore(store: StoreRef['store'], storeName: string): void {
-    activeStore = { store, storeName }
-}
+const updateFunctions = new Map<string, UpdateFn>()
 
 function getStorageKey(context: JobContext): string {
     return `${STORAGE_KEY_PREFIX}${context.type}_${context.id.replace(/[/:]/g, '_')}`
@@ -48,18 +41,21 @@ function removeTrackedJob(context: JobContext, jobId: string): void {
     saveTrackedJobs(context, jobs)
 }
 
-function updateFieldValue(fieldHandle: string, value: string): void {
-    if (!activeStore) {
-        return
-    }
-
-    const state = activeStore.store.state.publish[activeStore.storeName]
-    if (state?.values && Object.prototype.hasOwnProperty.call(state.values, fieldHandle)) {
-        state.values[fieldHandle] = value
+function updateFieldValue(jobId: string, value: string): void {
+    const updateFn = updateFunctions.get(jobId)
+    if (updateFn) {
+        updateFn(value)
+        updateFunctions.delete(jobId)
     }
 }
 
-export function startBackgroundJob(context: JobContext, jobId: string, fieldHandle: string, fieldTitle: string): void {
+export function startBackgroundJob(
+    context: JobContext,
+    jobId: string,
+    fieldHandle: string,
+    fieldTitle: string,
+    update: UpdateFn,
+): void {
     const jobs = getTrackedJobs(context)
     const job: TrackedJob = { jobId, fieldHandle, fieldTitle }
 
@@ -68,23 +64,25 @@ export function startBackgroundJob(context: JobContext, jobId: string, fieldHand
         saveTrackedJobs(context, jobs)
     }
 
+    updateFunctions.set(jobId, update)
     pollInBackground(context, job)
 }
 
-async function pollInBackground(context: JobContext, job: TrackedJob): Promise {
+async function pollInBackground(context: JobContext, job: TrackedJob): Promise<void> {
     try {
         const result = await pollJobStatus(job.jobId)
-        updateFieldValue(job.fieldHandle, result.data)
+        updateFieldValue(job.jobId, result.data)
         window.Statamic.$toast.success(`"${job.fieldTitle}" completed!`)
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         window.Statamic.$toast.error(`"${job.fieldTitle}" failed: ${message}`)
+        updateFunctions.delete(job.jobId)
     } finally {
         removeTrackedJob(context, job.jobId)
     }
 }
 
-export async function recoverTrackedJobs(context: JobContext): Promise {
+export async function recoverTrackedJobs(context: JobContext): Promise<void> {
     const jobs = getTrackedJobs(context)
 
     if (jobs.length === 0) {
@@ -93,6 +91,18 @@ export async function recoverTrackedJobs(context: JobContext): Promise {
 
     for (const job of jobs) {
         window.Statamic.$toast.info(`"${job.fieldTitle}" is still processing...`)
-        pollInBackground(context, job)
+        pollRecoveredJob(context, job)
+    }
+}
+
+async function pollRecoveredJob(context: JobContext, job: TrackedJob): Promise<void> {
+    try {
+        await pollJobStatus(job.jobId)
+        window.Statamic.$toast.info(`"${job.fieldTitle}" completed. Please save and refresh to see the result.`)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        window.Statamic.$toast.error(`"${job.fieldTitle}" failed: ${message}`)
+    } finally {
+        removeTrackedJob(context, job.jobId)
     }
 }
