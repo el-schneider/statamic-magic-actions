@@ -20,6 +20,8 @@ use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
 use Statamic\Facades\Asset as AssetFacade;
 use Statamic\Facades\Entry;
+use Statamic\Facades\Taxonomy;
+use Statamic\Facades\Term;
 
 final class ProcessPromptJob implements ShouldQueue
 {
@@ -161,7 +163,52 @@ final class ProcessPromptJob implements ShouldQueue
             $value = $this->wrapInBardBlock($value);
         }
 
+        if ($fieldType === 'terms' && is_array($value)) {
+            $value = $this->ensureTermsExist($value, $config);
+        }
+
         return $this->applyUpdateMode($currentValue, $value, $mode, $fieldType);
+    }
+
+    /**
+     * Ensure all terms exist in the taxonomy, creating any that don't.
+     *
+     * Replicates the frontend's createTermFromString behavior.
+     */
+    private function ensureTermsExist(array $terms, array $config): array
+    {
+        $taxonomy = $config['taxonomy'] ?? ($config['taxonomies'][0] ?? null);
+
+        if (! $taxonomy) {
+            return $terms;
+        }
+
+        $taxonomyInstance = Taxonomy::findByHandle($taxonomy);
+        if (! $taxonomyInstance) {
+            return $terms;
+        }
+
+        return collect($terms)->map(function ($termValue) use ($taxonomy, $taxonomyInstance) {
+            $slug = \Illuminate\Support\Str::slug($termValue);
+
+            if (! Term::find("{$taxonomy}::{$slug}")) {
+                $term = Term::make()
+                    ->slug($slug)
+                    ->taxonomy($taxonomyInstance)
+                    ->set('title', $termValue);
+
+                $term->save();
+
+                Log::info('Created new taxonomy term', [
+                    'job_id' => $this->jobId,
+                    'taxonomy' => $taxonomy,
+                    'slug' => $slug,
+                    'title' => $termValue,
+                ]);
+            }
+
+            return $slug;
+        })->all();
     }
 
     private function wrapInBardBlock(string $text): array
