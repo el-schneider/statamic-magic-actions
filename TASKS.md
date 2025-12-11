@@ -5,3 +5,5 @@
 3. Fix browser tests
 4. Enable selecting multiple magic actions in one field
 5. Think about how we can introduce batch processing for magic actions
+6. Probably provide a closure, to be defined on the MagicAction class, to be able to pass in the context of the action, e.g. available tags from a taxonomy etc.
+7. Let's add an ImageCaption action, that generates a caption for an image
