@@ -3,7 +3,6 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "build:publish": "npm run build && rm -rf ../../../public/vendor/statamic-magic-actions && php ../../../artisan vendor:publish --tag=statamic-magic-actions --force",
         "check": "npm run format:check && npm run pint:check",
         "dev": "vite",
         "fix": "npm run format:fix && npm run pint:fix",

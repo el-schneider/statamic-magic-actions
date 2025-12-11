@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'resources/**'
-      - 'tailwind.config.js'
       - 'vite.config.js'
       - 'postcss.config.js'
 jobs:
