@@ -64,7 +64,7 @@ abstract class BaseMagicAction implements MagicAction
         return $structured;
     }
 
-    public function icon(): ?string
+    final public function icon(): ?string
     {
         return null;
     }
