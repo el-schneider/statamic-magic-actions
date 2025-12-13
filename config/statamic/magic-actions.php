@@ -8,6 +8,7 @@ use ElSchneider\StatamicMagicActions\MagicActions\CreateTeaser;
 use ElSchneider\StatamicMagicActions\MagicActions\ExtractAssetsTags;
 use ElSchneider\StatamicMagicActions\MagicActions\ExtractMetaDescription;
 use ElSchneider\StatamicMagicActions\MagicActions\ExtractTags;
+use ElSchneider\StatamicMagicActions\MagicActions\ImageCaption;
 use ElSchneider\StatamicMagicActions\MagicActions\ProposeTitle;
 use ElSchneider\StatamicMagicActions\MagicActions\TranscribeAudio;
 
@@ -51,6 +52,7 @@ return [
             'actions' => [
                 ProposeTitle::class,
                 AltText::class,
+                ImageCaption::class,
             ],
         ],
 
@@ -59,6 +61,7 @@ return [
                 CreateTeaser::class,
                 ExtractMetaDescription::class,
                 TranscribeAudio::class,
+                ImageCaption::class,
             ],
         ],
 
@@ -66,6 +69,7 @@ return [
             'actions' => [
                 CreateTeaser::class,
                 TranscribeAudio::class,
+                ImageCaption::class,
             ],
         ],
     ],

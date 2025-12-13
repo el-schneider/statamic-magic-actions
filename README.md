@@ -7,7 +7,7 @@ AI-powered field actions for Statamic v5. Generate alt text, extract tags, creat
 - **Zero-friction workflow**: One-click AI actions integrated directly into field UI
 - **Multiple AI providers**: OpenAI and Anthropic via [Prism PHP](https://prismphp.dev/)
 - **Background processing**: Generation Jobs run asynchronously with status tracking
-- **8 built-in actions**: Alt text, titles, meta descriptions, teasers, tags, transcription
+- **9 built-in actions**: Alt text, captions, titles, meta descriptions, teasers, tags, transcription
 - **Extensible**: Create custom actions with full control over prompts and models
 
 ## Installation
@@ -65,6 +65,7 @@ php artisan queue:work
 | ----------------- | -------------------------------------------------- |
 | **Propose Title** | Generate SEO-friendly titles from content          |
 | **Alt Text**      | Create accessible image descriptions (uses vision) |
+| **Image Caption** | Generate narrative captions for images             |
 
 ### Textarea Fields
 
@@ -73,6 +74,7 @@ php artisan queue:work
 | **Extract Meta Description** | SEO-optimized descriptions (max 160 chars) |
 | **Create Teaser**            | Engaging preview text (~300 chars)         |
 | **Transcribe Audio**         | Convert audio files to text using Whisper  |
+| **Image Caption**            | Generate narrative captions for images     |
 
 ### Bard Fields
 
@@ -80,6 +82,7 @@ php artisan queue:work
 | -------------------- | -------------------------------------- |
 | **Create Teaser**    | Teaser text formatted for Bard         |
 | **Transcribe Audio** | Audio transcription formatted for Bard |
+| **Image Caption**    | Image captions formatted for Bard      |
 
 ### Terms Fields
 
@@ -108,6 +111,7 @@ return [
             'actions' => [
                 ProposeTitle::class,
                 AltText::class,
+                ImageCaption::class,
             ],
         ],
         // ... more fieldtype mappings
