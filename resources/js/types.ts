@@ -60,10 +60,6 @@ declare global {
     interface Window {
         StatamicConfig: {
             magicFields: MagicField[]
-            providers: {
-                openai?: { api_key: string }
-                google?: { api_key: string }
-            }
         }
         Statamic: {
             $fieldActions: {
