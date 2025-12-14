@@ -38,33 +38,18 @@ beforeEach(function () {
                 'api_key' => 'test-anthropic-key',
             ],
         ],
-        'actions' => [
+        'types' => [
             'text' => [
-                'propose-title' => [
-                    'provider' => 'openai',
-                    'model' => 'gpt-4',
-                    'parameters' => [
-                        'temperature' => 0.7,
-                        'max_tokens' => 200,
-                    ],
-                ],
-                'alt-text' => [
-                    'provider' => 'openai',
-                    'model' => 'gpt-4o',
-                    'parameters' => [
-                        'temperature' => 0.7,
-                        'max_tokens' => 1000,
-                    ],
-                ],
+                'models' => ['openai/gpt-4.1', 'openai/gpt-4.1-mini'],
+                'default' => 'openai/gpt-4.1',
+            ],
+            'vision' => [
+                'models' => ['openai/gpt-4.1'],
+                'default' => 'openai/gpt-4.1',
             ],
             'audio' => [
-                'transcribe-audio' => [
-                    'provider' => 'openai',
-                    'model' => 'whisper-1',
-                    'parameters' => [
-                        'language' => 'en',
-                    ],
-                ],
+                'models' => ['openai/whisper-1'],
+                'default' => 'openai/whisper-1',
             ],
         ],
     ]);

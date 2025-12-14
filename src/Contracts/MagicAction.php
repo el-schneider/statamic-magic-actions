@@ -13,23 +13,39 @@ interface MagicAction
     public function getHandle(): string;
 
     /**
-     * Configuration for the magic action
-     *
-     * @return array Contains: type, provider, model, parameters
+     * Type of AI operation (text, vision, audio)
      */
-    public function config(): array;
+    public function type(): string;
+
+    /**
+     * Parameters for the AI request
+     *
+     * @return array Contains sparse parameter overrides: temperature, max_tokens, language, etc.
+     */
+    public function parameters(): array;
+
+    /**
+     * Allowed models for this action
+     *
+     * @return array Empty array = use type defaults, single model = force that model,
+     *               multiple models = restrict to this list
+     *               Format: ['provider/model', 'provider/model']
+     */
+    public function models(): array;
 
     /**
      * System prompt for the AI model
      *
-     * Can contain Blade syntax and will be rendered with provided variables
+     * Can contain Blade syntax and will be rendered with provided variables.
+     * Optional for audio actions (which don't use prompts).
      */
     public function system(): string;
 
     /**
      * User prompt template for the AI model
      *
-     * Can contain Blade syntax and will be rendered with provided variables
+     * Can contain Blade syntax and will be rendered with provided variables.
+     * Optional for audio actions (which don't use prompts).
      */
     public function prompt(): string;
 

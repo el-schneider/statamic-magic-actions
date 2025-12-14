@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+! Important: This Addon is currently unreleased, so never worry about breaking changes and backwards compatibility.
+
 ## Project Overview
 
 **Statamic Magic Actions** is a Statamic CMS addon that integrates AI-powered actions into the Statamic control panel. It allows content editors to use magic actions (powered by OpenAI or Anthropic via Prism PHP) directly on various field types to automatically generate or transform content.

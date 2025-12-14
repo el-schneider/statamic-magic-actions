@@ -5,15 +5,15 @@ declare(strict_types=1);
 dataset('configured fieldtypes', [
     'text' => [
         'type' => 'text',
-        'expectedActions' => ['propose-title', 'alt-text'],
+        'expectedActions' => ['propose-title', 'alt-text', 'image-caption'],
     ],
     'textarea' => [
         'type' => 'textarea',
-        'expectedActions' => ['extract-meta-description', 'create-teaser', 'transcribe-audio'],
+        'expectedActions' => ['extract-meta-description', 'create-teaser', 'transcribe-audio', 'image-caption'],
     ],
     'bard' => [
         'type' => 'bard',
-        'expectedActions' => ['create-teaser', 'transcribe-audio'],
+        'expectedActions' => ['create-teaser', 'transcribe-audio', 'image-caption'],
     ],
     'terms' => [
         'type' => 'terms',

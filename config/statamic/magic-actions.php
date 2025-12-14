@@ -8,6 +8,7 @@ use ElSchneider\StatamicMagicActions\MagicActions\CreateTeaser;
 use ElSchneider\StatamicMagicActions\MagicActions\ExtractAssetsTags;
 use ElSchneider\StatamicMagicActions\MagicActions\ExtractMetaDescription;
 use ElSchneider\StatamicMagicActions\MagicActions\ExtractTags;
+use ElSchneider\StatamicMagicActions\MagicActions\ImageCaption;
 use ElSchneider\StatamicMagicActions\MagicActions\ProposeTitle;
 use ElSchneider\StatamicMagicActions\MagicActions\TranscribeAudio;
 
@@ -31,6 +32,51 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Types
+    |--------------------------------------------------------------------------
+    |
+    | Available models for each action type. Model keys use provider/model
+    | format for parsing. Each type has a list of available models and
+    | a default to use when no user preference is set.
+    |
+    */
+    'types' => [
+        'text' => [
+            'models' => [
+                'openai/gpt-4.1',
+                'openai/gpt-4.1-mini',
+                'anthropic/claude-sonnet-4-5',
+            ],
+            'default' => 'openai/gpt-4.1',
+        ],
+        'vision' => [
+            'models' => [
+                'openai/gpt-4.1',
+                'anthropic/claude-sonnet-4-5',
+            ],
+            'default' => 'openai/gpt-4.1',
+        ],
+        'audio' => [
+            'models' => [
+                'openai/whisper-1',
+            ],
+            'default' => 'openai/whisper-1',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settings Path
+    |--------------------------------------------------------------------------
+    |
+    | Path to the YAML file storing user settings. Defaults to content directory
+    | for git-trackability.
+    |
+    */
+    'settings_path' => base_path('content/magic-actions/settings.yaml'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Fieldtypes
     |--------------------------------------------------------------------------
     |
@@ -51,6 +97,7 @@ return [
             'actions' => [
                 ProposeTitle::class,
                 AltText::class,
+                ImageCaption::class,
             ],
         ],
 
@@ -59,6 +106,7 @@ return [
                 CreateTeaser::class,
                 ExtractMetaDescription::class,
                 TranscribeAudio::class,
+                ImageCaption::class,
             ],
         ],
 
@@ -66,6 +114,7 @@ return [
             'actions' => [
                 CreateTeaser::class,
                 TranscribeAudio::class,
+                ImageCaption::class,
             ],
         ],
     ],

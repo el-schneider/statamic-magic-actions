@@ -8,10 +8,10 @@ async function dispatchJob(
     type: ActionType,
     action: string,
     config: FieldConfig,
-    stateValues: Record,
+    stateValues: Record<string, unknown>,
     pathname: string,
     context?: JobContext,
-): Promise {
+): Promise<string> {
     if (type === 'vision') {
         const assetPath = getAssetPath(config, stateValues, pathname)
         const result = await executeVision(assetPath, action, {}, context)
@@ -37,7 +37,7 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
         title: field.title,
         quick: true,
         visible: ({ config }) =>
-            Boolean(config?.magic_actions_enabled && config?.magic_actions_action === field.action),
+            Boolean(config?.magic_actions_enabled && config?.magic_actions_action === field.actionHandle),
         icon: field.icon ?? magicIcon,
         run: async ({ handle, update, store, storeName, config }) => {
             try {
@@ -51,7 +51,14 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
                     throw new Error('Could not determine page context')
                 }
 
-                const jobId = await dispatchJob(actionType, field.action, config, stateValues, pathname, fieldContext)
+                const jobId = await dispatchJob(
+                    actionType,
+                    field.actionHandle,
+                    config,
+                    stateValues,
+                    pathname,
+                    fieldContext,
+                )
 
                 window.Statamic.$toast.info(`"${field.title}" started...`)
 

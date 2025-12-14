@@ -68,7 +68,7 @@ export function startBackgroundJob(
     pollInBackground(context, job)
 }
 
-async function pollInBackground(context: JobContext, job: TrackedJob): Promise {
+async function pollInBackground(context: JobContext, job: TrackedJob): Promise<void> {
     try {
         const result = await pollJobStatus(job.jobId)
         updateFieldValue(job.jobId, result.data)
@@ -82,7 +82,7 @@ async function pollInBackground(context: JobContext, job: TrackedJob): Promise {
     }
 }
 
-export async function recoverTrackedJobs(context: JobContext): Promise {
+export async function recoverTrackedJobs(context: JobContext): Promise<void> {
     const jobs = getTrackedJobs(context)
 
     if (jobs.length === 0) {
@@ -95,7 +95,7 @@ export async function recoverTrackedJobs(context: JobContext): Promise {
     }
 }
 
-async function pollRecoveredJob(context: JobContext, job: TrackedJob): Promise {
+async function pollRecoveredJob(context: JobContext, job: TrackedJob): Promise<void> {
     try {
         await pollJobStatus(job.jobId)
         window.Statamic.$toast.info(`"${job.fieldTitle}" completed. Please save and refresh to see the result.`)

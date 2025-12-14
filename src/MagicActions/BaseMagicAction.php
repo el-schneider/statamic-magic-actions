@@ -14,15 +14,31 @@ abstract class BaseMagicAction implements MagicAction
 {
     public const string TITLE = '';
 
-    abstract public function config(): array;
-
-    abstract public function system(): string;
-
-    abstract public function prompt(): string;
+    abstract public function type(): string;
 
     abstract public function schema(): ?ObjectSchema;
 
     abstract public function rules(): array;
+
+    public function parameters(): array
+    {
+        return [];
+    }
+
+    public function models(): array
+    {
+        return [];
+    }
+
+    public function system(): string
+    {
+        return '';
+    }
+
+    public function prompt(): string
+    {
+        return '';
+    }
 
     final public function getTitle(): string
     {

@@ -16,6 +16,20 @@ beforeEach(function () {
                 'api_key' => 'test-anthropic-key',
             ],
         ],
+        'types' => [
+            'text' => [
+                'models' => ['openai/gpt-4.1', 'openai/gpt-4.1-mini'],
+                'default' => 'openai/gpt-4.1',
+            ],
+            'vision' => [
+                'models' => ['openai/gpt-4.1'],
+                'default' => 'openai/gpt-4.1',
+            ],
+            'audio' => [
+                'models' => ['openai/whisper-1'],
+                'default' => 'openai/whisper-1',
+            ],
+        ],
     ]);
 });
 
@@ -30,7 +44,7 @@ it('loads a text action with all required fields', function () {
     expect($result)->toHaveKeys(['type', 'provider', 'model', 'parameters', 'systemPrompt', 'userPrompt']);
     expect($result['type'])->toBe('text');
     expect($result['provider'])->toBe('openai');
-    expect($result['model'])->toBe('gpt-4');
+    expect($result['model'])->toBe('gpt-4.1'); // Uses type default
     expect($result['parameters']['temperature'])->toBe(0.7);
     expect($result['parameters']['max_tokens'])->toBe(200);
     expect($result['systemPrompt'])->toContain('content expert');
@@ -121,4 +135,16 @@ it('throws MissingApiKeyException when provider API key is not configured', func
 
     expect(fn () => $loader->load('propose-title', ['text' => 'Sample content']))
         ->toThrow(MissingApiKeyException::class, "API key not configured for provider 'openai'");
+});
+
+// ============================================================================
+// Model constraints
+// ============================================================================
+
+it('uses forced model from TranscribeAudio action', function () {
+    $loader = app(ActionLoader::class);
+    $result = $loader->load('transcribe-audio', []);
+
+    expect($result['provider'])->toBe('openai');
+    expect($result['model'])->toBe('whisper-1');
 });

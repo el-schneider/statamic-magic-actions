@@ -3,14 +3,13 @@
 export interface MagicField {
     component: string
     title: string
-    action: string
-    promptType: 'text' | 'audio'
-    type: string
+    actionHandle: string
+    actionType: 'text' | 'vision' | 'audio'
     icon: string | null
 }
 
 export interface PublishState {
-    values: Record
+    values: Record<string, unknown>
 }
 
 export interface FieldActionConfig {
@@ -18,7 +17,7 @@ export interface FieldActionConfig {
     quick: boolean
     visible: (context: { config: FieldConfig }) => boolean
     icon: string
-    run: (context: RunContext) => Promise
+    run: (context: RunContext) => Promise<void>
 }
 
 export interface FieldConfig {
@@ -76,13 +75,13 @@ declare global {
                 info: (message: string) => void
             }
             $axios: {
-                get: <T>(url: string) => Promise
-                post: <T>(url: string, data: unknown) => Promise
+                get: <T>(url: string) => Promise<{ data: T }>
+                post: <T>(url: string, data: unknown) => Promise<{ data: T }>
             }
             Store: {
                 store: {
                     state: {
-                        publish: Record
+                        publish: Record<string, PublishState>
                     }
                 }
             }

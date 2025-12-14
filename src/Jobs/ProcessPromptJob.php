@@ -44,7 +44,7 @@ final class ProcessPromptJob implements ShouldQueue
             $action = $promptData['action'];
 
             $response = match ($promptData['type']) {
-                'text' => $this->handleTextPrompt($promptData, $action),
+                'text', 'vision' => $this->handleTextPrompt($promptData, $action),
                 'audio' => $this->handleAudioPrompt($promptData),
                 default => throw new Exception("Unknown prompt type: {$promptData['type']}"),
             };
@@ -111,11 +111,7 @@ final class ProcessPromptJob implements ShouldQueue
         $entry->set($fieldHandle, $finalValue);
         $entry->saveQuietly();
 
-        Log::info('Result persisted to entry', [
-            'job_id' => $this->jobId,
-            'entry_id' => $this->context['id'],
-            'field' => $fieldHandle,
-        ]);
+        Log::debug("Magic action: persisted to entry {$this->context['id']}");
 
         return $finalValue;
     }
@@ -257,6 +253,8 @@ final class ProcessPromptJob implements ShouldQueue
         $media = $this->loadMediaFromAsset();
         $hasSchema = isset($promptData['schema']);
 
+        $this->logRequestPayload($promptData, $hasSchema, $media);
+
         $request = $this->createTextRequest(
             $hasSchema ? Prism::structured() : Prism::text(),
             $promptData,
@@ -265,11 +263,15 @@ final class ProcessPromptJob implements ShouldQueue
 
         if ($hasSchema) {
             $result = $request->withSchema($promptData['schema'])->asStructured();
+            $this->logResponse('structured');
 
             return $action->unwrap($result->structured);
         }
 
-        return $request->asText()->text;
+        $result = $request->asText();
+        $this->logResponse('text');
+
+        return $result->text;
     }
 
     private function createTextRequest(mixed $builder, array $promptData, array $media): mixed
@@ -328,6 +330,14 @@ final class ProcessPromptJob implements ShouldQueue
             $asset->container()->diskHandle()
         );
 
+        Log::info('API request: Transcribing audio', [
+            'job_id' => $this->jobId,
+            'provider' => $promptData['provider'],
+            'model' => $promptData['model'],
+            'asset_path' => $asset->path(),
+            'parameters' => $promptData['parameters'] ?? [],
+        ]);
+
         $request = Prism::audio()
             ->using($promptData['provider'], $promptData['model'])
             ->withInput($audioFile);
@@ -336,7 +346,10 @@ final class ProcessPromptJob implements ShouldQueue
             $request->withProviderOptions($promptData['parameters']);
         }
 
-        return $request->asText()->text;
+        $result = $request->asText();
+        $this->logResponse('audio');
+
+        return $result->text;
     }
 
     /**
@@ -365,5 +378,31 @@ final class ProcessPromptJob implements ShouldQueue
     private function handleError(JobTracker $jobTracker, string $message): void
     {
         $jobTracker->updateStatus($this->jobId, 'failed', $message);
+    }
+
+    private function logRequestPayload(array $promptData, bool $hasSchema, array $media): void
+    {
+        $logData = [
+            'job_id' => $this->jobId,
+            'action' => $this->action,
+            'provider' => $promptData['provider'],
+            'model' => $promptData['model'],
+            'has_schema' => $hasSchema,
+            'has_media' => ! empty($media),
+            'parameters' => $promptData['parameters'] ?? [],
+        ];
+
+        Log::debug('API request: Sending prompt to AI provider', $logData);
+    }
+
+    private function logResponse(string $type): void
+    {
+        $logData = [
+            'job_id' => $this->jobId,
+            'request_type' => $type,
+            'response_source' => 'AI provider',
+        ];
+
+        Log::debug('API response: Received from AI provider', $logData);
     }
 }

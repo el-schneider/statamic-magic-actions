@@ -49,8 +49,8 @@ final class ActionsController extends Controller
             return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $text, $context) {
                 ProcessPromptJob::dispatch($jobId, $action, ['text' => $text], null, $context);
             });
-        } catch (MissingApiKeyException) {
-            return $this->apiKeyNotConfiguredError('Completion');
+        } catch (MissingApiKeyException $e) {
+            return $this->apiKeyNotConfiguredError('Completion', $e->getMessage());
         } catch (InvalidArgumentException $e) {
             Log::warning('Completion request validation failed', [
                 'action' => $request->input('action'),
@@ -90,8 +90,8 @@ final class ActionsController extends Controller
             return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath, $variables, $context) {
                 ProcessPromptJob::dispatch($jobId, $action, $variables, $assetPath, $context);
             });
-        } catch (MissingApiKeyException) {
-            return $this->apiKeyNotConfiguredError('Vision');
+        } catch (MissingApiKeyException $e) {
+            return $this->apiKeyNotConfiguredError('Vision', $e->getMessage());
         } catch (InvalidArgumentException $e) {
             Log::warning('Vision request validation failed', [
                 'action' => $request->input('action'),
@@ -129,8 +129,8 @@ final class ActionsController extends Controller
             return $this->queueBackgroundJob($jobId, $action, $context, function () use ($jobId, $action, $assetPath, $context) {
                 ProcessPromptJob::dispatch($jobId, $action, [], $assetPath, $context);
             });
-        } catch (MissingApiKeyException) {
-            return $this->apiKeyNotConfiguredError('Transcription');
+        } catch (MissingApiKeyException $e) {
+            return $this->apiKeyNotConfiguredError('Transcription', $e->getMessage());
         }
     }
 
@@ -201,13 +201,13 @@ final class ActionsController extends Controller
         return response()->json(['success' => true]);
     }
 
-    private function apiKeyNotConfiguredError(string $action): JsonResponse
+    private function apiKeyNotConfiguredError(string $action, string $errorMessage): JsonResponse
     {
-        Log::warning("$action request rejected: OpenAI API key not configured");
+        Log::warning("$action request rejected: {$errorMessage}");
 
         return response()->json([
-            'error' => 'OpenAI API key is not configured',
-            'message' => 'Please configure your OpenAI API key in the addon settings',
+            'error' => $errorMessage,
+            'message' => 'Please configure the required API key in the addon settings',
         ], 500);
     }
 
