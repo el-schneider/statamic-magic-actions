@@ -196,11 +196,11 @@ Register your action in the config:
 
 ## Action Types
 
-| Type     | Use Case                | Model Example                   |
-| -------- | ----------------------- | ------------------------------- |
-| `text`   | Text-to-text processing | `gpt-4.1`, `claude-sonnet-4-5`  |
-| `vision` | Image analysis          | `gpt-4.1`, `claude-sonnet-4-5`  |
-| `audio`  | Transcription           | `whisper-1`                     |
+| Type     | Use Case                | Model Example                  |
+| -------- | ----------------------- | ------------------------------ |
+| `text`   | Text-to-text processing | `gpt-4.1`, `claude-sonnet-4-5` |
+| `vision` | Image analysis          | `gpt-4.1`, `claude-sonnet-4-5` |
+| `audio`  | Transcription           | `whisper-1`                    |
 
 ## Prompts with Blade
 

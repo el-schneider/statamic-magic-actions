@@ -51,7 +51,14 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
                     throw new Error('Could not determine page context')
                 }
 
-                const jobId = await dispatchJob(actionType, field.actionHandle, config, stateValues, pathname, fieldContext)
+                const jobId = await dispatchJob(
+                    actionType,
+                    field.actionHandle,
+                    config,
+                    stateValues,
+                    pathname,
+                    fieldContext,
+                )
 
                 window.Statamic.$toast.info(`"${field.title}" started...`)
 
