@@ -150,57 +150,6 @@ final class ActionsController extends Controller
         return response()->json($job);
     }
 
-    /**
-     * Get all recoverable jobs for a specific context (entry or asset).
-     */
-    public function jobs(Request $request, string $contextType, string $contextId): JsonResponse
-    {
-        // Clean up expired jobs first
-        $this->jobTracker->cleanupContext($contextType, $contextId);
-
-        $jobs = $this->jobTracker->getRecoverableJobs($contextType, $contextId);
-
-        return response()->json([
-            'jobs' => $jobs->toArray(),
-        ]);
-    }
-
-    /**
-     * Acknowledge a job (mark as seen/applied by user).
-     */
-    public function acknowledge(Request $request, string $jobId): JsonResponse
-    {
-        $job = $this->jobTracker->getJob($jobId);
-
-        if (! $job) {
-            return response()->json(['error' => 'Job not found'], 404);
-        }
-
-        $this->jobTracker->acknowledgeJob($jobId);
-
-        Log::info('Job acknowledged', ['job_id' => $jobId]);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Dismiss a job without applying the result.
-     */
-    public function dismiss(Request $request, string $jobId): JsonResponse
-    {
-        $job = $this->jobTracker->getJob($jobId);
-
-        if (! $job) {
-            return response()->json(['error' => 'Job not found'], 404);
-        }
-
-        $this->jobTracker->removeJob($jobId);
-
-        Log::info('Job dismissed', ['job_id' => $jobId]);
-
-        return response()->json(['success' => true]);
-    }
-
     private function apiKeyNotConfiguredError(string $action, string $errorMessage): JsonResponse
     {
         Log::warning("$action request rejected: {$errorMessage}");

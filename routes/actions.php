@@ -12,10 +12,3 @@ Route::post('transcribe', [ActionsController::class, 'transcribe'])->name('trans
 
 // Job status endpoint
 Route::get('status/{jobId}', [ActionsController::class, 'status'])->name('status');
-
-// Job management endpoints for background processing recovery
-Route::get('jobs/{contextType}/{contextId}', [ActionsController::class, 'jobs'])
-    ->name('jobs')
-    ->where('contextId', '.*');
-Route::post('acknowledge/{jobId}', [ActionsController::class, 'acknowledge'])->name('acknowledge');
-Route::post('dismiss/{jobId}', [ActionsController::class, 'dismiss'])->name('dismiss');
