@@ -1,6 +1,6 @@
 import type { ActionType, FieldConfig, JobContext, MagicField } from './types'
 
-export function sleep(ms: number): Promise {
+export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
@@ -9,7 +9,7 @@ export function extractText(content: unknown): string {
     if (typeof content === 'string') return content
 
     if (typeof content === 'object' && content !== null) {
-        const obj = content as Record
+        const obj = content as Record<string, unknown>
 
         if (obj.type === 'text' && typeof obj.text === 'string') {
             return obj.text
@@ -45,7 +45,7 @@ export function parseAssetPathFromUrl(pathname: string): string | null {
 export function determineActionType(
     field: MagicField,
     config: FieldConfig,
-    stateValues: Record,
+    stateValues: Record<string, unknown>,
     pathname: string,
 ): ActionType {
     if (field.actionType === 'audio') {
@@ -66,7 +66,7 @@ export function determineActionType(
     return isAssetPath(sourceValue) ? 'vision' : 'completion'
 }
 
-export function getAssetPath(config: FieldConfig, stateValues: Record, pathname: string): string {
+export function getAssetPath(config: FieldConfig, stateValues: Record<string, unknown>, pathname: string): string {
     const pathFromUrl = parseAssetPathFromUrl(pathname)
     if (pathFromUrl) {
         return pathFromUrl

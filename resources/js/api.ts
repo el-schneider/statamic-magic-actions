@@ -12,7 +12,7 @@ export interface PollResult {
     data: string
 }
 
-export async function pollJobStatus(jobId: string, maxAttempts = 120, intervalMs = 1000): Promise {
+export async function pollJobStatus(jobId: string, maxAttempts = 120, intervalMs = 1000): Promise<PollResult> {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const response = await window.Statamic.$axios.get<JobStatusResponse>(`${ENDPOINTS.status}/${jobId}`)
         const { status, data, error } = response.data
@@ -31,8 +31,12 @@ export async function pollJobStatus(jobId: string, maxAttempts = 120, intervalMs
     throw new Error('Timed out waiting for job to complete')
 }
 
-export async function executeCompletion(text: string, action: string, context?: JobContext): Promise {
-    const payload: Record = { text, action }
+export async function executeCompletion(
+    text: string,
+    action: string,
+    context?: JobContext,
+): Promise<{ jobId: string }> {
+    const payload: Record<string, unknown> = { text, action }
 
     if (context) {
         payload.context_type = context.type
@@ -52,10 +56,10 @@ export async function executeCompletion(text: string, action: string, context?: 
 export async function executeVision(
     assetPath: string,
     action: string,
-    variables: Record = {},
+    variables: Record<string, unknown> = {},
     context?: JobContext,
-): Promise {
-    const payload: Record = {
+): Promise<{ jobId: string }> {
+    const payload: Record<string, unknown> = {
         asset_path: assetPath,
         action,
         variables,
@@ -76,8 +80,12 @@ export async function executeVision(
     return { jobId: response.data.job_id }
 }
 
-export async function executeTranscription(assetPath: string, action: string, context?: JobContext): Promise {
-    const payload: Record = {
+export async function executeTranscription(
+    assetPath: string,
+    action: string,
+    context?: JobContext,
+): Promise<{ jobId: string }> {
+    const payload: Record<string, unknown> = {
         asset_path: assetPath,
         action,
     }

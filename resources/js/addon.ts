@@ -8,10 +8,10 @@ async function dispatchJob(
     type: ActionType,
     action: string,
     config: FieldConfig,
-    stateValues: Record,
+    stateValues: Record<string, unknown>,
     pathname: string,
     context?: JobContext,
-): Promise {
+): Promise<string> {
     if (type === 'vision') {
         const assetPath = getAssetPath(config, stateValues, pathname)
         const result = await executeVision(assetPath, action, {}, context)

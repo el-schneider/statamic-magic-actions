@@ -124,7 +124,8 @@ final class ActionLoader
             $globalSystemPrompt = Settings::get('global.system_prompt', '');
             $actionSystemPrompt = $action->system();
 
-            $systemPrompt = mb_trim("{$globalSystemPrompt}\n\n{$actionSystemPrompt}");
+            $parts = array_filter([$globalSystemPrompt, $actionSystemPrompt]);
+            $systemPrompt = implode("\n\n", $parts);
             $result['systemPrompt'] = $this->renderBladeString($systemPrompt, $variables);
 
             // Use action's user prompt
