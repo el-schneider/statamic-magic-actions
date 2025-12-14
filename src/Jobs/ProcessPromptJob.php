@@ -153,7 +153,7 @@ final class ProcessPromptJob implements ShouldQueue
 
         $fieldType = $field->type();
         $config = $field->config();
-        $mode = $config['magic_actions_mode'] ?? 'replace';
+        $mode = $config['magic_actions_mode'] ?? 'append';
 
         if ($fieldType === 'bard' && is_string($value)) {
             $value = $this->wrapInBardBlock($value);
