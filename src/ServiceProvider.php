@@ -7,6 +7,9 @@ namespace ElSchneider\StatamicMagicActions;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
+use ElSchneider\StatamicMagicActions\Settings\Blueprint as SettingsBlueprint;
+use Illuminate\Support\Facades\File;
+use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Entry;
 use Statamic\Fields\Blueprint;
 use Statamic\Providers\AddonServiceProvider;
@@ -23,10 +26,6 @@ final class ServiceProvider extends AddonServiceProvider
         'publicDirectory' => 'resources/dist',
     ];
 
-    protected $routes = [
-        'actions' => __DIR__.'/../routes/actions.php',
-    ];
-
     public function register()
     {
         parent::register();
@@ -41,11 +40,16 @@ final class ServiceProvider extends AddonServiceProvider
 
             return $registry;
         });
+        $this->app->singleton(SettingsBlueprint::class, function ($app) {
+            return new SettingsBlueprint($app->make(ActionRegistry::class));
+        });
     }
 
     public function boot(): void
     {
         parent::boot();
+
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'magic-actions');
 
         // Publish magic action classes for user customization
         $this->publishes([
@@ -56,6 +60,12 @@ final class ServiceProvider extends AddonServiceProvider
     public function bootAddon()
     {
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
+
+        Nav::extend(function ($nav) {
+            $nav->tools('Magic Actions')
+                ->route('magic-actions.settings.index')
+                ->icon(File::get(__DIR__.'/../resources/js/icons/magic.svg'));
+        });
 
         $blueprint = $this->extractBlueprintFromRequest();
         $magicFields = $this->buildMagicFieldsConfig($blueprint);
@@ -154,13 +164,12 @@ final class ServiceProvider extends AddonServiceProvider
             }
 
             return [
-                'type' => $field->type(),
-                'action' => $action,
+                'actionHandle' => $action,
+                'actionType' => $actionClass->type(),
                 'component' => $field->fieldtype()->component(),
                 'title' => $actionClass->getTitle(),
-                'promptType' => $actionClass->config()['type'],
                 'icon' => $actionClass->icon(),
             ];
-        })->filter()->unique('action')->values()->toArray();
+        })->filter()->unique('actionHandle')->values()->toArray();
     }
 }

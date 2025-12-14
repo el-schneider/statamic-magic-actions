@@ -3,9 +3,8 @@
 export interface MagicField {
     component: string
     title: string
-    action: string
-    promptType: 'text' | 'audio'
-    type: string
+    actionHandle: string
+    actionType: 'text' | 'vision' | 'audio'
     icon: string | null
 }
 

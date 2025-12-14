@@ -6,7 +6,7 @@ namespace ElSchneider\StatamicMagicActions\Services;
 
 use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use ElSchneider\StatamicMagicActions\Exceptions\MissingApiKeyException;
-use Illuminate\Support\Facades\Blade;
+use ElSchneider\StatamicMagicActions\Settings;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
@@ -88,30 +88,46 @@ final class ActionLoader
             throw new InvalidArgumentException('Invalid variables: '.implode(', ', $validator->errors()->all()));
         }
 
-        $config = $action->config();
-        $actionType = $config['type'] ?? null;
-        $provider = $config['provider'] ?? null;
-        $model = $config['model'] ?? null;
-        $parameters = $config['parameters'] ?? [];
+        $type = $action->type();
+
+        // Resolve model from global defaults
+        $modelKey = Settings::get("global.defaults.{$type}")
+            ?? Config::get("statamic.magic-actions.types.{$type}.default");
+
+        // Parse provider/model from the combined key
+        if (! str_contains($modelKey, '/')) {
+            throw new InvalidArgumentException(
+                "Invalid model key format: '{$modelKey}'. Expected format: 'provider/model'"
+            );
+        }
+        [$provider, $model] = explode('/', $modelKey, 2);
 
         // Validate provider API key
-        if ($provider) {
-            $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key");
-            if (! $apiKey) {
-                throw new MissingApiKeyException("API key not configured for provider '{$provider}'");
-            }
+        $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key");
+        if (! $apiKey) {
+            throw new MissingApiKeyException("API key not configured for provider '{$provider}'");
         }
 
+        // Parameters from action class
+        $parameters = $action->parameters();
+
         $result = [
-            'type' => $actionType,
+            'type' => $type,
             'provider' => $provider,
             'model' => $model,
             'parameters' => $parameters,
         ];
 
-        // Render prompts for text actions
-        if ($actionType === 'text') {
-            $result['systemPrompt'] = $this->renderBladeString($action->system(), $variables);
+        // Render prompts for text and vision actions
+        if ($type === 'text' || $type === 'vision') {
+            // Build system prompt: global prepended + action default
+            $globalSystemPrompt = Settings::get('global.system_prompt', '');
+            $actionSystemPrompt = $action->system();
+
+            $systemPrompt = mb_trim("{$globalSystemPrompt}\n\n{$actionSystemPrompt}");
+            $result['systemPrompt'] = $this->renderBladeString($systemPrompt, $variables);
+
+            // Use action's user prompt
             $result['userPrompt'] = $this->renderBladeString($action->prompt(), $variables);
 
             $schema = $action->schema();
@@ -121,7 +137,7 @@ final class ActionLoader
         }
 
         // Audio actions don't need system/user prompts in the same way
-        if ($actionType === 'audio') {
+        if ($type === 'audio') {
             // Keep minimal - Prism::audio() handles transcription directly
         }
 
@@ -133,11 +149,6 @@ final class ActionLoader
      */
     private function renderBladeString(string $template, array $variables): string
     {
-        $compiled = Blade::compileString($template);
-        extract($variables, EXTR_SKIP);
-        ob_start();
-        eval('?>'.$compiled);
-
-        return ob_get_clean();
+        return app('blade.compiler')->render($template, $variables);
     }
 }

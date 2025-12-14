@@ -48,12 +48,12 @@ export function determineActionType(
     stateValues: Record,
     pathname: string,
 ): ActionType {
-    if (field.promptType === 'audio') {
+    if (field.actionType === 'audio') {
         return 'transcription'
     }
 
-    if (field.promptType !== 'text') {
-        return 'completion'
+    if (field.actionType === 'vision') {
+        return 'vision'
     }
 
     const isAssetEditPage = parseAssetPathFromUrl(pathname) !== null

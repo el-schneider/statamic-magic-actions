@@ -12,16 +12,16 @@ final class ExtractAssetsTags extends BaseMagicAction
 {
     public const string TITLE = 'Extract Tags';
 
-    public function config(): array
+    public function type(): string
+    {
+        return 'vision';
+    }
+
+    public function parameters(): array
     {
         return [
-            'type' => 'text',
-            'provider' => 'openai',
-            'model' => 'gpt-4o',
-            'parameters' => [
-                'temperature' => 0.5,
-                'max_tokens' => 500,
-            ],
+            'temperature' => 0.5,
+            'max_tokens' => 500,
         ];
     }
 

@@ -11,16 +11,16 @@ final class ImageCaption extends BaseMagicAction
 {
     public const string TITLE = 'Image Caption';
 
-    public function config(): array
+    public function type(): string
+    {
+        return 'vision';
+    }
+
+    public function parameters(): array
     {
         return [
-            'type' => 'text',
-            'provider' => 'openai',
-            'model' => 'gpt-4o',
-            'parameters' => [
-                'temperature' => 0.7,
-                'max_tokens' => 1000,
-            ],
+            'temperature' => 0.7,
+            'max_tokens' => 1000,
         ];
     }
 

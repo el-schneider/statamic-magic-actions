@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use ElSchneider\StatamicMagicActions\MagicActions\BaseMagicAction;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -58,17 +59,19 @@ final class ActionRegistry
     {
         // Try vendor path first (production), then local path (development)
         $baseDir = base_path('vendor/el-schneider/statamic-magic-actions/src/MagicActions');
-        if (! is_dir($baseDir)) {
+        if (! File::isDirectory($baseDir)) {
             $baseDir = __DIR__.'/../MagicActions';
         }
-        $files = glob($baseDir.'/*.php');
 
-        foreach ($files ?? [] as $file) {
-            if ($file === dirname($file).'/BaseMagicAction.php') {
+        $files = File::files($baseDir);
+
+        foreach ($files as $file) {
+            // Skip the base class
+            if ($file->getFilename() === 'BaseMagicAction.php') {
                 continue;
             }
 
-            $className = basename($file, '.php');
+            $className = $file->getBasename('.php');
             $fqcn = $namespace.'\\'.$className;
 
             if (class_exists($fqcn) && is_subclass_of($fqcn, BaseMagicAction::class)) {

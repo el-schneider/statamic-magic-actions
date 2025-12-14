@@ -11,16 +11,16 @@ final class ExtractMetaDescription extends BaseMagicAction
 {
     public const string TITLE = 'Extract Meta Description';
 
-    public function config(): array
+    public function type(): string
+    {
+        return 'text';
+    }
+
+    public function parameters(): array
     {
         return [
-            'type' => 'text',
-            'provider' => 'openai',
-            'model' => 'gpt-4',
-            'parameters' => [
-                'temperature' => 0.7,
-                'max_tokens' => 300,
-            ],
+            'temperature' => 0.7,
+            'max_tokens' => 300,
         ];
     }
 
