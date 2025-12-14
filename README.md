@@ -29,7 +29,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 Optionally publish the config:
 
 ```bash
-php artisan vendor:publish --tag=statamic.magic-actions.config
+php artisan vendor:publish --tag=statamic-magic-actions-config
 ```
 
 ## Usage

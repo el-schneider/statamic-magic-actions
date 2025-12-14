@@ -16,30 +16,17 @@ use Statamic\Providers\AddonServiceProvider;
 final class ServiceProvider extends AddonServiceProvider
 {
     protected $vite = [
-        'input' => [
-            'resources/js/addon.ts',
-        ],
+        'input' => ['resources/js/addon.ts'],
         'publicDirectory' => 'resources/dist',
     ];
 
-    public function register()
+    public function register(): void
     {
         parent::register();
 
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
-        $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
-        $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
-        $this->app->singleton(MagicFieldsConfigBuilder::class, fn () => new MagicFieldsConfigBuilder());
-        $this->app->singleton(ActionRegistry::class, function () {
-            $registry = new ActionRegistry();
-            $registry->discoverFromNamespace('ElSchneider\\StatamicMagicActions\\MagicActions');
-
-            return $registry;
-        });
-        $this->app->singleton(SettingsBlueprint::class, function ($app) {
-            return new SettingsBlueprint($app->make(ActionRegistry::class));
-        });
+        $this->registerServices();
     }
 
     public function boot(): void
@@ -48,16 +35,42 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'magic-actions');
 
-        // Publish magic action classes for user customization
+        $this->publishes([
+            __DIR__.'/../config/statamic/magic-actions.php' => config_path('statamic/magic-actions.php'),
+        ], 'statamic-magic-actions-config');
+
         $this->publishes([
             __DIR__.'/MagicActions' => app_path('MagicActions'),
-        ], 'magic-actions');
+        ], 'statamic-magic-actions-classes');
     }
 
-    public function bootAddon()
+    public function bootAddon(): void
     {
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
 
+        $this->registerNavigation();
+    }
+
+    private function registerServices(): void
+    {
+        $this->app->singleton(ActionLoader::class);
+        $this->app->singleton(FieldConfigService::class);
+        $this->app->singleton(MagicFieldsConfigBuilder::class);
+
+        $this->app->singleton(ActionRegistry::class, function () {
+            $registry = new ActionRegistry();
+            $registry->discoverFromNamespace('ElSchneider\\StatamicMagicActions\\MagicActions');
+
+            return $registry;
+        });
+
+        $this->app->singleton(SettingsBlueprint::class, function ($app) {
+            return new SettingsBlueprint($app->make(ActionRegistry::class));
+        });
+    }
+
+    private function registerNavigation(): void
+    {
         Nav::extend(function ($nav) {
             $nav->tools('Magic Actions')
                 ->route('magic-actions.settings.index')
