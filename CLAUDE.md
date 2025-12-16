@@ -41,6 +41,16 @@ The addon supports three types of AI operations:
 5. **Status Polling**: Frontend polls `/actions/status/{jobId}` to check completion
 6. **Result Return**: When done, result is cached and returned to frontend
 
+## Laravel Auto-Registration
+
+### Event Listeners
+
+Laravel automatically discovers event listeners in `app/Listeners/` (or `src/Listeners/` for packages when configured):
+
+- Methods starting with `handle` or `__invoke` are registered as listeners
+- The event is determined by the type-hint in the method signature
+- No manual registration needed in ServiceProvider
+
 ## Development Commands
 
 ### Code Quality
