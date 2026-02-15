@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions;
 
+use ElSchneider\StatamicMagicActions\Commands\MagicRunCommand;
 use ElSchneider\StatamicMagicActions\Listeners\ProvideAssetMagicActionsToScript;
 use ElSchneider\StatamicMagicActions\Listeners\ProvideEntryMagicActionsToScript;
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
@@ -83,6 +84,8 @@ final class ServiceProvider extends AddonServiceProvider
 
     public function bootAddon()
     {
+        $this->commands([MagicRunCommand::class]);
+
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
 
         Nav::extend(function ($nav) {
