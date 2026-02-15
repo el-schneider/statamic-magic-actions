@@ -29,8 +29,14 @@ ANTHROPIC_API_KEY=sk-ant-...
 Optionally publish the config:
 
 ```bash
-php artisan vendor:publish --tag=statamic.magic-actions.config
+php artisan vendor:publish --tag=statamic-magic-actions-config
 ```
+
+Available publish tags:
+
+- `statamic-magic-actions` — built frontend assets (`public/vendor/statamic-magic-actions/build`)
+- `statamic-magic-actions-config` — config file (`config/statamic/magic-actions.php`)
+- `statamic-magic-actions-actions` — action stubs (`app/MagicActions`)
 
 ## Usage
 
