@@ -30,6 +30,11 @@ abstract class BaseMagicAction implements MagicAction
         return [];
     }
 
+    public function acceptedMimeTypes(): array
+    {
+        return [];
+    }
+
     public function system(): string
     {
         return '';

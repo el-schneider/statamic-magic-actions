@@ -24,6 +24,11 @@ final class AltText extends BaseMagicAction
         ];
     }
 
+    public function acceptedMimeTypes(): array
+    {
+        return ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    }
+
     public function schema(): ?ObjectSchema
     {
         return new ObjectSchema(

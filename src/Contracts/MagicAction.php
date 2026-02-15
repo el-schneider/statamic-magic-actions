@@ -34,6 +34,13 @@ interface MagicAction
     public function models(): array;
 
     /**
+     * Accepted MIME type patterns for file-based actions.
+     *
+     * @return array Empty array = no file type restriction
+     */
+    public function acceptedMimeTypes(): array;
+
+    /**
      * System prompt for the AI model
      *
      * Can contain Blade syntax and will be rendered with provided variables.

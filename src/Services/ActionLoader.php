@@ -48,6 +48,14 @@ final class ActionLoader
     }
 
     /**
+     * Get a MagicAction instance without loading provider/model config.
+     */
+    public function getMagicAction(string $action): ?MagicAction
+    {
+        return $this->loadMagicAction($action);
+    }
+
+    /**
      * Load MagicAction from user's app or addon's src directory
      */
     private function loadMagicAction(string $action): ?MagicAction

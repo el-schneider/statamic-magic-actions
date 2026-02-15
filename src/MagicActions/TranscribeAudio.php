@@ -20,6 +20,11 @@ final class TranscribeAudio extends BaseMagicAction
         return ['openai/whisper-1'];
     }
 
+    public function acceptedMimeTypes(): array
+    {
+        return ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac'];
+    }
+
     public function parameters(): array
     {
         return [
