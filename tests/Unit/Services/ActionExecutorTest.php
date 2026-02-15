@@ -120,7 +120,7 @@ it('returns all configured and registered magic actions in getAvailableActions',
         TranscribeAudio::class,
     ];
 
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', $configuredActions);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', $configuredActions);
 
     $entry = makeEntryTarget($fieldHandle, makeField($fieldtype));
 
@@ -138,7 +138,7 @@ it('returns all configured and registered magic actions in getAvailableActions',
 
 it('returns true from canExecute for a valid action handle', function () {
     $fieldHandle = 'magic_field';
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', [ProposeTitle::class]);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', [ProposeTitle::class]);
 
     $entry = makeEntryTarget($fieldHandle, makeField(new DummyFieldtype()));
     $executor = new ActionExecutor(app(ActionLoader::class), app(JobTracker::class));
@@ -148,7 +148,7 @@ it('returns true from canExecute for a valid action handle', function () {
 
 it('returns false from canExecute for a non-existent action handle', function () {
     $fieldHandle = 'magic_field';
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', [ProposeTitle::class]);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', [ProposeTitle::class]);
 
     $entry = makeEntryTarget($fieldHandle, makeField(new DummyFieldtype()));
     $executor = new ActionExecutor(app(ActionLoader::class), app(JobTracker::class));
@@ -158,7 +158,7 @@ it('returns false from canExecute for a non-existent action handle', function ()
 
 it('rejects unsupported mime types for actions with acceptedMimeTypes', function () {
     $fieldHandle = 'magic_field';
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', [AltText::class]);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', [AltText::class]);
 
     $asset = makeAssetTarget($fieldHandle, makeField(new DummyFieldtype()), 'text/plain');
     $executor = new ActionExecutor(app(ActionLoader::class), app(JobTracker::class));
@@ -168,7 +168,7 @@ it('rejects unsupported mime types for actions with acceptedMimeTypes', function
 
 it('accepts supported mime types for actions with acceptedMimeTypes', function () {
     $fieldHandle = 'magic_field';
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', [AltText::class]);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', [AltText::class]);
 
     $asset = makeAssetTarget($fieldHandle, makeField(new DummyFieldtype()), 'image/png');
     $executor = new ActionExecutor(app(ActionLoader::class), app(JobTracker::class));
@@ -180,7 +180,7 @@ it('injects context variables for RequiresContext actions', function () {
     Bus::fake();
 
     $fieldHandle = 'magic_field';
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', [AssignTagsFromTaxonomies::class]);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', [AssignTagsFromTaxonomies::class]);
 
     $entry = makeEntryTarget($fieldHandle, makeField(new DummyFieldtype(), config: ['taxonomy' => 'tags']));
     $executor = new ActionExecutor(app(ActionLoader::class), app(JobTracker::class));
@@ -201,7 +201,7 @@ it('dispatches ProcessPromptJob when execute is called with a valid action', fun
     Bus::fake();
 
     $fieldHandle = 'magic_field';
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', [ProposeTitle::class]);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', [ProposeTitle::class]);
 
     $entry = makeEntryTarget($fieldHandle, makeField(new DummyFieldtype()));
     $executor = new ActionExecutor(app(ActionLoader::class), app(JobTracker::class));
@@ -223,7 +223,7 @@ it('executes synchronously and returns the ai result', function () {
     ]);
 
     $fieldHandle = 'magic_field';
-    Config::set("statamic.magic-actions.fieldtypes.".DummyFieldtype::class.'.actions', [ProposeTitle::class]);
+    Config::set('statamic.magic-actions.fieldtypes.'.DummyFieldtype::class.'.actions', [ProposeTitle::class]);
 
     $entry = makeEntryTarget($fieldHandle, makeField(new DummyFieldtype()));
     $executor = new ActionExecutor(app(ActionLoader::class), app(JobTracker::class));

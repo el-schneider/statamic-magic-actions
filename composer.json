@@ -21,7 +21,6 @@
         "laravel/pint": "^1.21",
         "pestphp/pest": "^4.1",
         "pestphp/pest-plugin-browser": "^4.1"
-
     },
     "config": {
         "allow-plugins": {
@@ -41,5 +40,13 @@
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "scripts": {
+        "pint": "vendor/bin/pint",
+        "test": "vendor/bin/pest --no-coverage",
+        "ci": [
+            "@pint --test",
+            "@test"
+        ]
+    }
 }
