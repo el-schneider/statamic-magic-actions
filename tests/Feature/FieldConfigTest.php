@@ -61,6 +61,7 @@ it('shows magic action fields for configured fieldtype', function (string $type,
     $actionField = $config->firstWhere('handle', 'magic_actions_action');
     expect($actionField)->not->toBeNull()
         ->and($actionField['type'])->toBe('select')
+        ->and($actionField['multiple'])->toBeTrue()
         ->and($actionField['options'])->toHaveKeys($expectedActions)
         ->and(count($actionField['options']))->toBe(count($expectedActions));
 })->with('configured fieldtypes');

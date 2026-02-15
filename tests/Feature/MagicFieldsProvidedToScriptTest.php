@@ -74,7 +74,10 @@ it('provides magic fields config for multiple enabled actions on same field', fu
                                         'type' => 'textarea',
                                         'display' => 'Content',
                                         'magic_actions_enabled' => true,
-                                        'magic_actions_action' => 'create-teaser',
+                                        'magic_actions_action' => [
+                                            'create-teaser',
+                                            'extract-meta-description',
+                                        ],
                                     ],
                                 ],
                             ],

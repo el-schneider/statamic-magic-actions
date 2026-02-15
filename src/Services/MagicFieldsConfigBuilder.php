@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\Services;
 
+use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use Statamic\Fields\Blueprint;
 
 use function get_class;
 
 final class MagicFieldsConfigBuilder
 {
+    public function __construct(private readonly ActionLoader $actionLoader) {}
+
     public function buildFromBlueprint(?Blueprint $blueprint): ?array
     {
         if (! $blueprint) {
@@ -20,49 +23,103 @@ final class MagicFieldsConfigBuilder
             return $field->config()['magic_actions_enabled'] ?? false;
         })->map(function ($field) {
             $fieldtype = get_class($field->fieldtype());
-            $action = $field->config()['magic_actions_action'] ?? null;
+            $selectedActions = $this->normalizeSelectedActions($field->config()['magic_actions_action'] ?? null);
 
-            if (! $action) {
+            if ($selectedActions === []) {
                 return null;
             }
 
-            // Find the action class by its handle from enabled actions
-            $actionClass = null;
-            foreach (config('statamic.magic-actions.fieldtypes')[$fieldtype]['actions'] ?? [] as $actionData) {
-                // Handle both FQCN strings and pre-formatted arrays
-                $classPath = null;
-                $actionHandle = null;
+            $enabledActions = $this->resolveEnabledActionsForFieldtype($fieldtype);
 
-                if (is_string($actionData) && class_exists($actionData)) {
-                    $classPath = $actionData;
-                } elseif (is_array($actionData) && isset($actionData['action'])) {
-                    $actionHandle = $actionData['action'];
-                    $explodedHandle = str_replace('-', ' ', $actionHandle);
-                    $className = str_replace(' ', '', ucwords($explodedHandle));
-                    $classPath = "ElSchneider\\StatamicMagicActions\\MagicActions\\{$className}";
-                }
-
-                if ($classPath && class_exists($classPath)) {
-                    $instance = new $classPath();
-                    if ($instance->getHandle() === $action) {
-                        $actionClass = $instance;
-                        break;
-                    }
-                }
+            if ($enabledActions === []) {
+                return null;
             }
 
-            // Ignore field if action is not enabled in addon config
-            if (! $actionClass) {
+            $fieldActions = collect($selectedActions)
+                ->map(fn (string $actionHandle) => $enabledActions[$actionHandle] ?? null)
+                ->filter()
+                ->values()
+                ->toArray();
+
+            if ($fieldActions === []) {
                 return null;
             }
 
             return [
-                'actionHandle' => $action,
-                'actionType' => $actionClass->type(),
+                'fieldHandle' => $field->handle(),
                 'component' => $field->fieldtype()->component(),
-                'title' => $actionClass->getTitle(),
-                'icon' => $actionClass->icon(),
+                'actions' => $fieldActions,
             ];
-        })->filter()->unique('actionHandle')->values()->toArray();
+        })->filter()->values()->toArray();
+    }
+
+    private function normalizeSelectedActions(mixed $actionConfig): array
+    {
+        if (is_string($actionConfig)) {
+            $actionConfig = mb_trim($actionConfig);
+
+            return $actionConfig !== '' ? [$actionConfig] : [];
+        }
+
+        if (! is_array($actionConfig)) {
+            return [];
+        }
+
+        $selectedActions = collect($actionConfig)
+            ->filter(fn (mixed $actionHandle) => is_string($actionHandle) && mb_trim($actionHandle) !== '')
+            ->map(fn (string $actionHandle) => mb_trim($actionHandle))
+            ->unique()
+            ->values()
+            ->toArray();
+
+        return $selectedActions;
+    }
+
+    private function resolveEnabledActionsForFieldtype(string $fieldtype): array
+    {
+        $configuredActions = config("statamic.magic-actions.fieldtypes.{$fieldtype}.actions", []);
+
+        if (! is_array($configuredActions)) {
+            return [];
+        }
+
+        $resolvedActions = [];
+
+        foreach ($configuredActions as $configuredAction) {
+            $action = $this->resolveConfiguredAction($configuredAction);
+
+            if (! $action) {
+                continue;
+            }
+
+            $actionHandle = $action->getHandle();
+            $resolvedActions[$actionHandle] = [
+                'title' => $action->getTitle(),
+                'actionHandle' => $actionHandle,
+                'actionType' => $action->type(),
+                'icon' => $action->icon(),
+            ];
+        }
+
+        return $resolvedActions;
+    }
+
+    private function resolveConfiguredAction(mixed $configuredAction): ?MagicAction
+    {
+        if (is_string($configuredAction) && class_exists($configuredAction)) {
+            $instance = new $configuredAction();
+
+            return $instance instanceof MagicAction ? $instance : null;
+        }
+
+        if (is_array($configuredAction) && isset($configuredAction['action']) && is_string($configuredAction['action'])) {
+            return $this->actionLoader->getMagicAction($configuredAction['action']);
+        }
+
+        if (is_string($configuredAction)) {
+            return $this->actionLoader->getMagicAction($configuredAction);
+        }
+
+        return null;
     }
 }

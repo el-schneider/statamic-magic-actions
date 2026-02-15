@@ -2,7 +2,7 @@ import { executeCompletion, executeTranscription, executeVision } from './api'
 import { determineActionType, extractPageContext, extractText, getAssetPath } from './helpers'
 import magicIcon from './icons/magic.svg?raw'
 import { recoverTrackedJobs, startBackgroundJob } from './job-tracker'
-import type { ActionType, FieldActionConfig, FieldConfig, JobContext, MagicField } from './types'
+import type { ActionType, FieldActionConfig, FieldConfig, JobContext, MagicField, MagicFieldAction } from './types'
 
 async function dispatchJob(
     type: ActionType,
@@ -32,18 +32,41 @@ async function dispatchJob(
     return result.jobId
 }
 
-function createFieldAction(field: MagicField, pageContext: JobContext | null): FieldActionConfig {
+function getConfiguredActions(config: FieldConfig): string[] {
+    const configured = config.magic_actions_action
+
+    if (typeof configured === 'string') {
+        return configured ? [configured] : []
+    }
+
+    if (Array.isArray(configured)) {
+        return configured.filter((actionHandle): actionHandle is string => typeof actionHandle === 'string')
+    }
+
+    return []
+}
+
+function createFieldAction(
+    field: MagicField,
+    action: MagicFieldAction,
+    pageContext: JobContext | null,
+): FieldActionConfig {
     return {
-        title: field.title,
+        title: action.title,
         quick: true,
-        visible: ({ config }) =>
-            Boolean(config?.magic_actions_enabled && config?.magic_actions_action === field.actionHandle),
-        icon: field.icon ?? magicIcon,
+        visible: ({ config, handle }) => {
+            if (!config?.magic_actions_enabled || handle !== field.fieldHandle) {
+                return false
+            }
+
+            return getConfiguredActions(config).includes(action.actionHandle)
+        },
+        icon: action.icon ?? magicIcon,
         run: async ({ handle, update, store, storeName, config }) => {
             try {
                 const stateValues = store.state.publish[storeName].values
                 const pathname = window.location.pathname
-                const actionType = determineActionType(field, config, stateValues, pathname)
+                const actionType = determineActionType(action, config, stateValues, pathname)
 
                 const fieldContext: JobContext | undefined = pageContext ? { ...pageContext, field: handle } : undefined
 
@@ -53,16 +76,16 @@ function createFieldAction(field: MagicField, pageContext: JobContext | null): F
 
                 const jobId = await dispatchJob(
                     actionType,
-                    field.actionHandle,
+                    action.actionHandle,
                     config,
                     stateValues,
                     pathname,
                     fieldContext,
                 )
 
-                window.Statamic.$toast.info(`"${field.title}" started...`)
+                window.Statamic.$toast.info(`"${action.title}" started...`)
 
-                startBackgroundJob(fieldContext, jobId, handle, field.title, update)
+                startBackgroundJob(fieldContext, jobId, handle, action.title, update)
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Failed to start the action'
                 window.Statamic.$toast.error(message)
@@ -81,7 +104,15 @@ function registerFieldActions(): void {
 
     for (const field of magicFields) {
         const componentName = `${field.component}-fieldtype`
-        window.Statamic.$fieldActions.add(componentName, createFieldAction(field, pageContext))
+
+        if (field.actions.length === 1) {
+            window.Statamic.$fieldActions.add(componentName, createFieldAction(field, field.actions[0], pageContext))
+            continue
+        }
+
+        for (const action of field.actions) {
+            window.Statamic.$fieldActions.add(componentName, createFieldAction(field, action, pageContext))
+        }
     }
 
     if (pageContext) {

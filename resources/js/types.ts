@@ -1,7 +1,12 @@
 /// <reference types="vite/client" />
 
 export interface MagicField {
+    fieldHandle: string
     component: string
+    actions: MagicFieldAction[]
+}
+
+export interface MagicFieldAction {
     title: string
     actionHandle: string
     actionType: 'text' | 'vision' | 'audio'
@@ -15,14 +20,14 @@ export interface PublishState {
 export interface FieldActionConfig {
     title: string
     quick: boolean
-    visible: (context: { config: FieldConfig }) => boolean
+    visible: (context: { config: FieldConfig; handle: string }) => boolean
     icon: string
     run: (context: RunContext) => Promise<void>
 }
 
 export interface FieldConfig {
     magic_actions_enabled?: boolean
-    magic_actions_action?: string
+    magic_actions_action?: string | string[]
     magic_actions_source?: string
     magic_actions_mode?: 'replace' | 'append'
 }

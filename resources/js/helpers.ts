@@ -1,4 +1,4 @@
-import type { ActionType, FieldConfig, JobContext, MagicField } from './types'
+import type { ActionType, FieldConfig, JobContext, MagicFieldAction } from './types'
 
 export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -43,16 +43,16 @@ export function parseAssetPathFromUrl(pathname: string): string | null {
 }
 
 export function determineActionType(
-    field: MagicField,
+    action: MagicFieldAction,
     config: FieldConfig,
     stateValues: Record<string, unknown>,
     pathname: string,
 ): ActionType {
-    if (field.actionType === 'audio') {
+    if (action.actionType === 'audio') {
         return 'transcription'
     }
 
-    if (field.actionType === 'vision') {
+    if (action.actionType === 'vision') {
         return 'vision'
     }
 

@@ -56,7 +56,8 @@ final class FieldConfigService
                 $config = $this->defaultFieldConfig;
                 $config['magic_actions_action'] = [
                     'type' => 'select',
-                    'display' => 'Action',
+                    'display' => 'Actions',
+                    'multiple' => true,
                     'options' => collect($settings['actions'])->pluck('title', 'action')->toArray(),
                     'sometimes' => ['magic_actions_enabled' => true],
                     'if' => ['magic_actions_enabled' => true],

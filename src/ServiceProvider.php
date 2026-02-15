@@ -55,7 +55,9 @@ final class ServiceProvider extends AddonServiceProvider
             );
         });
         $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
-        $this->app->singleton(MagicFieldsConfigBuilder::class, fn () => new MagicFieldsConfigBuilder());
+        $this->app->singleton(MagicFieldsConfigBuilder::class, function ($app) {
+            return new MagicFieldsConfigBuilder($app->make(ActionLoader::class));
+        });
         $this->app->singleton(ActionRegistry::class, function () {
             $registry = new ActionRegistry();
             $registry->discoverFromNamespace('ElSchneider\\StatamicMagicActions\\MagicActions');
