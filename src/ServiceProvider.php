@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions;
 
+use ElSchneider\StatamicMagicActions\Listeners\ProvideAssetMagicActionsToScript;
+use ElSchneider\StatamicMagicActions\Listeners\ProvideEntryMagicActionsToScript;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
 use ElSchneider\StatamicMagicActions\Settings\Blueprint as SettingsBlueprint;
 use Illuminate\Support\Facades\File;
+use Statamic\Events\AssetBlueprintFound;
+use Statamic\Events\EntryBlueprintFound;
 use Statamic\Facades\CP\Nav;
 use Statamic\Providers\AddonServiceProvider;
 
@@ -20,6 +24,15 @@ final class ServiceProvider extends AddonServiceProvider
             'resources/js/addon.ts',
         ],
         'publicDirectory' => 'resources/dist',
+    ];
+
+    protected $listen = [
+        EntryBlueprintFound::class => [
+            ProvideEntryMagicActionsToScript::class,
+        ],
+        AssetBlueprintFound::class => [
+            ProvideAssetMagicActionsToScript::class,
+        ],
     ];
 
     public function register()
