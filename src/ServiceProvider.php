@@ -6,9 +6,11 @@ namespace ElSchneider\StatamicMagicActions;
 
 use ElSchneider\StatamicMagicActions\Listeners\ProvideAssetMagicActionsToScript;
 use ElSchneider\StatamicMagicActions\Listeners\ProvideEntryMagicActionsToScript;
+use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
+use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
 use ElSchneider\StatamicMagicActions\Settings\Blueprint as SettingsBlueprint;
 use Illuminate\Support\Facades\File;
@@ -42,6 +44,13 @@ final class ServiceProvider extends AddonServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
         $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
+        $this->app->singleton(ActionExecutor::class, function ($app) {
+            return new ActionExecutor(
+                $app->make(ActionLoader::class),
+                $app->make(JobTracker::class)
+            );
+        });
+        $this->app->singleton(JobTracker::class, fn () => new JobTracker());
         $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
         $this->app->singleton(MagicFieldsConfigBuilder::class, fn () => new MagicFieldsConfigBuilder());
         $this->app->singleton(ActionRegistry::class, function () {
