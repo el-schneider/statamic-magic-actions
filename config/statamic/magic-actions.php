@@ -19,6 +19,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | Provider credentials for Prism. API keys loaded from environment.
+    | Required env vars:
+    | - OPENAI_API_KEY for OpenAI models
+    | - ANTHROPIC_API_KEY for Anthropic models
     |
     */
     'providers' => [
@@ -74,6 +77,47 @@ return [
     |
     */
     'settings_path' => base_path('content/magic-actions/settings.yaml'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto Run
+    |--------------------------------------------------------------------------
+    |
+    | Configure automatic action execution on entry/asset save events.
+    | Disabled by default. When enabled, configured actions run automatically
+    | when content is saved (only for empty fields unless overwrite is true).
+    |
+    */
+    'auto_run' => [
+        'enabled' => env('MAGIC_ACTIONS_AUTO_RUN', false),
+        'overwrite' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLI Defaults
+    |--------------------------------------------------------------------------
+    |
+    | Default options for the magic:run CLI command.
+    |
+    */
+    'cli' => [
+        'queue' => true, // Default to queued execution for CLI.
+        'overwrite' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Batch Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for batch job processing.
+    |
+    */
+    'batch' => [
+        'cache_ttl' => 86400, // 24 hours in seconds.
+        'max_concurrent' => 10, // Max concurrent jobs per batch (placeholder).
+    ],
 
     /*
     |--------------------------------------------------------------------------

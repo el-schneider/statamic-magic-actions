@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\Commands;
 
+use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
+use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Illuminate\Console\Command;
 use Statamic\Contracts\Assets\Asset;
@@ -24,7 +26,9 @@ final class MagicRunCommand extends Command
         {--field= : Target field handle (required)}
         {--action= : Override action handle}
         {--overwrite : Overwrite existing values}
+        {--no-overwrite : Disable overwrite even when enabled by config}
         {--queue : Dispatch jobs to queue instead of running synchronously}
+        {--no-queue : Run synchronously even when queueing is enabled by config}
         {--dry-run : Show what would be processed without making changes}';
 
     protected $description = 'Run magic actions against entries or assets from the CLI.';
@@ -45,8 +49,20 @@ final class MagicRunCommand extends Command
         $assetIdentifier = $this->stringOption('asset');
         $actionOverride = $this->stringOption('action');
 
-        $overwrite = (bool) $this->option('overwrite');
-        $queued = (bool) $this->option('queue');
+        if ($this->booleanOptionProvided('overwrite') && $this->booleanOptionProvided('no-overwrite')) {
+            $this->components->error('Use either --overwrite or --no-overwrite, not both.');
+
+            return self::FAILURE;
+        }
+
+        if ($this->booleanOptionProvided('queue') && $this->booleanOptionProvided('no-queue')) {
+            $this->components->error('Use either --queue or --no-queue, not both.');
+
+            return self::FAILURE;
+        }
+
+        $overwrite = $this->resolveBooleanOption('overwrite', 'no-overwrite', 'statamic.magic-actions.cli.overwrite', false);
+        $queued = $this->resolveBooleanOption('queue', 'no-queue', 'statamic.magic-actions.cli.queue', true);
         $dryRun = (bool) $this->option('dry-run');
 
         if ($fieldHandle === null) {
@@ -62,7 +78,11 @@ final class MagicRunCommand extends Command
         }
 
         if ($actionOverride !== null && ! $this->actionLoader->exists($actionOverride)) {
-            $this->components->error("Action '{$actionOverride}' does not exist.");
+            $availableActions = $this->formatList($this->availableActionHandles());
+            $this->components->error(
+                "Action '{$actionOverride}' not found. Available actions: {$availableActions}. ".
+                'Check config/statamic/magic-actions.php.'
+            );
 
             return self::FAILURE;
         }
@@ -270,9 +290,10 @@ final class MagicRunCommand extends Command
             $collection = CollectionFacade::findByHandle($collectionHandle);
 
             if (! $collection) {
+                $availableCollections = $this->formatList($this->availableCollectionHandles());
                 $errors[] = [
                     'target' => "collection:{$collectionHandle}",
-                    'message' => 'Collection not found.',
+                    'message' => "Collection '{$collectionHandle}' not found. Available collections: {$availableCollections}.",
                 ];
             } else {
                 foreach ($collection->queryEntries()->get() as $entry) {
@@ -374,7 +395,9 @@ final class MagicRunCommand extends Command
         $action = $configuredActions[0];
 
         if (! $this->actionLoader->exists($action)) {
-            return [null, "Configured action '{$action}' does not exist."];
+            $availableActions = $this->formatList($this->availableActionHandles());
+
+            return [null, "Configured action '{$action}' does not exist. Available actions: {$availableActions}."];
         }
 
         return [$action, null];
@@ -597,5 +620,122 @@ final class MagicRunCommand extends Command
         $value = mb_trim($value);
 
         return $value !== '' ? $value : null;
+    }
+
+    private function resolveBooleanOption(
+        string $option,
+        string $negatedOption,
+        string $configKey,
+        bool $fallback
+    ): bool {
+        if ($this->booleanOptionProvided($negatedOption)) {
+            return false;
+        }
+
+        if ($this->booleanOptionProvided($option)) {
+            return (bool) $this->option($option);
+        }
+
+        return (bool) config($configKey, $fallback);
+    }
+
+    private function booleanOptionProvided(string $option): bool
+    {
+        return $this->input->hasParameterOption("--{$option}", true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function availableCollectionHandles(): array
+    {
+        $collectionHandles = CollectionFacade::handles()->all();
+        $normalized = [];
+
+        foreach ($collectionHandles as $handle) {
+            if (! is_string($handle) || $handle === '') {
+                continue;
+            }
+
+            $normalized[$handle] = $handle;
+        }
+
+        ksort($normalized);
+
+        return array_values($normalized);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function availableActionHandles(): array
+    {
+        $fieldtypes = config('statamic.magic-actions.fieldtypes', []);
+
+        if (! is_array($fieldtypes)) {
+            return [];
+        }
+
+        $handles = [];
+
+        foreach ($fieldtypes as $fieldtypeConfig) {
+            if (! is_array($fieldtypeConfig)) {
+                continue;
+            }
+
+            $configuredActions = $fieldtypeConfig['actions'] ?? [];
+
+            if (! is_array($configuredActions)) {
+                continue;
+            }
+
+            foreach ($configuredActions as $configuredAction) {
+                $handle = $this->resolveConfiguredActionHandle($configuredAction);
+
+                if ($handle === null || ! $this->actionLoader->exists($handle)) {
+                    continue;
+                }
+
+                $handles[$handle] = $handle;
+            }
+        }
+
+        ksort($handles);
+
+        return array_values($handles);
+    }
+
+    private function resolveConfiguredActionHandle(mixed $configuredAction): ?string
+    {
+        if (is_array($configuredAction) && isset($configuredAction['action']) && is_string($configuredAction['action'])) {
+            $action = mb_trim($configuredAction['action']);
+
+            return $action !== '' ? $action : null;
+        }
+
+        if (! is_string($configuredAction)) {
+            return null;
+        }
+
+        $configuredAction = mb_trim($configuredAction);
+
+        if ($configuredAction === '') {
+            return null;
+        }
+
+        if ($this->actionLoader->exists($configuredAction)) {
+            return $configuredAction;
+        }
+
+        if (! is_subclass_of($configuredAction, MagicAction::class)) {
+            return null;
+        }
+
+        return ActionRegistry::classNameToHandle($configuredAction);
+    }
+
+    private function formatList(array $values): string
+    {
+        return $values === [] ? '(none)' : implode(', ', $values);
     }
 }

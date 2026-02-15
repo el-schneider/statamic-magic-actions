@@ -184,7 +184,11 @@ final class ActionsController extends Controller
                     'context' => $context,
                 ]);
 
-                return response()->json(['error' => 'Context target not found'], 404);
+                return response()->json([
+                    'error' => "Context target not found for type '{$context['type']}' and id '{$context['id']}'.",
+                    'context_type' => $context['type'],
+                    'context_id' => $context['id'],
+                ], 404);
             }
 
             $jobId = $this->actionExecutor->execute($action, $target, $context['field'], $options);

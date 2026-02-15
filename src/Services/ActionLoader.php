@@ -100,7 +100,13 @@ final class ActionLoader
 
         // Resolve model from global defaults
         $modelKey = Settings::get("global.defaults.{$type}")
-            ?? Config::get("statamic.magic-actions.types.{$type}.default");
+            ?? Config::get("statamic.magic-actions.types.{$type}.default", $this->defaultModelKeyForType($type));
+
+        if (! is_string($modelKey) || mb_trim($modelKey) === '') {
+            throw new InvalidArgumentException(
+                "Missing model configuration for type '{$type}'. Set statamic.magic-actions.types.{$type}.default."
+            );
+        }
 
         // Parse provider/model from the combined key
         if (! str_contains($modelKey, '/')) {
@@ -111,9 +117,13 @@ final class ActionLoader
         [$provider, $model] = explode('/', $modelKey, 2);
 
         // Validate provider API key
-        $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key");
-        if (! $apiKey) {
-            throw new MissingApiKeyException("API key not configured for provider '{$provider}'");
+        $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key", '');
+        if (! is_string($apiKey) || mb_trim($apiKey) === '') {
+            $envVar = $this->providerApiKeyEnvVar($provider);
+
+            throw new MissingApiKeyException(
+                "API key not configured for provider '{$provider}'. Set {$envVar} in your .env file."
+            );
         }
 
         // Parameters from action class
@@ -159,5 +169,22 @@ final class ActionLoader
     private function renderBladeString(string $template, array $variables): string
     {
         return app('blade.compiler')->render($template, $variables);
+    }
+
+    private function defaultModelKeyForType(string $type): string
+    {
+        return match ($type) {
+            'audio' => 'openai/whisper-1',
+            default => 'openai/gpt-4.1',
+        };
+    }
+
+    private function providerApiKeyEnvVar(string $provider): string
+    {
+        return match (mb_strtolower($provider)) {
+            'openai' => 'OPENAI_API_KEY',
+            'anthropic' => 'ANTHROPIC_API_KEY',
+            default => mb_strtoupper($provider).'_API_KEY',
+        };
     }
 }

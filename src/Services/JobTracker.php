@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 
 /**
@@ -23,7 +24,7 @@ final class JobTracker
 
     public const CACHE_TAG = 'magic_actions';
 
-    public const JOB_TTL = 86400; // 24 hours
+    public const JOB_TTL = 86400; // 24 hours (default fallback).
 
     /**
      * Create a new job with context information.
@@ -264,17 +265,26 @@ final class JobTracker
 
     private function cachePut(string $key, mixed $value): void
     {
+        $ttl = $this->cacheTtl();
+
         if ($this->supportsCacheTags()) {
-            Cache::tags([self::CACHE_TAG])->put($key, $value, self::JOB_TTL);
+            Cache::tags([self::CACHE_TAG])->put($key, $value, $ttl);
 
             return;
         }
 
-        Cache::put($key, $value, self::JOB_TTL);
+        Cache::put($key, $value, $ttl);
     }
 
     private function supportsCacheTags(): bool
     {
         return method_exists(Cache::getStore(), 'tags');
+    }
+
+    private function cacheTtl(): int
+    {
+        $ttl = (int) Config::get('statamic.magic-actions.batch.cache_ttl', self::JOB_TTL);
+
+        return $ttl > 0 ? $ttl : self::JOB_TTL;
     }
 }

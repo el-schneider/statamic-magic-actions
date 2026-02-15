@@ -25,6 +25,12 @@ final class ActionExecutor
 
     public function execute(string $action, Entry|Asset $target, string $fieldHandle, array $options = []): string
     {
+        if (! $this->actionLoader->exists($action)) {
+            throw new InvalidArgumentException(
+                "Action '{$action}' not found. Check config/statamic/magic-actions.php and your field action configuration."
+            );
+        }
+
         $this->assertMimeTypeSupported($action, $target, $options);
 
         if (! $this->canExecute($action, $target, $fieldHandle, $options)) {
@@ -56,6 +62,12 @@ final class ActionExecutor
 
     public function executeSync(string $action, Entry|Asset $target, string $fieldHandle, array $options = []): mixed
     {
+        if (! $this->actionLoader->exists($action)) {
+            throw new InvalidArgumentException(
+                "Action '{$action}' not found. Check config/statamic/magic-actions.php and your field action configuration."
+            );
+        }
+
         $this->assertMimeTypeSupported($action, $target, $options);
 
         if (! $this->canExecute($action, $target, $fieldHandle, $options)) {
@@ -199,7 +211,7 @@ final class ActionExecutor
             $actionName = class_basename($magicAction);
             $displayMimeType = $assetMimeType !== '' ? $assetMimeType : 'unknown';
             throw new InvalidArgumentException(
-                "Action {$actionName} does not support file type {$displayMimeType}. Accepted types: {$accepted}"
+                "Action {$actionName} does not support file type '{$displayMimeType}'. Accepted types: {$accepted}."
             );
         }
     }

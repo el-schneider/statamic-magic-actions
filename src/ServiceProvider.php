@@ -86,6 +86,10 @@ final class ServiceProvider extends AddonServiceProvider
         $this->publishes([
             __DIR__.'/MagicActions' => app_path('MagicActions'),
         ], 'magic-actions');
+
+        $this->publishes([
+            __DIR__.'/../config/statamic/magic-actions.php' => config_path('statamic/magic-actions.php'),
+        ], 'magic-actions-config');
     }
 
     public function bootAddon()
