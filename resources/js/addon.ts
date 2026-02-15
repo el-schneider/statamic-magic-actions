@@ -9,7 +9,17 @@ import {
 } from './helpers'
 import magicIcon from './icons/magic.svg?raw'
 import { recoverTrackedJobs, startBackgroundJob } from './job-tracker'
-import type { ActionType, FieldActionConfig, FieldConfig, JobContext, MagicField, MagicFieldAction } from './types'
+import type {
+    ActionType,
+    FieldActionConfig,
+    FieldConfig,
+    JobContext,
+    MagicActionCatalog,
+    MagicFieldAction,
+} from './types'
+
+const registeredFieldActions = new Set<string>()
+let hasRecoveredTrackedJobs = false
 
 async function dispatchJob(
     type: ActionType,
@@ -54,19 +64,16 @@ function getConfiguredActions(config: FieldConfig): string[] {
     return []
 }
 
-function createFieldAction(
-    field: MagicField,
-    action: MagicFieldAction,
-): FieldActionConfig {
+function createFieldAction(action: MagicFieldAction): FieldActionConfig {
     return {
         title: action.title,
         quick: true,
-        visible: ({ config, handle }) => {
-            if (!config?.magic_actions_enabled || handle !== field.fieldHandle) {
+        visible: ({ config }) => {
+            if (!config?.magic_actions_enabled) {
                 return false
             }
 
-            if (!getConfiguredActions(config).includes(action.actionHandle)) {
+            if (!getConfiguredActions(config).includes(action.handle)) {
                 return false
             }
 
@@ -86,14 +93,7 @@ function createFieldAction(
                     throw new Error('Could not determine page context')
                 }
 
-                const jobId = await dispatchJob(
-                    actionType,
-                    action.actionHandle,
-                    config,
-                    stateValues,
-                    pathname,
-                    fieldContext,
-                )
+                const jobId = await dispatchJob(actionType, action.handle, config, stateValues, pathname, fieldContext)
 
                 window.Statamic.$toast.info(`"${action.title}" started...`)
 
@@ -107,22 +107,28 @@ function createFieldAction(
 }
 
 function registerFieldActions(): void {
-    const magicFields = window.StatamicConfig?.magicFields
-    if (!magicFields?.length) {
-        return
-    }
+    const magicActionCatalog: MagicActionCatalog = window.StatamicConfig?.magicActionCatalog ?? {}
 
-    for (const field of magicFields) {
-        const componentName = `${field.component}-fieldtype`
+    for (const [component, actions] of Object.entries(magicActionCatalog)) {
+        const componentName = `${component}-fieldtype`
 
-        for (const action of field.actions) {
-            window.Statamic.$fieldActions.add(componentName, createFieldAction(field, action))
+        for (const action of actions) {
+            const registrationKey = `${component}:${action.handle}`
+            if (registeredFieldActions.has(registrationKey)) {
+                continue
+            }
+
+            window.Statamic.$fieldActions.add(componentName, createFieldAction(action))
+            registeredFieldActions.add(registrationKey)
         }
     }
 
-    const pageContext = extractPageContext()
-    if (pageContext) {
-        recoverTrackedJobs(pageContext)
+    if (!hasRecoveredTrackedJobs) {
+        const pageContext = extractPageContext()
+        if (pageContext) {
+            recoverTrackedJobs(pageContext)
+            hasRecoveredTrackedJobs = true
+        }
     }
 }
 

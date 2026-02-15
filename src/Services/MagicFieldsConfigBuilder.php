@@ -5,73 +5,47 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
-use Statamic\Fields\Blueprint;
-
-use function get_class;
+use Statamic\Fields\Fieldtype;
+use Throwable;
 
 final class MagicFieldsConfigBuilder
 {
     public function __construct(private readonly ActionLoader $actionLoader) {}
 
-    public function buildFromBlueprint(?Blueprint $blueprint): ?array
+    public function buildCatalog(): array
     {
-        if (! $blueprint) {
-            return null;
-        }
+        $fieldtypeConfigs = config('statamic.magic-actions.fieldtypes', []);
 
-        return $blueprint->fields()->all()->filter(fn ($field): bool => (bool) ($field->config()['magic_actions_enabled'] ?? false))
-            ->map(function ($field) {
-                $fieldtype = get_class($field->fieldtype());
-                $selectedActions = $this->normalizeSelectedActions($field->config()['magic_actions_action'] ?? null);
-
-                if ($selectedActions === []) {
-                    return null;
-                }
-
-                $enabledActions = $this->resolveEnabledActionsForFieldtype($fieldtype);
-
-                if ($enabledActions === []) {
-                    return null;
-                }
-
-                $fieldActions = collect($selectedActions)
-                    ->map(fn (string $actionHandle) => $enabledActions[$actionHandle] ?? null)
-                    ->filter()
-                    ->values()
-                    ->toArray();
-
-                if ($fieldActions === []) {
-                    return null;
-                }
-
-                return [
-                    'fieldHandle' => $field->handle(),
-                    'component' => $field->fieldtype()->component(),
-                    'actions' => $fieldActions,
-                ];
-            })
-            ->filter()
-            ->values()
-            ->toArray();
-    }
-
-    private function normalizeSelectedActions(mixed $actionConfig): array
-    {
-        if (is_string($actionConfig)) {
-            $actionConfig = mb_trim($actionConfig);
-
-            return $actionConfig !== '' ? [$actionConfig] : [];
-        }
-
-        if (! is_array($actionConfig)) {
+        if (! is_array($fieldtypeConfigs)) {
             return [];
         }
 
-        return collect($actionConfig)
-            ->filter(fn (mixed $actionHandle) => is_string($actionHandle) && mb_trim($actionHandle) !== '')
-            ->map(fn (string $actionHandle) => mb_trim($actionHandle))
-            ->unique()
-            ->values()
+        $catalog = [];
+
+        foreach (array_keys($fieldtypeConfigs) as $fieldtype) {
+            $component = $this->resolveFieldtypeComponent($fieldtype);
+            if (! $component) {
+                continue;
+            }
+
+            $actions = $this->resolveEnabledActionsForFieldtype($fieldtype);
+            if ($actions === []) {
+                continue;
+            }
+
+            if (! isset($catalog[$component])) {
+                $catalog[$component] = [];
+            }
+
+            foreach ($actions as $actionHandle => $action) {
+                $catalog[$component][$actionHandle] = $action;
+            }
+        }
+
+        ksort($catalog);
+
+        return collect($catalog)
+            ->map(fn (array $actions): array => array_values($actions))
             ->toArray();
     }
 
@@ -95,7 +69,7 @@ final class MagicFieldsConfigBuilder
             $actionHandle = $action->getHandle();
             $resolvedActions[$actionHandle] = [
                 'title' => $action->getTitle(),
-                'actionHandle' => $actionHandle,
+                'handle' => $actionHandle,
                 'actionType' => $action->type(),
                 'icon' => $action->icon(),
                 'acceptedMimeTypes' => $action->acceptedMimeTypes(),
@@ -103,6 +77,27 @@ final class MagicFieldsConfigBuilder
         }
 
         return $resolvedActions;
+    }
+
+    private function resolveFieldtypeComponent(mixed $fieldtype): ?string
+    {
+        if (! is_string($fieldtype) || ! class_exists($fieldtype) || ! is_subclass_of($fieldtype, Fieldtype::class)) {
+            return null;
+        }
+
+        try {
+            $fieldtypeInstance = new $fieldtype();
+        } catch (Throwable) {
+            return null;
+        }
+
+        $component = $fieldtypeInstance->component();
+
+        if (! is_string($component) || mb_trim($component) === '') {
+            return null;
+        }
+
+        return $component;
     }
 
     private function resolveConfiguredAction(mixed $configuredAction): ?MagicAction

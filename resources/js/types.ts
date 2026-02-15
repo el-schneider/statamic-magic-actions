@@ -1,18 +1,14 @@
 /// <reference types="vite/client" />
 
-export interface MagicField {
-    fieldHandle: string
-    component: string
-    actions: MagicFieldAction[]
-}
-
 export interface MagicFieldAction {
     title: string
-    actionHandle: string
+    handle: string
     actionType: 'text' | 'vision' | 'audio'
     icon: string | null
     acceptedMimeTypes: string[]
 }
+
+export type MagicActionCatalog = Record<string, MagicFieldAction[]>
 
 export interface PublishState {
     values: Record<string, unknown>
@@ -65,7 +61,7 @@ export interface JobContext {
 declare global {
     interface Window {
         StatamicConfig: {
-            magicFields: MagicField[]
+            magicActionCatalog?: MagicActionCatalog
         }
         Statamic: {
             $fieldActions: {

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions;
 
 use ElSchneider\StatamicMagicActions\Commands\MagicRunCommand;
-use ElSchneider\StatamicMagicActions\Listeners\ProvideAssetMagicActionsToScript;
-use ElSchneider\StatamicMagicActions\Listeners\ProvideEntryMagicActionsToScript;
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
@@ -17,10 +15,9 @@ use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
 use ElSchneider\StatamicMagicActions\Settings\Blueprint as SettingsBlueprint;
 use Illuminate\Support\Facades\File;
-use Statamic\Events\AssetContainerBlueprintFound;
-use Statamic\Events\EntryBlueprintFound;
 use Statamic\Facades\CP\Nav;
 use Statamic\Providers\AddonServiceProvider;
+use Statamic\Statamic;
 
 final class ServiceProvider extends AddonServiceProvider
 {
@@ -31,15 +28,6 @@ final class ServiceProvider extends AddonServiceProvider
             'resources/js/addon.ts',
         ],
         'publicDirectory' => 'resources/dist',
-    ];
-
-    protected $listen = [
-        EntryBlueprintFound::class => [
-            ProvideEntryMagicActionsToScript::class,
-        ],
-        AssetContainerBlueprintFound::class => [
-            ProvideAssetMagicActionsToScript::class,
-        ],
     ];
 
     public function register()
@@ -94,14 +82,41 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->app->make(BulkActionRegistrar::class)->registerBulkActions();
 
-        view()->composer('statamic::assets.browse', function () {
-            $this->app->make(ProvideAssetMagicActionsToScript::class)->provideForAssetRoutes();
-        });
+        $this->provideGlobalMagicActionCatalog();
 
         Nav::extend(function ($nav) {
             $nav->tools('Magic Actions')
                 ->route('magic-actions.settings.index')
                 ->icon(File::get(__DIR__.'/../resources/js/icons/magic.svg'));
         });
+    }
+
+    private function provideGlobalMagicActionCatalog(): void
+    {
+        if (! $this->isControlPanelRequest()) {
+            return;
+        }
+
+        $catalog = $this->app->make(MagicFieldsConfigBuilder::class)->buildCatalog();
+
+        Statamic::provideToScript([
+            'magicActionCatalog' => $catalog,
+        ]);
+    }
+
+    private function isControlPanelRequest(): bool
+    {
+        if ($this->app->runningInConsole()) {
+            return false;
+        }
+
+        $cpRoute = mb_trim((string) config('statamic.cp.route', 'cp'), '/');
+        if ($cpRoute === '') {
+            return false;
+        }
+
+        $requestPath = mb_trim(request()->path(), '/');
+
+        return $requestPath === $cpRoute || str_starts_with($requestPath, $cpRoute.'/');
     }
 }
