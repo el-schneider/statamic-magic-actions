@@ -81,7 +81,7 @@ it('does not write field values when using dry-run', function () {
     expect($before)->not->toBeNull();
     expect($before?->get('title'))->toBe('');
 
-    $this->artisan('magic:run', [
+    $this->artisan('statamic:magic:run', [
         '--entry' => $target['entry_id'],
         '--field' => 'title',
         '--dry-run' => true,
@@ -103,7 +103,7 @@ it('writes results during synchronous execution', function () {
 
     $target = createEntryForMagicRun(['title' => '', 'content' => 'Seed content']);
 
-    $this->artisan('magic:run', [
+    $this->artisan('statamic:magic:run', [
         '--entry' => $target['entry_id'],
         '--field' => 'title',
         '--no-queue' => true,
@@ -118,7 +118,7 @@ it('writes results during synchronous execution', function () {
 it('fails when overwrite and no-overwrite flags are used together', function () {
     $target = createEntryForMagicRun();
 
-    $this->artisan('magic:run', [
+    $this->artisan('statamic:magic:run', [
         '--entry' => $target['entry_id'],
         '--field' => 'title',
         '--overwrite' => true,
@@ -129,7 +129,7 @@ it('fails when overwrite and no-overwrite flags are used together', function () 
 });
 
 it('requires at least one target flag', function () {
-    $this->artisan('magic:run', [
+    $this->artisan('statamic:magic:run', [
         '--field' => 'title',
     ])
         ->expectsOutputToContain('Provide at least one target via --collection=, --entry=, or --asset=')
