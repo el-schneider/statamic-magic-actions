@@ -24,9 +24,9 @@ use Statamic\Providers\AddonServiceProvider;
 final class ServiceProvider extends AddonServiceProvider
 {
     protected $actions = [
-        Actions\GenerateAltTextAction::class,
-        Actions\ExtractTagsAction::class,
-        Actions\GenerateMetaDescriptionAction::class,
+        Actions\GenerateAltText::class,
+        Actions\ExtractTags::class,
+        Actions\GenerateMetaDescription::class,
     ];
 
     protected $vite = [
