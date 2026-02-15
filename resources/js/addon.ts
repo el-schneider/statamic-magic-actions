@@ -1,5 +1,12 @@
 import { executeCompletion, executeTranscription, executeVision } from './api'
-import { determineActionType, extractPageContext, extractText, getAssetPath } from './helpers'
+import {
+    determineActionType,
+    extractPageContext,
+    extractText,
+    getAssetExtensionFromUrl,
+    getAssetPath,
+    isActionAllowedForExtension,
+} from './helpers'
 import magicIcon from './icons/magic.svg?raw'
 import { recoverTrackedJobs, startBackgroundJob } from './job-tracker'
 import type { ActionType, FieldActionConfig, FieldConfig, JobContext, MagicField, MagicFieldAction } from './types'
@@ -59,7 +66,11 @@ function createFieldAction(
                 return false
             }
 
-            return getConfiguredActions(config).includes(action.actionHandle)
+            if (!getConfiguredActions(config).includes(action.actionHandle)) {
+                return false
+            }
+
+            return isActionAllowedForExtension(action.acceptedMimeTypes, getAssetExtensionFromUrl())
         },
         icon: action.icon ?? magicIcon,
         run: async ({ handle, update, store, storeName, config }) => {

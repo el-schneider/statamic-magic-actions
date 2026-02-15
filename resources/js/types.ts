@@ -11,6 +11,7 @@ export interface MagicFieldAction {
     actionHandle: string
     actionType: 'text' | 'vision' | 'audio'
     icon: string | null
+    acceptedMimeTypes: string[]
 }
 
 export interface PublishState {

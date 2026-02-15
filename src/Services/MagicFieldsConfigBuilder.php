@@ -98,6 +98,7 @@ final class MagicFieldsConfigBuilder
                 'actionHandle' => $actionHandle,
                 'actionType' => $action->type(),
                 'icon' => $action->icon(),
+                'acceptedMimeTypes' => $action->acceptedMimeTypes(),
             ];
         }
 

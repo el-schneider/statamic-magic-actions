@@ -1,5 +1,21 @@
 import type { ActionType, FieldConfig, JobContext, MagicFieldAction } from './types'
 
+const EXT_TO_MIME: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    mp3: 'audio/mpeg',
+    mp4: 'audio/mp4',
+    wav: 'audio/wav',
+    webm: 'audio/webm',
+    ogg: 'audio/ogg',
+    flac: 'audio/flac',
+    pdf: 'application/pdf',
+}
+
 export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -104,4 +120,52 @@ export function extractPageContext(): JobContext | null {
     }
 
     return null
+}
+
+export function getAssetExtensionFromUrl(): string | null {
+    const match = window.location.pathname.match(/\/cp\/assets\/browse\/[^/]+\/(.+?)\/edit$/)
+    if (!match) {
+        return null
+    }
+
+    const path = decodeURIComponent(match[1])
+    const fileName = path.split('/').pop() ?? path
+    const dotIndex = fileName.lastIndexOf('.')
+
+    if (dotIndex <= 0 || dotIndex === fileName.length - 1) {
+        return null
+    }
+
+    return fileName.substring(dotIndex + 1).toLowerCase()
+}
+
+export function isActionAllowedForExtension(acceptedMimeTypes: string[], extension: string | null): boolean {
+    if (acceptedMimeTypes.length === 0) {
+        return true
+    }
+
+    if (!extension) {
+        return true
+    }
+
+    const mimeType = EXT_TO_MIME[extension]
+    if (!mimeType) {
+        return true
+    }
+
+    const normalizedMimeType = mimeType.toLowerCase()
+
+    return acceptedMimeTypes.some((acceptedMimeType) => {
+        const normalizedAcceptedMimeType = acceptedMimeType.toLowerCase()
+
+        if (normalizedAcceptedMimeType === '*/*') {
+            return true
+        }
+
+        if (normalizedAcceptedMimeType.endsWith('/*')) {
+            return normalizedMimeType.startsWith(normalizedAcceptedMimeType.slice(0, -1))
+        }
+
+        return normalizedAcceptedMimeType === normalizedMimeType
+    })
 }
