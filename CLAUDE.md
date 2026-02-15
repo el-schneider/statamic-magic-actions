@@ -87,3 +87,11 @@ You can test the addon in the Statamic control panel using these credentials. Fo
 - Example: `curl -b "cookies.txt" http://statamic-magic-actions-test.test/api/magic-actions/...`
 
 See the logs at `../statamic-magic-actions-test/storage/logs/laravel.log` when debugging errors.
+
+## Critical: Always Verify Frontend Changes
+
+After ANY change that touches frontend code (TypeScript, Vite build, asset publishing):
+1. Run `npm run build` and confirm the manifest points to the new file
+2. Verify via browser (Playwright, agent-browser, or equivalent) that the change actually works
+3. Check browser console for errors
+4. Never assume a build succeeded just because it didn't error — always confirm the output is served correctly
