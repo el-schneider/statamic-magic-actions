@@ -6,9 +6,11 @@ AI-powered field actions for Statamic v5. Generate alt text, extract tags, creat
 
 - **Zero-friction workflow**: One-click AI actions integrated directly into field UI
 - **Multiple AI providers**: OpenAI and Anthropic via [Prism PHP](https://prismphp.dev/)
-- **Background processing**: Generation Jobs run asynchronously with status tracking
+- **Background processing**: Jobs run asynchronously with status tracking
+- **Bulk actions**: Run actions on multiple entries/assets from listing views
+- **CLI command**: `magic:run` for batch processing with dry-run support
 - **9 built-in actions**: Alt text, captions, titles, meta descriptions, teasers, tags, transcription
-- **Extensible**: Create custom actions with full control over prompts and models
+- **Extensible**: Create custom actions — just extend `BaseMagicAction`
 
 ## Installation
 
@@ -29,14 +31,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 Optionally publish the config:
 
 ```bash
-php artisan vendor:publish --tag=statamic-magic-actions-config
+php artisan vendor:publish --tag=magic-actions-config
 ```
-
-Available publish tags:
-
-- `statamic-magic-actions` — built frontend assets (`public/vendor/statamic-magic-actions/build`)
-- `statamic-magic-actions-config` — config file (`config/statamic/magic-actions.php`)
-- `statamic-magic-actions-actions` — action stubs (`app/MagicActions`)
 
 ## Usage
 
@@ -45,7 +41,7 @@ Available publish tags:
 In the Statamic control panel, edit any supported fieldtype and enable Magic Actions:
 
 - **Enabled**: Toggle on
-- **Action**: Choose from available actions
+- **Action**: Choose from available actions (supports multiple per field)
 - **Source**: Field containing source content
 - **Mode**: Append or Replace
 
@@ -53,7 +49,27 @@ In the Statamic control panel, edit any supported fieldtype and enable Magic Act
 
 A wand icon appears on configured fields. Click it to run the action.
 
-### 3. Queue processing
+### 3. Bulk actions
+
+Select entries or assets in listing views — bulk action buttons appear automatically for all actions that declare `supportsBulk()`.
+
+### 4. CLI batch processing
+
+```bash
+# Process all entries in a collection
+php artisan magic:run --collection=pages --action=propose-title
+
+# Dry run to preview targets
+php artisan magic:run --collection=pages --action=propose-title --dry-run
+
+# Process a specific entry
+php artisan magic:run --entry=home --action=propose-title
+
+# Queue jobs instead of running synchronously
+php artisan magic:run --collection=pages --action=propose-title --queue
+```
+
+### 5. Queue processing
 
 For best performance, configure a queue worker:
 
@@ -98,33 +114,6 @@ php artisan queue:work
 | **Assign Tags from Taxonomies** | Match content to existing taxonomy terms |
 | **Extract Asset Tags**          | Generate tags from image analysis        |
 
-## Configuration Reference
-
-```php
-// config/statamic/magic-actions.php
-return [
-    'providers' => [
-        'openai' => [
-            'api_key' => env('OPENAI_API_KEY'),
-        ],
-        'anthropic' => [
-            'api_key' => env('ANTHROPIC_API_KEY'),
-        ],
-    ],
-
-    'fieldtypes' => [
-        'Statamic\Fieldtypes\Text' => [
-            'actions' => [
-                ProposeTitle::class,
-                AltText::class,
-                ImageCaption::class,
-            ],
-        ],
-        // ... more fieldtype mappings
-    ],
-];
-```
-
 ## Custom Actions
 
 Create your own magic actions by extending `BaseMagicAction`:
@@ -142,17 +131,9 @@ final class Summarize extends BaseMagicAction
 {
     public const string TITLE = 'Summarize';
 
-    public function config(): array
+    public function type(): string
     {
-        return [
-            'type' => 'text',
-            'provider' => 'openai',
-            'model' => 'gpt-4',
-            'parameters' => [
-                'temperature' => 0.5,
-                'max_tokens' => 500,
-            ],
-        ];
+        return 'text';
     }
 
     public function schema(): ?ObjectSchema
@@ -169,9 +150,7 @@ final class Summarize extends BaseMagicAction
 
     public function rules(): array
     {
-        return [
-            'text' => 'required|string',
-        ];
+        return ['text' => 'required|string'];
     }
 
     public function system(): string
@@ -185,12 +164,24 @@ final class Summarize extends BaseMagicAction
 {{ $text }}
 BLADE;
     }
+
+    // Optional: enable bulk action support
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'entry';
+    }
 }
 ```
 
-Register your action in the config:
+Register in the config:
 
 ```php
+// config/statamic/magic-actions.php
 'fieldtypes' => [
     'Statamic\Fieldtypes\Textarea' => [
         'actions' => [
