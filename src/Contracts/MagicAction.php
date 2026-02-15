@@ -81,4 +81,12 @@ interface MagicAction
      * Optional icon for the action (Statamic icon name or SVG string)
      */
     public function icon(): ?string;
+
+    /**
+     * Whether taxonomy term results should be constrained to existing terms only.
+     *
+     * When true, AI-returned terms not found in the taxonomy are silently dropped.
+     * When false (default), missing terms are created automatically.
+     */
+    public function constrainToExistingTerms(): bool;
 }

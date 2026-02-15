@@ -80,4 +80,9 @@ Available Tags:
 {{ $available_tags }}
 BLADE;
     }
+
+    public function constrainToExistingTerms(): bool
+    {
+        return true;
+    }
 }

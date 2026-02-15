@@ -90,6 +90,11 @@ abstract class BaseMagicAction implements MagicAction
         return null;
     }
 
+    public function constrainToExistingTerms(): bool
+    {
+        return false;
+    }
+
     private function deriveHandle(): string
     {
         return \ElSchneider\StatamicMagicActions\Services\ActionRegistry::classNameToHandle(static::class);

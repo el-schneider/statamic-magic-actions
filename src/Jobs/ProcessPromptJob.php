@@ -27,6 +27,8 @@ final class ProcessPromptJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    private ?MagicAction $loadedAction = null;
+
     public function __construct(
         private string $jobId,
         private string $action,
@@ -42,6 +44,7 @@ final class ProcessPromptJob implements ShouldQueue
 
             $promptData = $actionLoader->load($this->action, $this->variables);
             $action = $promptData['action'];
+            $this->loadedAction = $action;
 
             $response = match ($promptData['type']) {
                 'text', 'vision' => $this->handleTextPrompt($promptData, $action),
@@ -106,7 +109,7 @@ final class ProcessPromptJob implements ShouldQueue
 
         $blueprint = $entry->blueprint();
         $field = $blueprint?->field($fieldHandle);
-        $finalValue = $this->prepareValueForField($field, $value, $entry->get($fieldHandle));
+        $finalValue = $this->prepareValueForField($field, $value, $entry->get($fieldHandle), $this->loadedAction);
 
         $entry->set($fieldHandle, $finalValue);
         $entry->saveQuietly();
@@ -131,7 +134,7 @@ final class ProcessPromptJob implements ShouldQueue
 
         $blueprint = $asset->blueprint();
         $field = $blueprint?->field($fieldHandle);
-        $finalValue = $this->prepareValueForField($field, $value, $asset->get($fieldHandle));
+        $finalValue = $this->prepareValueForField($field, $value, $asset->get($fieldHandle), $this->loadedAction);
 
         $asset->set($fieldHandle, $finalValue);
         $asset->saveQuietly();
@@ -145,8 +148,12 @@ final class ProcessPromptJob implements ShouldQueue
         return $finalValue;
     }
 
-    private function prepareValueForField(mixed $field, mixed $value, mixed $currentValue): mixed
-    {
+    private function prepareValueForField(
+        mixed $field,
+        mixed $value,
+        mixed $currentValue,
+        ?MagicAction $action = null
+    ): mixed {
         if (! $field) {
             return $value;
         }
@@ -160,20 +167,19 @@ final class ProcessPromptJob implements ShouldQueue
         }
 
         if ($fieldType === 'terms' && is_array($value)) {
-            $value = $this->ensureTermsExist($value, $config);
+            $value = $this->ensureTermsExist($value, $config, $action);
         }
 
         return $this->applyUpdateMode($currentValue, $value, $mode, $fieldType);
     }
 
     /**
-     * Ensure all terms exist in the taxonomy, creating any that don't.
-     *
-     * Replicates the frontend's createTermFromString behavior.
+     * Resolve taxonomy term slugs and optionally create missing terms.
      */
-    private function ensureTermsExist(array $terms, array $config): array
+    private function ensureTermsExist(array $terms, array $config, ?MagicAction $action = null): array
     {
         $taxonomy = $config['taxonomy'] ?? ($config['taxonomies'][0] ?? null);
+        $constrainToExistingTerms = $action?->constrainToExistingTerms() ?? false;
 
         if (! $taxonomy) {
             return $terms;
@@ -184,27 +190,42 @@ final class ProcessPromptJob implements ShouldQueue
             return $terms;
         }
 
-        return collect($terms)->map(function ($termValue) use ($taxonomy, $taxonomyInstance) {
+        return collect($terms)->map(function ($termValue) use ($taxonomy, $taxonomyInstance, $constrainToExistingTerms, $action) {
             $slug = \Illuminate\Support\Str::slug($termValue);
 
-            if (! Term::find("{$taxonomy}::{$slug}")) {
-                $term = Term::make()
-                    ->slug($slug)
-                    ->taxonomy($taxonomyInstance)
-                    ->set('title', $termValue);
+            $existingTerm = Term::find("{$taxonomy}::{$slug}");
+            if ($existingTerm) {
+                return $slug;
+            }
 
-                $term->save();
-
-                Log::info('Created new taxonomy term', [
+            if ($constrainToExistingTerms) {
+                Log::debug('Dropped non-existing constrained taxonomy term', [
                     'job_id' => $this->jobId,
                     'taxonomy' => $taxonomy,
                     'slug' => $slug,
-                    'title' => $termValue,
+                    'term_value' => $termValue,
+                    'action' => $action?->getHandle(),
                 ]);
+
+                return null;
             }
 
+            $term = Term::make()
+                ->slug($slug)
+                ->taxonomy($taxonomyInstance)
+                ->set('title', $termValue);
+
+            $term->save();
+
+            Log::info('Created new taxonomy term', [
+                'job_id' => $this->jobId,
+                'taxonomy' => $taxonomy,
+                'slug' => $slug,
+                'title' => $termValue,
+            ]);
+
             return $slug;
-        })->all();
+        })->reject(static fn (mixed $slug): bool => $slug === null)->values()->all();
     }
 
     private function wrapInBardBlock(string $text): array
