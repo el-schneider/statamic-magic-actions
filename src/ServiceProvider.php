@@ -23,6 +23,12 @@ use Statamic\Providers\AddonServiceProvider;
 
 final class ServiceProvider extends AddonServiceProvider
 {
+    protected $actions = [
+        Actions\GenerateAltTextAction::class,
+        Actions\ExtractTagsAction::class,
+        Actions\GenerateMetaDescriptionAction::class,
+    ];
+
     protected $vite = [
         'input' => [
             'resources/js/addon.ts',
