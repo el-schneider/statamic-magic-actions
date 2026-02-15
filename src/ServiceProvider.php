@@ -10,6 +10,7 @@ use ElSchneider\StatamicMagicActions\Listeners\ProvideEntryMagicActionsToScript;
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
+use ElSchneider\StatamicMagicActions\Services\BulkActionRegistrar;
 use ElSchneider\StatamicMagicActions\Services\ContextResolver;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
 use ElSchneider\StatamicMagicActions\Services\JobTracker;
@@ -23,11 +24,7 @@ use Statamic\Providers\AddonServiceProvider;
 
 final class ServiceProvider extends AddonServiceProvider
 {
-    protected $actions = [
-        Actions\GenerateAltText::class,
-        Actions\ExtractTags::class,
-        Actions\GenerateMetaDescription::class,
-    ];
+    protected $actions = [];
 
     protected $vite = [
         'input' => [
@@ -71,6 +68,9 @@ final class ServiceProvider extends AddonServiceProvider
 
             return $registry;
         });
+        $this->app->singleton(BulkActionRegistrar::class, function ($app) {
+            return new BulkActionRegistrar($app->make(ActionRegistry::class));
+        });
         $this->app->singleton(SettingsBlueprint::class, function ($app) {
             return new SettingsBlueprint($app->make(ActionRegistry::class));
         });
@@ -97,6 +97,9 @@ final class ServiceProvider extends AddonServiceProvider
         $this->commands([MagicRunCommand::class]);
 
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
+
+        // Auto-register bulk actions from MagicActions that declare supportsBulk()
+        $this->app->make(BulkActionRegistrar::class)->registerBulkActions();
 
         // Asset edit pages are SPA — blueprint event doesn't fire during page render.
         // Use a view composer to provide magicFields for asset browse/edit routes.

@@ -76,4 +76,24 @@ BLADE;
     {
         return 'Generate a caption for the provided image.';
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'asset';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Generate caption for this asset?|Generate captions for these :count assets?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Generate Caption|Generate Captions for :count Assets';
+    }
 }

@@ -41,4 +41,24 @@ final class TranscribeAudio extends BaseMagicAction
     {
         return [];
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'asset';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Transcribe this asset?|Transcribe these :count assets?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Transcribe Audio|Transcribe Audio for :count Assets';
+    }
 }

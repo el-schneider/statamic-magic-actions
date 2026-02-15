@@ -95,6 +95,35 @@ abstract class BaseMagicAction implements MagicAction
         return false;
     }
 
+    public function supportsBulk(): bool
+    {
+        return false;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'entry';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        $title = static::TITLE;
+
+        return "{$title} for this item?|{$title} for these :count items?";
+    }
+
+    public function bulkButtonText(): string
+    {
+        $title = static::TITLE;
+
+        return "{$title}|{$title} for :count Items";
+    }
+
+    public function supportsFieldSelection(): bool
+    {
+        return false;
+    }
+
     private function deriveHandle(): string
     {
         return \ElSchneider\StatamicMagicActions\Services\ActionRegistry::classNameToHandle(static::class);

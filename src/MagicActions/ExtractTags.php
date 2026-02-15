@@ -64,4 +64,29 @@ BLADE;
 {{ $text }}
 BLADE;
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'entry';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Extract tags for this entry?|Extract tags for these :count entries?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Extract Tags|Extract Tags for :count Entries';
+    }
+
+    public function supportsFieldSelection(): bool
+    {
+        return true;
+    }
 }

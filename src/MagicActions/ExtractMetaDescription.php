@@ -86,4 +86,24 @@ BLADE;
 {{ $text }}
 BLADE;
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'entry';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Generate a meta description for this entry?|Generate meta descriptions for these :count entries?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Generate Meta Description|Generate Meta Descriptions for :count Entries';
+    }
 }

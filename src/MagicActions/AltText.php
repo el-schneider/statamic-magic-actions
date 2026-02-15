@@ -76,4 +76,24 @@ BLADE;
     {
         return 'Analyze the provided image.';
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'asset';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Generate alt text for this asset?|Generate alt text for these :count assets?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Generate Alt Text|Generate Alt Text for :count Assets';
+    }
 }

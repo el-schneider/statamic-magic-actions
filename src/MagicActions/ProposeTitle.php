@@ -63,4 +63,24 @@ BLADE;
 {{ $text }}
 BLADE;
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'entry';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Propose a title for this entry?|Propose titles for these :count entries?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Propose Title|Propose Titles for :count Entries';
+    }
 }

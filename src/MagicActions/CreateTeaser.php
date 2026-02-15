@@ -87,4 +87,24 @@ BLADE;
 {{ $text }}
 BLADE;
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'entry';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Create a teaser for this entry?|Create teasers for these :count entries?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Create Teaser|Create Teasers for :count Entries';
+    }
 }

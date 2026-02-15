@@ -85,4 +85,24 @@ BLADE;
     {
         return true;
     }
+
+    public function supportsBulk(): bool
+    {
+        return true;
+    }
+
+    public function bulkTargetType(): string
+    {
+        return 'entry';
+    }
+
+    public function bulkConfirmationText(): string
+    {
+        return 'Assign tags for this entry?|Assign tags for these :count entries?';
+    }
+
+    public function bulkButtonText(): string
+    {
+        return 'Assign Tags|Assign Tags for :count Entries';
+    }
 }

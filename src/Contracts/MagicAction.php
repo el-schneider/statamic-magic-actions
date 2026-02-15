@@ -89,4 +89,31 @@ interface MagicAction
      * When false (default), missing terms are created automatically.
      */
     public function constrainToExistingTerms(): bool;
+
+    /**
+     * Whether this action supports bulk operations in CP listing views.
+     */
+    public function supportsBulk(): bool;
+
+    /**
+     * Target type for bulk operations: 'entry' or 'asset'.
+     */
+    public function bulkTargetType(): string;
+
+    /**
+     * Confirmation text for bulk action dialog.
+     * Use singular|plural format: "Do this?|Do this for :count items?"
+     */
+    public function bulkConfirmationText(): string;
+
+    /**
+     * Button text for bulk action bar.
+     * Use singular|plural format: "Do This|Do This for :count Items"
+     */
+    public function bulkButtonText(): string;
+
+    /**
+     * Whether the bulk action should show field selection when multiple fields are configured.
+     */
+    public function supportsFieldSelection(): bool;
 }
