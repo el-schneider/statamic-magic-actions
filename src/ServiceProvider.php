@@ -16,7 +16,7 @@ use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
 use ElSchneider\StatamicMagicActions\Settings\Blueprint as SettingsBlueprint;
 use Illuminate\Support\Facades\File;
-use Statamic\Events\AssetBlueprintFound;
+use Statamic\Events\AssetContainerBlueprintFound;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Facades\CP\Nav;
 use Statamic\Providers\AddonServiceProvider;
@@ -40,7 +40,7 @@ final class ServiceProvider extends AddonServiceProvider
         EntryBlueprintFound::class => [
             ProvideEntryMagicActionsToScript::class,
         ],
-        AssetBlueprintFound::class => [
+        AssetContainerBlueprintFound::class => [
             ProvideAssetMagicActionsToScript::class,
         ],
     ];
