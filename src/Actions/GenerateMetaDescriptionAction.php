@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Actions;
 
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
+use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Statamic\Actions\Action;
 use Statamic\Contracts\Entries\Entry;
 use Throwable;
@@ -35,9 +36,12 @@ final class GenerateMetaDescriptionAction extends Action
     public function run($items, $values): string
     {
         $executor = app(ActionExecutor::class);
+        $jobTracker = app(JobTracker::class);
         $queued = 0;
         $skipped = 0;
         $failed = 0;
+        $batchId = null;
+        $dispatchPlan = [];
 
         foreach (collect($items) as $item) {
             if (! $item instanceof Entry) {
@@ -54,8 +58,28 @@ final class GenerateMetaDescriptionAction extends Action
                 continue;
             }
 
+            $dispatchPlan[] = [
+                'entry' => $item,
+                'field' => $fieldHandle,
+            ];
+        }
+
+        if ($dispatchPlan !== []) {
+            $batchId = $jobTracker->createBatch(self::ACTION_HANDLE, count($dispatchPlan), [
+                'source' => 'cp_bulk_action',
+            ]);
+        }
+
+        foreach ($dispatchPlan as $dispatchRow) {
             try {
-                $executor->execute(self::ACTION_HANDLE, $item, $fieldHandle);
+                $jobId = $executor->execute(
+                    self::ACTION_HANDLE,
+                    $dispatchRow['entry'],
+                    $dispatchRow['field']
+                );
+                if ($batchId !== null) {
+                    $jobTracker->addJobToBatch($batchId, $jobId);
+                }
                 $queued++;
             } catch (Throwable) {
                 $failed++;
@@ -76,6 +100,10 @@ final class GenerateMetaDescriptionAction extends Action
 
         if ($failed > 0) {
             $messages[] = trans_choice('Failed to queue :count entry.|Failed to queue :count entries.', $failed);
+        }
+
+        if ($queued > 0 && $batchId !== null) {
+            $messages[] = "batch_id: {$batchId}";
         }
 
         return implode(' ', $messages);

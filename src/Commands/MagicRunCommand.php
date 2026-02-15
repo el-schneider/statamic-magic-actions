@@ -6,6 +6,7 @@ namespace ElSchneider\StatamicMagicActions\Commands;
 
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
+use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Illuminate\Console\Command;
 use Statamic\Contracts\Assets\Asset;
 use Statamic\Contracts\Entries\Entry;
@@ -31,6 +32,7 @@ final class MagicRunCommand extends Command
     public function __construct(
         private readonly ActionExecutor $actionExecutor,
         private readonly ActionLoader $actionLoader,
+        private readonly JobTracker $jobTracker,
     ) {
         parent::__construct();
     }
@@ -166,9 +168,19 @@ final class MagicRunCommand extends Command
             $processed = count($executionPlan);
 
             $this->renderStatusTable($statusRows);
-            $this->renderSummary($totalTargets, $processed, $skipped, $failed, false, 0);
+            $this->renderSummary($totalTargets, $processed, $skipped, $failed, false, 0, null);
 
             return $failed > 0 ? self::FAILURE : self::SUCCESS;
+        }
+
+        $batchId = null;
+
+        if ($queued && count($executionPlan) > 1) {
+            $batchId = $this->jobTracker->createBatch(
+                $this->resolveBatchAction($executionPlan),
+                count($executionPlan),
+                ['source' => 'cli_magic_run']
+            );
         }
 
         $progressBar = null;
@@ -181,12 +193,16 @@ final class MagicRunCommand extends Command
         foreach ($executionPlan as $planRow) {
             try {
                 if ($queued) {
-                    $this->actionExecutor->execute(
+                    $jobId = $this->actionExecutor->execute(
                         $planRow['action'],
                         $planRow['target'],
                         $fieldHandle,
                         $planRow['options']
                     );
+
+                    if ($batchId !== null) {
+                        $this->jobTracker->addJobToBatch($batchId, $jobId);
+                    }
 
                     $statusRows[] = [
                         'target' => $planRow['target_label'],
@@ -236,7 +252,7 @@ final class MagicRunCommand extends Command
         }
 
         $this->renderStatusTable($statusRows);
-        $this->renderSummary($totalTargets, $processed, $skipped, $failed, $queued, $dispatched);
+        $this->renderSummary($totalTargets, $processed, $skipped, $failed, $queued, $dispatched, $batchId);
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -532,7 +548,8 @@ final class MagicRunCommand extends Command
         int $skipped,
         int $failed,
         bool $queued,
-        int $dispatched
+        int $dispatched,
+        ?string $batchId
     ): void {
         $summaryRows = [
             ['Total targets', (string) $totalTargets],
@@ -543,9 +560,30 @@ final class MagicRunCommand extends Command
 
         if ($queued) {
             $summaryRows[] = ['Dispatched jobs', (string) $dispatched];
+
+            if ($batchId !== null) {
+                $summaryRows[] = ['Batch ID', $batchId];
+            }
         }
 
         $this->table(['Metric', 'Count'], $summaryRows);
+    }
+
+    /**
+     * @param  array<int, array{target: Entry|Asset, target_label: string, action: string, options: array<string, mixed>}>  $executionPlan
+     */
+    private function resolveBatchAction(array $executionPlan): string
+    {
+        $actions = array_values(array_unique(array_map(
+            static fn (array $row): string => $row['action'],
+            $executionPlan
+        )));
+
+        if (count($actions) === 1) {
+            return $actions[0];
+        }
+
+        return 'mixed';
     }
 
     private function stringOption(string $name): ?string

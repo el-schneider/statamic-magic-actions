@@ -112,6 +112,22 @@ final class ActionsController extends Controller
         return response()->json($job);
     }
 
+    /**
+     * Check the status of a batch.
+     */
+    public function batchStatus(string $batchId): JsonResponse
+    {
+        $batch = $this->jobTracker->getBatch($batchId);
+
+        if (! $batch) {
+            Log::warning('Batch not found in cache', ['batch_id' => $batchId]);
+
+            return response()->json(['error' => 'Batch not found'], 404);
+        }
+
+        return response()->json($batch);
+    }
+
     private function apiKeyNotConfiguredError(string $action, string $errorMessage): JsonResponse
     {
         Log::warning("$action request rejected: {$errorMessage}");

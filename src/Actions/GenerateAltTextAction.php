@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Actions;
 
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
+use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Statamic\Actions\Action;
 use Statamic\Contracts\Assets\Asset;
 use Throwable;
@@ -47,9 +48,12 @@ final class GenerateAltTextAction extends Action
     public function run($items, $values): string
     {
         $executor = app(ActionExecutor::class);
+        $jobTracker = app(JobTracker::class);
         $queued = 0;
         $skipped = 0;
         $failed = 0;
+        $batchId = null;
+        $dispatchPlan = [];
 
         foreach (collect($items) as $item) {
             if (! $item instanceof Asset || ! $this->isImageAsset($item)) {
@@ -58,8 +62,21 @@ final class GenerateAltTextAction extends Action
                 continue;
             }
 
+            $dispatchPlan[] = $item;
+        }
+
+        if ($dispatchPlan !== []) {
+            $batchId = $jobTracker->createBatch(self::ACTION_HANDLE, count($dispatchPlan), [
+                'source' => 'cp_bulk_action',
+            ]);
+        }
+
+        foreach ($dispatchPlan as $asset) {
             try {
-                $executor->execute(self::ACTION_HANDLE, $item, self::FIELD_HANDLE);
+                $jobId = $executor->execute(self::ACTION_HANDLE, $asset, self::FIELD_HANDLE);
+                if ($batchId !== null) {
+                    $jobTracker->addJobToBatch($batchId, $jobId);
+                }
                 $queued++;
             } catch (Throwable) {
                 $failed++;
@@ -84,6 +101,10 @@ final class GenerateAltTextAction extends Action
 
         if ($failed > 0) {
             $messages[] = trans_choice('Failed to queue :count asset.|Failed to queue :count assets.', $failed);
+        }
+
+        if ($queued > 0 && $batchId !== null) {
+            $messages[] = "batch_id: {$batchId}";
         }
 
         return implode(' ', $messages);
