@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
 use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
+use ElSchneider\StatamicMagicActions\Contracts\RequiresContext;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use Prism\Prism\Schema\ObjectSchema;
 
-abstract class BaseMagicAction implements MagicAction
+abstract class BaseMagicAction implements MagicAction, RequiresContext
 {
     public const string TITLE = '';
 
@@ -17,6 +18,13 @@ abstract class BaseMagicAction implements MagicAction
     abstract public function schema(): ?ObjectSchema;
 
     abstract public function rules(): array;
+
+    public function contextRequirements(): array
+    {
+        return [
+            'text' => 'entry_content',
+        ];
+    }
 
     public function parameters(): array
     {
