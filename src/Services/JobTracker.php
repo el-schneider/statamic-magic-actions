@@ -6,7 +6,9 @@ namespace ElSchneider\StatamicMagicActions\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Tracks background jobs with context information for recovery after navigation.
@@ -21,8 +23,6 @@ final class JobTracker
     public const BATCH_CACHE_PREFIX = 'magic_actions_batch_';
 
     public const BATCH_JOBS_CACHE_PREFIX = 'magic_actions_batch_jobs_';
-
-    public const CACHE_TAG = 'magic_actions';
 
     public const JOB_TTL = 86400; // 24 hours (default fallback).
 
@@ -256,29 +256,30 @@ final class JobTracker
 
     private function cacheGet(string $key): mixed
     {
-        if ($this->supportsCacheTags()) {
-            return Cache::tags([self::CACHE_TAG])->get($key);
-        }
+        try {
+            return Cache::get($key);
+        } catch (Throwable $e) {
+            Log::warning('Job tracker cache read failed', [
+                'cache_key' => $key,
+                'error' => $e->getMessage(),
+            ]);
 
-        return Cache::get($key);
+            return null;
+        }
     }
 
     private function cachePut(string $key, mixed $value): void
     {
         $ttl = $this->cacheTtl();
 
-        if ($this->supportsCacheTags()) {
-            Cache::tags([self::CACHE_TAG])->put($key, $value, $ttl);
-
-            return;
+        try {
+            Cache::put($key, $value, $ttl);
+        } catch (Throwable $e) {
+            Log::warning('Job tracker cache write failed', [
+                'cache_key' => $key,
+                'error' => $e->getMessage(),
+            ]);
         }
-
-        Cache::put($key, $value, $ttl);
-    }
-
-    private function supportsCacheTags(): bool
-    {
-        return method_exists(Cache::getStore(), 'tags');
     }
 
     private function cacheTtl(): int
