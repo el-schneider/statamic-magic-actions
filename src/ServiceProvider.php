@@ -98,6 +98,12 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
 
+        // Asset edit pages are SPA — blueprint event doesn't fire during page render.
+        // Use a view composer to provide magicFields for asset browse/edit routes.
+        view()->composer('statamic::assets.browse', function () {
+            $this->app->make(ProvideAssetMagicActionsToScript::class)->provideForAssetRoutes();
+        });
+
         Nav::extend(function ($nav) {
             $nav->tools('Magic Actions')
                 ->route('magic-actions.settings.index')
