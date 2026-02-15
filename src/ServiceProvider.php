@@ -44,13 +44,13 @@ final class ServiceProvider extends AddonServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
         $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
+        $this->app->singleton(JobTracker::class, fn () => new JobTracker());
         $this->app->singleton(ActionExecutor::class, function ($app) {
             return new ActionExecutor(
                 $app->make(ActionLoader::class),
                 $app->make(JobTracker::class)
             );
         });
-        $this->app->singleton(JobTracker::class, fn () => new JobTracker());
         $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
         $this->app->singleton(MagicFieldsConfigBuilder::class, fn () => new MagicFieldsConfigBuilder());
         $this->app->singleton(ActionRegistry::class, function () {
