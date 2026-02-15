@@ -154,7 +154,7 @@ final class MagicRunCommand extends Command
             if ($executionPlan === []) {
                 $this->components->warn('No targets would be processed.');
             } else {
-                $this->components->table(
+                $this->table(
                     ['Target', 'Field', 'Action'],
                     array_map(
                         fn (array $row): array => [$row['target_label'], $fieldHandle, $row['action']],
@@ -517,7 +517,7 @@ final class MagicRunCommand extends Command
             return;
         }
 
-        $this->components->table(
+        $this->table(
             ['Target', 'Field', 'Action', 'Status', 'Message'],
             array_map(
                 fn (array $row): array => [$row['target'], $row['field'], $row['action'], $row['status'], $row['message']],
@@ -545,7 +545,7 @@ final class MagicRunCommand extends Command
             $summaryRows[] = ['Dispatched jobs', (string) $dispatched];
         }
 
-        $this->components->table(['Metric', 'Count'], $summaryRows);
+        $this->table(['Metric', 'Count'], $summaryRows);
     }
 
     private function stringOption(string $name): ?string
