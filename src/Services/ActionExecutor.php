@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ElSchneider\StatamicMagicActions\Services;
 
 use ElSchneider\StatamicMagicActions\Contracts\MagicAction;
+use ElSchneider\StatamicMagicActions\Contracts\RequiresContext;
 use ElSchneider\StatamicMagicActions\Jobs\ProcessPromptJob;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ final class ActionExecutor
     public function __construct(
         private readonly ActionLoader $actionLoader,
         private readonly JobTracker $jobTracker,
+        private readonly ?ContextResolver $contextResolver = null,
     ) {}
 
     public function execute(string $action, Entry|Asset $target, string $fieldHandle, array $options = []): string
@@ -31,6 +33,7 @@ final class ActionExecutor
 
         $jobId = (string) Str::uuid();
         $context = $this->buildContext($target, $fieldHandle);
+        $variables = $this->resolveVariables($action, $target, $fieldHandle, $options);
 
         $this->jobTracker->createJob(
             $jobId,
@@ -43,7 +46,7 @@ final class ActionExecutor
         ProcessPromptJob::dispatch(
             $jobId,
             $action,
-            $this->resolveVariables($options),
+            $variables,
             $this->resolveAssetPath($target, $options),
             $context
         );
@@ -61,6 +64,7 @@ final class ActionExecutor
 
         $jobId = (string) Str::uuid();
         $context = $this->buildContext($target, $fieldHandle);
+        $variables = $this->resolveVariables($action, $target, $fieldHandle, $options);
 
         $this->jobTracker->createJob(
             $jobId,
@@ -73,7 +77,7 @@ final class ActionExecutor
         ProcessPromptJob::dispatchSync(
             $jobId,
             $action,
-            $this->resolveVariables($options),
+            $variables,
             $this->resolveAssetPath($target, $options),
             $context
         );
@@ -136,11 +140,24 @@ final class ActionExecutor
         ];
     }
 
-    private function resolveVariables(array $options): array
-    {
+    private function resolveVariables(
+        string $actionHandle,
+        Entry|Asset $target,
+        string $fieldHandle,
+        array $options
+    ): array {
         $variables = $options['variables'] ?? [];
+        $explicitVariables = is_array($variables) ? $variables : [];
 
-        return is_array($variables) ? $variables : [];
+        $action = $this->actionLoader->getMagicAction($actionHandle);
+        if (! $action instanceof RequiresContext) {
+            return $explicitVariables;
+        }
+
+        $contextResolver = $this->contextResolver ?? new ContextResolver();
+        $resolvedVariables = $contextResolver->resolve($action, $target, $fieldHandle);
+
+        return array_merge($resolvedVariables, $explicitVariables);
     }
 
     private function resolveAssetPath(Entry|Asset $target, array $options): ?string

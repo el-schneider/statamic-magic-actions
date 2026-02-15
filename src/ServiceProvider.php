@@ -9,6 +9,7 @@ use ElSchneider\StatamicMagicActions\Listeners\ProvideEntryMagicActionsToScript;
 use ElSchneider\StatamicMagicActions\Services\ActionExecutor;
 use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
+use ElSchneider\StatamicMagicActions\Services\ContextResolver;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
 use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
@@ -45,10 +46,12 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
         $this->app->singleton(JobTracker::class, fn () => new JobTracker());
+        $this->app->singleton(ContextResolver::class, fn () => new ContextResolver());
         $this->app->singleton(ActionExecutor::class, function ($app) {
             return new ActionExecutor(
                 $app->make(ActionLoader::class),
-                $app->make(JobTracker::class)
+                $app->make(JobTracker::class),
+                $app->make(ContextResolver::class)
             );
         });
         $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());

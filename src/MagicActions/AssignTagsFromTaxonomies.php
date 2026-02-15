@@ -4,13 +4,22 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\MagicActions;
 
+use ElSchneider\StatamicMagicActions\Contracts\RequiresContext;
 use Prism\Prism\Schema\ArraySchema;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\Schema\StringSchema;
 
-final class AssignTagsFromTaxonomies extends BaseMagicAction
+final class AssignTagsFromTaxonomies extends BaseMagicAction implements RequiresContext
 {
     public const string TITLE = 'Assign Tags from Taxonomies';
+
+    public function contextRequirements(): array
+    {
+        return [
+            'available_tags' => 'taxonomy_terms',
+            'content' => 'entry_content',
+        ];
+    }
 
     public function type(): string
     {
