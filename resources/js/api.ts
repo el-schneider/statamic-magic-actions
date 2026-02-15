@@ -12,6 +12,27 @@ export interface PollResult {
     data: string
 }
 
+function addContext(payload: Record<string, unknown>, context?: JobContext): Record<string, unknown> {
+    if (!context) {
+        return payload
+    }
+
+    return {
+        ...payload,
+        context_type: context.type,
+        context_id: context.id,
+        field_handle: context.field,
+    }
+}
+
+function extractJobId(response: JobResponse): string {
+    if (!response.job_id) {
+        throw new Error('No job ID returned from the server')
+    }
+
+    return response.job_id
+}
+
 export async function pollJobStatus(jobId: string, maxAttempts = 120, intervalMs = 1000): Promise<PollResult> {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const response = await window.Statamic.$axios.get<JobStatusResponse>(`${ENDPOINTS.status}/${jobId}`)
@@ -36,21 +57,10 @@ export async function executeCompletion(
     action: string,
     context?: JobContext,
 ): Promise<{ jobId: string }> {
-    const payload: Record<string, unknown> = { text, action }
-
-    if (context) {
-        payload.context_type = context.type
-        payload.context_id = context.id
-        payload.field_handle = context.field
-    }
-
+    const payload = addContext({ text, action }, context)
     const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.completion, payload)
 
-    if (!response.data.job_id) {
-        throw new Error('No job ID returned from the server')
-    }
-
-    return { jobId: response.data.job_id }
+    return { jobId: extractJobId(response.data) }
 }
 
 export async function executeVision(
@@ -59,25 +69,18 @@ export async function executeVision(
     variables: Record<string, unknown> = {},
     context?: JobContext,
 ): Promise<{ jobId: string }> {
-    const payload: Record<string, unknown> = {
-        asset_path: assetPath,
-        action,
-        variables,
-    }
-
-    if (context) {
-        payload.context_type = context.type
-        payload.context_id = context.id
-        payload.field_handle = context.field
-    }
+    const payload = addContext(
+        {
+            asset_path: assetPath,
+            action,
+            variables,
+        },
+        context,
+    )
 
     const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.vision, payload)
 
-    if (!response.data.job_id) {
-        throw new Error('No job ID returned from the server')
-    }
-
-    return { jobId: response.data.job_id }
+    return { jobId: extractJobId(response.data) }
 }
 
 export async function executeTranscription(
@@ -85,22 +88,15 @@ export async function executeTranscription(
     action: string,
     context?: JobContext,
 ): Promise<{ jobId: string }> {
-    const payload: Record<string, unknown> = {
-        asset_path: assetPath,
-        action,
-    }
-
-    if (context) {
-        payload.context_type = context.type
-        payload.context_id = context.id
-        payload.field_handle = context.field
-    }
+    const payload = addContext(
+        {
+            asset_path: assetPath,
+            action,
+        },
+        context,
+    )
 
     const response = await window.Statamic.$axios.post<JobResponse>(ENDPOINTS.transcription, payload)
 
-    if (!response.data.job_id) {
-        throw new Error('No job ID returned from the server')
-    }
-
-    return { jobId: response.data.job_id }
+    return { jobId: extractJobId(response.data) }
 }

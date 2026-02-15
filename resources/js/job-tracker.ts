@@ -13,6 +13,16 @@ const STORAGE_KEY_PREFIX = 'magic_actions_jobs_'
 
 const updateFunctions = new Map<string, UpdateFn>()
 
+function isTrackedJob(value: unknown): value is TrackedJob {
+    if (!value || typeof value !== 'object') {
+        return false
+    }
+
+    const job = value as Partial<TrackedJob>
+
+    return typeof job.jobId === 'string' && typeof job.fieldHandle === 'string' && typeof job.fieldTitle === 'string'
+}
+
 function getStorageKey(context: JobContext): string {
     return `${STORAGE_KEY_PREFIX}${context.type}_${context.id.replace(/[/:]/g, '_')}`
 }
@@ -21,7 +31,9 @@ function getTrackedJobs(context: JobContext): TrackedJob[] {
     try {
         const key = getStorageKey(context)
         const stored = localStorage.getItem(key)
-        return stored ? JSON.parse(stored) : []
+        const parsed = stored ? JSON.parse(stored) : []
+
+        return Array.isArray(parsed) ? parsed.filter(isTrackedJob) : []
     } catch {
         return []
     }

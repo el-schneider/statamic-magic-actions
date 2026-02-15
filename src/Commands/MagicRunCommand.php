@@ -301,16 +301,7 @@ final class MagicRunCommand extends Command
                         continue;
                     }
 
-                    $key = $this->targetKey($entry);
-                    if (isset($seen[$key])) {
-                        continue;
-                    }
-
-                    $seen[$key] = true;
-                    $targets[] = [
-                        'target' => $entry,
-                        'label' => $this->describeTarget($entry),
-                    ];
+                    $this->addTargetIfNotSeen($targets, $seen, $entry);
                 }
             }
         }
@@ -324,14 +315,7 @@ final class MagicRunCommand extends Command
                     'message' => 'Entry not found.',
                 ];
             } else {
-                $key = $this->targetKey($entry);
-                if (! isset($seen[$key])) {
-                    $seen[$key] = true;
-                    $targets[] = [
-                        'target' => $entry,
-                        'label' => $this->describeTarget($entry),
-                    ];
-                }
+                $this->addTargetIfNotSeen($targets, $seen, $entry);
             }
         }
 
@@ -344,14 +328,7 @@ final class MagicRunCommand extends Command
                     'message' => 'Asset not found. Expected format: container::path',
                 ];
             } else {
-                $key = $this->targetKey($asset);
-                if (! isset($seen[$key])) {
-                    $seen[$key] = true;
-                    $targets[] = [
-                        'target' => $asset,
-                        'label' => $this->describeTarget($asset),
-                    ];
-                }
+                $this->addTargetIfNotSeen($targets, $seen, $asset);
             }
         }
 
@@ -737,5 +714,24 @@ final class MagicRunCommand extends Command
     private function formatList(array $values): string
     {
         return $values === [] ? '(none)' : implode(', ', $values);
+    }
+
+    /**
+     * @param  array<int, array{target: Entry|Asset, label: string}>  $targets
+     * @param  array<string, bool>  $seen
+     */
+    private function addTargetIfNotSeen(array &$targets, array &$seen, Entry|Asset $target): void
+    {
+        $key = $this->targetKey($target);
+
+        if (isset($seen[$key])) {
+            return;
+        }
+
+        $seen[$key] = true;
+        $targets[] = [
+            'target' => $target,
+            'label' => $this->describeTarget($target),
+        ];
     }
 }

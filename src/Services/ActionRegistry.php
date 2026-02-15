@@ -9,12 +9,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Throwable;
 
-/**
- * Registry for managing Magic Action metadata and discovery.
- *
- * Centralizes action handle resolution and class discovery to prevent
- * duplication across ServiceProvider, FieldConfigService, and ActionLoader.
- */
 final class ActionRegistry
 {
     /**
@@ -27,46 +21,21 @@ final class ActionRegistry
      */
     private array $instances = [];
 
-    /**
-     * Convert a class name to a handle (kebab-case).
-     *
-     * Example: ProposeTitle -> propose-title
-     */
     public static function classNameToHandle(string $className): string
     {
-        // Remove any namespace
         $className = basename(str_replace('\\', '/', $className));
 
         return Str::kebab($className);
     }
 
-    /**
-     * Convert a handle to a class name (PascalCase).
-     *
-     * Example: propose-title -> ProposeTitle
-     */
     public static function handleToClassName(string $handle): string
     {
         return Str::studly($handle);
     }
 
-    /**
-     * Discover and register all MagicAction classes from a given namespace.
-     *
-     * @param  string  $namespace  The namespace to scan (e.g., 'ElSchneider\\StatamicMagicActions\\MagicActions')
-     */
     public function discoverFromNamespace(string $namespace): void
     {
-        // Try vendor path first (production), then local path (development)
-        $baseDir = base_path('vendor/el-schneider/statamic-magic-actions/src/MagicActions');
-        if (! File::isDirectory($baseDir)) {
-            $baseDir = __DIR__.'/../MagicActions';
-        }
-
-        $files = File::files($baseDir);
-
-        foreach ($files as $file) {
-            // Skip the base class
+        foreach (File::files($this->resolveDiscoveryDirectory()) as $file) {
             if ($file->getFilename() === 'BaseMagicAction.php') {
                 continue;
             }
@@ -78,25 +47,18 @@ final class ActionRegistry
                 try {
                     $instance = new $fqcn();
                     $this->handles[$instance->getHandle()] = $fqcn;
-                } catch (Throwable $e) {
-                    // Skip actions that fail to instantiate
+                } catch (Throwable) {
                     continue;
                 }
             }
         }
     }
 
-    /**
-     * Get the class path for an action by handle.
-     */
     public function getClassPath(string $handle): ?string
     {
         return $this->handles[$handle] ?? null;
     }
 
-    /**
-     * Get an action instance by handle (cached).
-     */
     public function getInstance(string $handle): ?BaseMagicAction
     {
         if (! isset($this->handles[$handle])) {
@@ -111,21 +73,11 @@ final class ActionRegistry
         return $this->instances[$handle];
     }
 
-    /**
-     * Get all registered action handles.
-     *
-     * @return array<string>
-     */
     public function getAllHandles(): array
     {
         return array_keys($this->handles);
     }
 
-    /**
-     * Get all registered actions as [handle => instance] pairs.
-     *
-     * @return array<string, BaseMagicAction>
-     */
     public function getAllInstances(): array
     {
         foreach ($this->handles as $handle => $class) {
@@ -135,5 +87,16 @@ final class ActionRegistry
         }
 
         return $this->instances;
+    }
+
+    private function resolveDiscoveryDirectory(): string
+    {
+        $vendorDirectory = base_path('vendor/el-schneider/statamic-magic-actions/src/MagicActions');
+
+        if (File::isDirectory($vendorDirectory)) {
+            return $vendorDirectory;
+        }
+
+        return __DIR__.'/../MagicActions';
     }
 }

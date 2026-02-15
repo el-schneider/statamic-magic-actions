@@ -6,11 +6,12 @@ namespace ElSchneider\StatamicMagicActions\Listeners;
 
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
 use Statamic\Events\EntryBlueprintFound;
+use Statamic\Fields\Blueprint;
 use Statamic\Statamic;
 
 final class ProvideEntryMagicActionsToScript
 {
-    public function __construct(private MagicFieldsConfigBuilder $configBuilder) {}
+    public function __construct(private readonly MagicFieldsConfigBuilder $configBuilder) {}
 
     public function handle(EntryBlueprintFound $event): void
     {
@@ -21,12 +22,12 @@ final class ProvideEntryMagicActionsToScript
         $this->provideMagicActionsToScript($event->blueprint);
     }
 
-    private function provideMagicActionsToScript($blueprint): void
+    private function provideMagicActionsToScript(Blueprint $blueprint): void
     {
         $magicFields = $this->configBuilder->buildFromBlueprint($blueprint);
 
         Statamic::provideToScript([
-            'magicFields' => $magicFields ?? [],
+            'magicFields' => $magicFields ?: [],
         ]);
     }
 
@@ -34,10 +35,6 @@ final class ProvideEntryMagicActionsToScript
     {
         $routeName = request()->route()?->getName();
 
-        if (! $routeName) {
-            return false;
-        }
-
-        return str_starts_with($routeName, 'statamic.cp.collections');
+        return is_string($routeName) && str_starts_with($routeName, 'statamic.cp.collections');
     }
 }

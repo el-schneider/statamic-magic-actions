@@ -21,8 +21,13 @@ export function sleep(ms: number): Promise<void> {
 }
 
 export function extractText(content: unknown): string {
-    if (!content) return ''
-    if (typeof content === 'string') return content
+    if (!content) {
+        return ''
+    }
+
+    if (typeof content === 'string') {
+        return content
+    }
 
     if (typeof content === 'object' && content !== null) {
         const obj = content as Record<string, unknown>
@@ -46,8 +51,10 @@ export function isAssetPath(value: unknown): boolean {
         return value.includes('::')
     }
 
-    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
-        return value[0].includes('::')
+    if (Array.isArray(value)) {
+        const firstString = value.find((item): item is string => typeof item === 'string')
+
+        return typeof firstString === 'string' && firstString.includes('::')
     }
 
     return false
@@ -78,7 +85,8 @@ export function determineActionType(
         return 'vision'
     }
 
-    const sourceValue = stateValues[config.magic_actions_source!]
+    const sourceValue = config.magic_actions_source ? stateValues[config.magic_actions_source] : undefined
+
     return isAssetPath(sourceValue) ? 'vision' : 'completion'
 }
 
@@ -88,7 +96,7 @@ export function getAssetPath(config: FieldConfig, stateValues: Record<string, un
         return pathFromUrl
     }
 
-    const sourceValue = stateValues[config.magic_actions_source!]
+    const sourceValue = config.magic_actions_source ? stateValues[config.magic_actions_source] : undefined
     if (Array.isArray(sourceValue) && sourceValue.length > 0) {
         return sourceValue[0] as string
     }

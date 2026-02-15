@@ -11,17 +11,23 @@ final class Settings
 {
     public static function data(): array
     {
-        if (! File::exists(self::path())) {
+        $path = self::path();
+
+        if (! File::exists($path)) {
             return [];
         }
 
-        return YAML::parse(File::get(self::path())) ?? [];
+        $parsed = YAML::parse(File::get($path));
+
+        return is_array($parsed) ? $parsed : [];
     }
 
     public static function save(array $data): void
     {
-        File::ensureDirectoryExists(dirname(self::path()));
-        File::put(self::path(), YAML::dump($data));
+        $path = self::path();
+
+        File::ensureDirectoryExists(dirname($path));
+        File::put($path, YAML::dump($data));
     }
 
     public static function get(string $key, mixed $default = null): mixed

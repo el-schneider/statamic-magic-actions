@@ -158,10 +158,6 @@ final class DynamicBulkAction extends Action
         ];
     }
 
-    // ──────────────────────────────────────────────────────
-    // Asset bulk run
-    // ──────────────────────────────────────────────────────
-
     private function runForAssets($items, MagicAction $magic): string
     {
         $executor = app(ActionExecutor::class);
@@ -198,10 +194,6 @@ final class DynamicBulkAction extends Action
 
         return $this->resultMessage($queued, $skipped, $failed, $magic);
     }
-
-    // ──────────────────────────────────────────────────────
-    // Entry bulk run
-    // ──────────────────────────────────────────────────────
 
     private function runForEntries($items, $values, MagicAction $magic): string
     {
@@ -263,36 +255,38 @@ final class DynamicBulkAction extends Action
         return $this->resultMessage($queued, $skipped, $failed, $magic);
     }
 
-    // ──────────────────────────────────────────────────────
-    // Asset helpers
-    // ──────────────────────────────────────────────────────
-
     private function isCompatibleAsset(Asset $asset, MagicAction $magic): bool
     {
         $mimeTypes = $magic->acceptedMimeTypes();
 
-        // No MIME restriction = accept all
         if ($mimeTypes === []) {
             return true;
         }
 
-        // Check by MIME pattern
         $assetMime = mb_strtolower(mb_trim((string) $asset->mimeType()));
+        $hasImageMime = false;
+        $hasAudioMime = false;
+
         foreach ($mimeTypes as $pattern) {
+            if (! is_string($pattern)) {
+                continue;
+            }
+
+            $pattern = mb_strtolower(mb_trim($pattern));
+            $hasImageMime = $hasImageMime || str_starts_with($pattern, 'image/');
+            $hasAudioMime = $hasAudioMime || str_starts_with($pattern, 'audio/');
+
             if (str_ends_with($pattern, '/*')) {
                 $prefix = mb_substr($pattern, 0, -1);
                 if (str_starts_with($assetMime, $prefix)) {
                     return true;
                 }
-            } elseif ($assetMime === mb_strtolower($pattern)) {
+            } elseif ($assetMime === $pattern) {
                 return true;
             }
         }
 
-        // Fallback: check by extension for image/audio
         $ext = mb_strtolower(mb_trim((string) $asset->extension()));
-        $hasImageMime = collect($mimeTypes)->contains(fn ($m) => str_starts_with($m, 'image/'));
-        $hasAudioMime = collect($mimeTypes)->contains(fn ($m) => str_starts_with($m, 'audio/'));
 
         if ($hasImageMime && in_array($ext, self::IMAGE_EXTENSIONS, true)) {
             return true;
@@ -302,17 +296,11 @@ final class DynamicBulkAction extends Action
             return true;
         }
 
-        // Also check isImage() for image types
-        if ($hasImageMime && $asset->isImage()) {
-            return true;
-        }
-
-        return false;
+        return $hasImageMime && $asset->isImage();
     }
 
     private function resolveAssetFieldHandle(Asset $asset, MagicAction $magic): ?string
     {
-        // Check blueprint for configured field with this action
         $blueprint = $asset->blueprint();
 
         if ($blueprint) {
@@ -335,13 +323,8 @@ final class DynamicBulkAction extends Action
             }
         }
 
-        // No configured field found
         return null;
     }
-
-    // ──────────────────────────────────────────────────────
-    // Entry field helpers
-    // ──────────────────────────────────────────────────────
 
     /**
      * @return array<string, string>
@@ -460,10 +443,6 @@ final class DynamicBulkAction extends Action
         return is_array($data) ? $this->extractText($data) : '';
     }
 
-    // ──────────────────────────────────────────────────────
-    // Text extraction (ProseMirror / arrays / objects)
-    // ──────────────────────────────────────────────────────
-
     private function extractText(mixed $content): string
     {
         if ($content === null) {
@@ -518,10 +497,6 @@ final class DynamicBulkAction extends Action
 
         return '';
     }
-
-    // ──────────────────────────────────────────────────────
-    // Shared helpers
-    // ──────────────────────────────────────────────────────
 
     /**
      * @return array<int, string>

@@ -23,18 +23,14 @@ final class Blueprint
         ];
 
         foreach ($values as $key => $value) {
-            // Global defaults
-            if (str_starts_with($key, 'global_defaults_')) {
-                $capability = str_replace('global_defaults_', '', $key);
-                if ($value) {
-                    $settings['global']['defaults'][$capability] = $value;
-                }
-
+            if (! str_starts_with($key, 'global_defaults_') || empty($value)) {
                 continue;
             }
+
+            $capability = str_replace('global_defaults_', '', $key);
+            $settings['global']['defaults'][$capability] = $value;
         }
 
-        // Clean up empty values
         if (empty($settings['global']['system_prompt'])) {
             unset($settings['global']['system_prompt']);
         }
@@ -55,12 +51,10 @@ final class Blueprint
     {
         $values = [];
 
-        // Global system prompt
         if (isset($settings['global']['system_prompt'])) {
             $values['global_system_prompt'] = $settings['global']['system_prompt'];
         }
 
-        // Global defaults
         foreach ($settings['global']['defaults'] ?? [] as $capability => $model) {
             $values["global_defaults_{$capability}"] = $model;
         }
@@ -140,14 +134,12 @@ final class Blueprint
         $providers = Config::get('statamic.magic-actions.providers', []);
 
         foreach ($models as $modelKey) {
-            // Validate model key format
             if (! str_contains($modelKey, '/')) {
                 continue;
             }
 
             [$provider, $model] = explode('/', $modelKey, 2);
 
-            // Only include models for providers with valid API keys
             $apiKey = $providers[$provider]['api_key'] ?? null;
             if (! $apiKey) {
                 continue;

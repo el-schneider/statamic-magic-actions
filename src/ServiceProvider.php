@@ -51,29 +51,24 @@ final class ServiceProvider extends AddonServiceProvider
         $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
         $this->app->singleton(JobTracker::class, fn () => new JobTracker());
         $this->app->singleton(ContextResolver::class, fn () => new ContextResolver());
-        $this->app->singleton(ActionExecutor::class, function ($app) {
-            return new ActionExecutor(
-                $app->make(ActionLoader::class),
-                $app->make(JobTracker::class),
-                $app->make(ContextResolver::class)
-            );
-        });
+        $this->app->singleton(ActionExecutor::class, fn ($app) => new ActionExecutor(
+            $app->make(ActionLoader::class),
+            $app->make(JobTracker::class),
+            $app->make(ContextResolver::class)
+        ));
         $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
-        $this->app->singleton(MagicFieldsConfigBuilder::class, function ($app) {
-            return new MagicFieldsConfigBuilder($app->make(ActionLoader::class));
-        });
+        $this->app->singleton(
+            MagicFieldsConfigBuilder::class,
+            fn ($app) => new MagicFieldsConfigBuilder($app->make(ActionLoader::class))
+        );
         $this->app->singleton(ActionRegistry::class, function () {
             $registry = new ActionRegistry();
             $registry->discoverFromNamespace('ElSchneider\\StatamicMagicActions\\MagicActions');
 
             return $registry;
         });
-        $this->app->singleton(BulkActionRegistrar::class, function ($app) {
-            return new BulkActionRegistrar($app->make(ActionRegistry::class));
-        });
-        $this->app->singleton(SettingsBlueprint::class, function ($app) {
-            return new SettingsBlueprint($app->make(ActionRegistry::class));
-        });
+        $this->app->singleton(BulkActionRegistrar::class, fn ($app) => new BulkActionRegistrar($app->make(ActionRegistry::class)));
+        $this->app->singleton(SettingsBlueprint::class, fn () => new SettingsBlueprint());
     }
 
     public function boot(): void
@@ -82,7 +77,6 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'magic-actions');
 
-        // Publish magic action classes for user customization
         $this->publishes([
             __DIR__.'/MagicActions' => app_path('MagicActions'),
         ], 'magic-actions');
@@ -98,11 +92,8 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
 
-        // Auto-register bulk actions from MagicActions that declare supportsBulk()
         $this->app->make(BulkActionRegistrar::class)->registerBulkActions();
 
-        // Asset edit pages are SPA — blueprint event doesn't fire during page render.
-        // Use a view composer to provide magicFields for asset browse/edit routes.
         view()->composer('statamic::assets.browse', function () {
             $this->app->make(ProvideAssetMagicActionsToScript::class)->provideForAssetRoutes();
         });

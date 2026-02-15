@@ -14,15 +14,6 @@ use RuntimeException;
 
 final class ActionLoader
 {
-    /**
-     * Load an action with variables rendered
-     *
-     * @param  string  $action  The action identifier
-     * @param  array  $variables  Variables to render in templates
-     * @return array Contains: action, provider, model, parameters, systemPrompt, userPrompt, schema (if exists)
-     *
-     * @throws RuntimeException If action config not found
-     */
     public function load(string $action, array $variables = []): array
     {
         $magicAction = $this->loadMagicAction($action);
@@ -36,12 +27,6 @@ final class ActionLoader
         return $result;
     }
 
-    /**
-     * Check if an action exists
-     *
-     * @param  string  $action  The action identifier to check
-     * @return bool True if action exists, false otherwise
-     */
     public function exists(string $action): bool
     {
         return $this->loadMagicAction($action) !== null;
@@ -55,20 +40,15 @@ final class ActionLoader
         return $this->loadMagicAction($action);
     }
 
-    /**
-     * Load MagicAction from user's app or addon's src directory
-     */
     private function loadMagicAction(string $action): ?MagicAction
     {
-        $className = $this->convertActionNameToClassName($action);
+        $className = ActionRegistry::handleToClassName($action);
 
-        // Try user's published version first
         $userClass = "App\\MagicActions\\{$className}";
         if (class_exists($userClass)) {
             return new $userClass();
         }
 
-        // Fall back to addon's default
         $addonClass = "ElSchneider\\StatamicMagicActions\\MagicActions\\{$className}";
         if (class_exists($addonClass)) {
             return new $addonClass();
@@ -77,20 +57,8 @@ final class ActionLoader
         return null;
     }
 
-    /**
-     * Convert kebab-case action name to PascalCase class name
-     */
-    private function convertActionNameToClassName(string $action): string
-    {
-        return ActionRegistry::handleToClassName($action);
-    }
-
-    /**
-     * Build result array from MagicAction instance
-     */
     private function buildResultFromMagicAction(MagicAction $action, array $variables): array
     {
-        // Validate variables against action rules
         $validator = Validator::make($variables, $action->rules());
         if ($validator->fails()) {
             throw new InvalidArgumentException('Invalid variables: '.implode(', ', $validator->errors()->all()));
@@ -98,7 +66,6 @@ final class ActionLoader
 
         $type = $action->type();
 
-        // Resolve model from global defaults
         $modelKey = Settings::get("global.defaults.{$type}")
             ?? Config::get("statamic.magic-actions.types.{$type}.default", $this->defaultModelKeyForType($type));
 
@@ -108,7 +75,6 @@ final class ActionLoader
             );
         }
 
-        // Parse provider/model from the combined key
         if (! str_contains($modelKey, '/')) {
             throw new InvalidArgumentException(
                 "Invalid model key format: '{$modelKey}'. Expected format: 'provider/model'"
@@ -116,7 +82,6 @@ final class ActionLoader
         }
         [$provider, $model] = explode('/', $modelKey, 2);
 
-        // Validate provider API key
         $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key", '');
         if (! is_string($apiKey) || mb_trim($apiKey) === '') {
             $envVar = $this->providerApiKeyEnvVar($provider);
@@ -126,49 +91,39 @@ final class ActionLoader
             );
         }
 
-        // Parameters from action class
-        $parameters = $action->parameters();
-
         $result = [
             'type' => $type,
             'provider' => $provider,
             'model' => $model,
-            'parameters' => $parameters,
+            'parameters' => $action->parameters(),
         ];
 
-        // Render prompts for text and vision actions
-        if ($type === 'text' || $type === 'vision') {
-            // Build system prompt: global prepended + action default
-            $globalSystemPrompt = Settings::get('global.system_prompt', '');
-            $actionSystemPrompt = $action->system();
-
-            $parts = array_filter([$globalSystemPrompt, $actionSystemPrompt]);
-            $systemPrompt = implode("\n\n", $parts);
-            $result['systemPrompt'] = $this->renderBladeString($systemPrompt, $variables);
-
-            // Use action's user prompt
-            $result['userPrompt'] = $this->renderBladeString($action->prompt(), $variables);
-
-            $schema = $action->schema();
-            if ($schema !== null) {
-                $result['schema'] = $schema;
-            }
+        if (! in_array($type, ['text', 'vision'], true)) {
+            return $result;
         }
 
-        // Audio actions don't need system/user prompts in the same way
-        if ($type === 'audio') {
-            // Keep minimal - Prism::audio() handles transcription directly
+        $result['systemPrompt'] = $this->renderBladeString($this->buildSystemPrompt($action), $variables);
+        $result['userPrompt'] = $this->renderBladeString($action->prompt(), $variables);
+
+        $schema = $action->schema();
+        if ($schema !== null) {
+            $result['schema'] = $schema;
         }
 
         return $result;
     }
 
-    /**
-     * Render a Blade template string with variables
-     */
     private function renderBladeString(string $template, array $variables): string
     {
         return app('blade.compiler')->render($template, $variables);
+    }
+
+    private function buildSystemPrompt(MagicAction $action): string
+    {
+        $globalSystemPrompt = Settings::get('global.system_prompt', '');
+        $actionSystemPrompt = $action->system();
+
+        return implode("\n\n", array_filter([$globalSystemPrompt, $actionSystemPrompt]));
     }
 
     private function defaultModelKeyForType(string $type): string

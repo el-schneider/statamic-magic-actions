@@ -7,15 +7,13 @@ namespace ElSchneider\StatamicMagicActions\Listeners;
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
 use Statamic\Events\AssetContainerBlueprintFound;
 use Statamic\Facades\AssetContainer;
+use Statamic\Fields\Blueprint;
 use Statamic\Statamic;
 
 final class ProvideAssetMagicActionsToScript
 {
-    public function __construct(private MagicFieldsConfigBuilder $configBuilder) {}
+    public function __construct(private readonly MagicFieldsConfigBuilder $configBuilder) {}
 
-    /**
-     * Handle the AssetContainerBlueprintFound event (fires on API requests).
-     */
     public function handle(AssetContainerBlueprintFound $event): void
     {
         if (! $this->isOnCPRoute()) {
@@ -25,13 +23,6 @@ final class ProvideAssetMagicActionsToScript
         $this->provideMagicActionsToScript($event->blueprint);
     }
 
-    /**
-     * Provide magic fields for asset browse/edit pages.
-     *
-     * The asset edit page is SPA — the blueprint event fires during API calls,
-     * not during the initial page render. This method is called from a view
-     * composer to ensure magicFields are available on page load.
-     */
     public function provideForAssetRoutes(): void
     {
         if (! $this->isOnCPRoute()) {
@@ -45,9 +36,7 @@ final class ProvideAssetMagicActionsToScript
             return;
         }
 
-        $container = is_string($containerParam)
-            ? AssetContainer::findByHandle($containerParam)
-            : $containerParam;
+        $container = is_string($containerParam) ? AssetContainer::findByHandle($containerParam) : $containerParam;
 
         if (! $container) {
             return;
@@ -55,17 +44,19 @@ final class ProvideAssetMagicActionsToScript
 
         $blueprint = $container->blueprint();
 
-        if ($blueprint) {
-            $this->provideMagicActionsToScript($blueprint);
+        if (! $blueprint instanceof Blueprint) {
+            return;
         }
+
+        $this->provideMagicActionsToScript($blueprint);
     }
 
-    private function provideMagicActionsToScript($blueprint): void
+    private function provideMagicActionsToScript(Blueprint $blueprint): void
     {
         $magicFields = $this->configBuilder->buildFromBlueprint($blueprint);
 
         Statamic::provideToScript([
-            'magicFields' => $magicFields ?? [],
+            'magicFields' => $magicFields ?: [],
         ]);
     }
 
@@ -73,10 +64,6 @@ final class ProvideAssetMagicActionsToScript
     {
         $routeName = request()->route()?->getName();
 
-        if (! $routeName) {
-            return false;
-        }
-
-        return str_starts_with($routeName, 'statamic.cp.assets');
+        return is_string($routeName) && str_starts_with($routeName, 'statamic.cp.assets');
     }
 }

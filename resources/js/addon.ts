@@ -19,23 +19,24 @@ async function dispatchJob(
     pathname: string,
     context?: JobContext,
 ): Promise<string> {
+    if (type === 'completion') {
+        const sourceText = extractText(stateValues[config.magic_actions_source!])
+        if (!sourceText) {
+            throw new Error('Source field is empty')
+        }
+
+        const result = await executeCompletion(sourceText, action, context)
+        return result.jobId
+    }
+
+    const assetPath = getAssetPath(config, stateValues, pathname)
+
     if (type === 'vision') {
-        const assetPath = getAssetPath(config, stateValues, pathname)
         const result = await executeVision(assetPath, action, {}, context)
         return result.jobId
     }
 
-    if (type === 'transcription') {
-        const assetPath = getAssetPath(config, stateValues, pathname)
-        const result = await executeTranscription(assetPath, action, context)
-        return result.jobId
-    }
-
-    const sourceText = extractText(stateValues[config.magic_actions_source!])
-    if (!sourceText) {
-        throw new Error('Source field is empty')
-    }
-    const result = await executeCompletion(sourceText, action, context)
+    const result = await executeTranscription(assetPath, action, context)
     return result.jobId
 }
 
@@ -115,11 +116,6 @@ function registerFieldActions(): void {
 
     for (const field of magicFields) {
         const componentName = `${field.component}-fieldtype`
-
-        if (field.actions.length === 1) {
-            window.Statamic.$fieldActions.add(componentName, createFieldAction(field, field.actions[0], pageContext))
-            continue
-        }
 
         for (const action of field.actions) {
             window.Statamic.$fieldActions.add(componentName, createFieldAction(field, action, pageContext))

@@ -143,20 +143,19 @@ final class ActionsController extends Controller
      */
     private function extractContext(Request $request): ?array
     {
-        $contextType = $request->input('context_type');
-        $contextId = $request->input('context_id');
-        $fieldHandle = $request->input('field_handle');
+        $contextType = $this->nonEmptyString($request->input('context_type'));
+        $contextId = $this->nonEmptyString($request->input('context_id'));
+        $fieldHandle = $this->nonEmptyString($request->input('field_handle'));
 
-        if (is_string($contextType) && is_string($contextId) && is_string($fieldHandle)
-            && $contextType !== '' && $contextId !== '' && $fieldHandle !== '') {
-            return [
-                'type' => $contextType,
-                'id' => $contextId,
-                'field' => $fieldHandle,
-            ];
+        if ($contextType === null || $contextId === null || $fieldHandle === null) {
+            return null;
         }
 
-        return null;
+        return [
+            'type' => $contextType,
+            'id' => $contextId,
+            'field' => $fieldHandle,
+        ];
     }
 
     private function executeActionRequest(
@@ -221,27 +220,12 @@ final class ActionsController extends Controller
      */
     private function resolveTarget(array $context, array $options): Entry|Asset|null
     {
-        if ($context['type'] === 'entry') {
-            return EntryFacade::find($context['id']);
-        }
-
-        if ($context['type'] !== 'asset') {
-            return null;
-        }
-
-        $asset = $this->resolveAssetTarget($context['id']);
-
-        if ($asset) {
-            return $asset;
-        }
-
-        $assetPath = $options['asset_path'] ?? null;
-
-        if (is_string($assetPath) && $assetPath !== '') {
-            return AssetFacade::find($assetPath);
-        }
-
-        return null;
+        return match ($context['type']) {
+            'entry' => EntryFacade::find($context['id']),
+            'asset' => $this->resolveAssetTarget($context['id'])
+                ?? $this->resolveAssetByPath($options['asset_path'] ?? null),
+            default => null,
+        };
     }
 
     private function resolveAssetTarget(string $contextId): ?Asset
@@ -263,5 +247,25 @@ final class ActionsController extends Controller
         }
 
         return AssetFacade::find("{$container}::{$path}");
+    }
+
+    private function resolveAssetByPath(mixed $path): ?Asset
+    {
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        return AssetFacade::find($path);
+    }
+
+    private function nonEmptyString(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value === '' ? null : $value;
     }
 }

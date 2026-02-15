@@ -19,38 +19,40 @@ final class MagicFieldsConfigBuilder
             return null;
         }
 
-        return $blueprint->fields()->all()->filter(function ($field) {
-            return $field->config()['magic_actions_enabled'] ?? false;
-        })->map(function ($field) {
-            $fieldtype = get_class($field->fieldtype());
-            $selectedActions = $this->normalizeSelectedActions($field->config()['magic_actions_action'] ?? null);
+        return $blueprint->fields()->all()->filter(fn ($field): bool => (bool) ($field->config()['magic_actions_enabled'] ?? false))
+            ->map(function ($field) {
+                $fieldtype = get_class($field->fieldtype());
+                $selectedActions = $this->normalizeSelectedActions($field->config()['magic_actions_action'] ?? null);
 
-            if ($selectedActions === []) {
-                return null;
-            }
+                if ($selectedActions === []) {
+                    return null;
+                }
 
-            $enabledActions = $this->resolveEnabledActionsForFieldtype($fieldtype);
+                $enabledActions = $this->resolveEnabledActionsForFieldtype($fieldtype);
 
-            if ($enabledActions === []) {
-                return null;
-            }
+                if ($enabledActions === []) {
+                    return null;
+                }
 
-            $fieldActions = collect($selectedActions)
-                ->map(fn (string $actionHandle) => $enabledActions[$actionHandle] ?? null)
-                ->filter()
-                ->values()
-                ->toArray();
+                $fieldActions = collect($selectedActions)
+                    ->map(fn (string $actionHandle) => $enabledActions[$actionHandle] ?? null)
+                    ->filter()
+                    ->values()
+                    ->toArray();
 
-            if ($fieldActions === []) {
-                return null;
-            }
+                if ($fieldActions === []) {
+                    return null;
+                }
 
-            return [
-                'fieldHandle' => $field->handle(),
-                'component' => $field->fieldtype()->component(),
-                'actions' => $fieldActions,
-            ];
-        })->filter()->values()->toArray();
+                return [
+                    'fieldHandle' => $field->handle(),
+                    'component' => $field->fieldtype()->component(),
+                    'actions' => $fieldActions,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->toArray();
     }
 
     private function normalizeSelectedActions(mixed $actionConfig): array
@@ -65,14 +67,12 @@ final class MagicFieldsConfigBuilder
             return [];
         }
 
-        $selectedActions = collect($actionConfig)
+        return collect($actionConfig)
             ->filter(fn (mixed $actionHandle) => is_string($actionHandle) && mb_trim($actionHandle) !== '')
             ->map(fn (string $actionHandle) => mb_trim($actionHandle))
             ->unique()
             ->values()
             ->toArray();
-
-        return $selectedActions;
     }
 
     private function resolveEnabledActionsForFieldtype(string $fieldtype): array

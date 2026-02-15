@@ -6,6 +6,7 @@ namespace ElSchneider\StatamicMagicActions\Http\Controllers\CP;
 
 use ElSchneider\StatamicMagicActions\Settings;
 use ElSchneider\StatamicMagicActions\Settings\Blueprint;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Statamic\Http\Controllers\CP\CpController;
 
@@ -13,7 +14,7 @@ final class SettingsController extends CpController
 {
     public function __construct(
         Request $request,
-        private Blueprint $blueprintBuilder
+        private readonly Blueprint $blueprintBuilder
     ) {
         parent::__construct($request);
     }
@@ -33,7 +34,7 @@ final class SettingsController extends CpController
         ]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request): JsonResponse
     {
         $blueprint = $this->blueprintBuilder->make();
 

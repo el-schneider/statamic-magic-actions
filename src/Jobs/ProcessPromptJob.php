@@ -14,10 +14,12 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\ValueObjects\Media\Audio;
 use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
+use Statamic\Contracts\Assets\Asset;
 use Statamic\Facades\Asset as AssetFacade;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Taxonomy;
@@ -30,11 +32,11 @@ final class ProcessPromptJob implements ShouldQueue
     private ?MagicAction $loadedAction = null;
 
     public function __construct(
-        private string $jobId,
-        private string $action,
-        private array $variables,
-        private ?string $assetPath,
-        private array $context
+        private readonly string $jobId,
+        private readonly string $action,
+        private readonly array $variables,
+        private readonly ?string $assetPath,
+        private readonly array $context
     ) {}
 
     public function handle(ActionLoader $actionLoader, JobTracker $jobTracker): void
@@ -85,10 +87,6 @@ final class ProcessPromptJob implements ShouldQueue
     {
         if (is_array($response) && isset($response['text'])) {
             return $response['text'];
-        }
-
-        if (is_string($response)) {
-            return $response;
         }
 
         return $response;
@@ -154,7 +152,7 @@ final class ProcessPromptJob implements ShouldQueue
         mixed $currentValue,
         ?MagicAction $action = null
     ): mixed {
-        if (! $field) {
+        if ($field === null) {
             return $value;
         }
 
@@ -191,7 +189,7 @@ final class ProcessPromptJob implements ShouldQueue
         }
 
         return collect($terms)->map(function ($termValue) use ($taxonomy, $taxonomyInstance, $constrainToExistingTerms, $action) {
-            $slug = \Illuminate\Support\Str::slug($termValue);
+            $slug = Str::slug((string) $termValue);
 
             $existingTerm = Term::find("{$taxonomy}::{$slug}");
             if ($existingTerm) {
@@ -244,8 +242,7 @@ final class ProcessPromptJob implements ShouldQueue
             return $newValue;
         }
 
-        // Handle text-based fields (text, textarea)
-        if (in_array($fieldType, ['text', 'textarea'])) {
+        if (in_array($fieldType, ['text', 'textarea'], true)) {
             $current = is_string($currentValue) ? $currentValue : '';
             $new = is_string($newValue) ? $newValue : '';
 
@@ -256,7 +253,6 @@ final class ProcessPromptJob implements ShouldQueue
             return $current."\n".$new;
         }
 
-        // Handle array-based fields (terms, bard, etc.)
         if (is_array($currentValue)) {
             return array_merge($currentValue, is_array($newValue) ? $newValue : [$newValue]);
         }
@@ -301,9 +297,11 @@ final class ProcessPromptJob implements ShouldQueue
             ->using($promptData['provider'], $promptData['model'])
             ->withSystemPrompt($promptData['systemPrompt']);
 
-        empty($media)
-            ? $builder->withPrompt($promptData['userPrompt'])
-            : $builder->withPrompt($promptData['userPrompt'], $media);
+        if ($media === []) {
+            $builder->withPrompt($promptData['userPrompt']);
+        } else {
+            $builder->withPrompt($promptData['userPrompt'], $media);
+        }
 
         if (isset($promptData['parameters']['temperature'])) {
             $builder->usingTemperature($promptData['parameters']['temperature']);
@@ -315,9 +313,6 @@ final class ProcessPromptJob implements ShouldQueue
         return $builder;
     }
 
-    /**
-     * Load media from Statamic asset using fromStoragePath
-     */
     private function loadMediaFromAsset(): array
     {
         $asset = $this->resolveAsset();
@@ -373,10 +368,7 @@ final class ProcessPromptJob implements ShouldQueue
         return $result->text;
     }
 
-    /**
-     * @return \Statamic\Assets\Asset|null
-     */
-    private function resolveAsset(): mixed
+    private function resolveAsset(): ?Asset
     {
         if (! $this->assetPath) {
             return null;
@@ -385,14 +377,12 @@ final class ProcessPromptJob implements ShouldQueue
         return AssetFacade::find($this->assetPath);
     }
 
-    /**
-     * @param  \Statamic\Assets\Asset  $asset
-     */
-    private function isDocument(mixed $asset): bool
+    private function isDocument(Asset $asset): bool
     {
         return in_array(
             $asset->extension(),
-            ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt']
+            ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'],
+            true
         );
     }
 

@@ -25,21 +25,7 @@ final class ActionExecutor
 
     public function execute(string $action, Entry|Asset $target, string $fieldHandle, array $options = []): string
     {
-        if (! $this->actionLoader->exists($action)) {
-            throw new InvalidArgumentException(
-                "Action '{$action}' not found. Check config/statamic/magic-actions.php and your field action configuration."
-            );
-        }
-
-        $this->assertMimeTypeSupported($action, $target, $options);
-
-        if (! $this->canExecute($action, $target, $fieldHandle, $options)) {
-            throw new InvalidArgumentException("Action '{$action}' cannot be executed for field '{$fieldHandle}'.");
-        }
-
-        $jobId = (string) Str::uuid();
-        $context = $this->buildContext($target, $fieldHandle);
-        $variables = $this->resolveVariables($action, $target, $fieldHandle, $options);
+        [$jobId, $context, $variables, $assetPath] = $this->prepareExecution($action, $target, $fieldHandle, $options);
 
         $this->jobTracker->createJob(
             $jobId,
@@ -53,7 +39,7 @@ final class ActionExecutor
             $jobId,
             $action,
             $variables,
-            $this->resolveAssetPath($target, $options),
+            $assetPath,
             $context
         );
 
@@ -62,21 +48,7 @@ final class ActionExecutor
 
     public function executeSync(string $action, Entry|Asset $target, string $fieldHandle, array $options = []): mixed
     {
-        if (! $this->actionLoader->exists($action)) {
-            throw new InvalidArgumentException(
-                "Action '{$action}' not found. Check config/statamic/magic-actions.php and your field action configuration."
-            );
-        }
-
-        $this->assertMimeTypeSupported($action, $target, $options);
-
-        if (! $this->canExecute($action, $target, $fieldHandle, $options)) {
-            throw new InvalidArgumentException("Action '{$action}' cannot be executed for field '{$fieldHandle}'.");
-        }
-
-        $jobId = (string) Str::uuid();
-        $context = $this->buildContext($target, $fieldHandle);
-        $variables = $this->resolveVariables($action, $target, $fieldHandle, $options);
+        [$jobId, $context, $variables, $assetPath] = $this->prepareExecution($action, $target, $fieldHandle, $options);
 
         $this->jobTracker->createJob(
             $jobId,
@@ -90,7 +62,7 @@ final class ActionExecutor
             $jobId,
             $action,
             $variables,
-            $this->resolveAssetPath($target, $options),
+            $assetPath,
             $context
         );
 
@@ -141,6 +113,36 @@ final class ActionExecutor
         }
 
         return array_values(array_unique($handles));
+    }
+
+    /**
+     * @return array{0: string, 1: array{type: string, id: string, field: string}, 2: array, 3: ?string}
+     */
+    private function prepareExecution(string $action, Entry|Asset $target, string $fieldHandle, array $options): array
+    {
+        $this->assertCanExecute($action, $target, $fieldHandle, $options);
+
+        return [
+            (string) Str::uuid(),
+            $this->buildContext($target, $fieldHandle),
+            $this->resolveVariables($action, $target, $fieldHandle, $options),
+            $this->resolveAssetPath($target, $options),
+        ];
+    }
+
+    private function assertCanExecute(string $action, Entry|Asset $target, string $fieldHandle, array $options): void
+    {
+        if (! $this->actionLoader->exists($action)) {
+            throw new InvalidArgumentException(
+                "Action '{$action}' not found. Check config/statamic/magic-actions.php and your field action configuration."
+            );
+        }
+
+        $this->assertMimeTypeSupported($action, $target, $options);
+
+        if (! $this->canExecute($action, $target, $fieldHandle, $options)) {
+            throw new InvalidArgumentException("Action '{$action}' cannot be executed for field '{$fieldHandle}'.");
+        }
     }
 
     private function buildContext(Entry|Asset $target, string $fieldHandle): array
@@ -336,10 +338,18 @@ final class ActionExecutor
     private function resolveActionHandle(mixed $configuredAction): ?string
     {
         if (is_array($configuredAction) && isset($configuredAction['action']) && is_string($configuredAction['action'])) {
-            return $configuredAction['action'];
+            $action = mb_trim($configuredAction['action']);
+
+            return $action !== '' ? $action : null;
         }
 
         if (! is_string($configuredAction)) {
+            return null;
+        }
+
+        $configuredAction = mb_trim($configuredAction);
+
+        if ($configuredAction === '') {
             return null;
         }
 

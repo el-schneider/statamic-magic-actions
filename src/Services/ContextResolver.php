@@ -49,25 +49,16 @@ final class ContextResolver
 
     private function resolveBuiltInRequirement(string $resolver, Entry|Asset $target, string $fieldHandle): mixed
     {
-        if ($resolver === 'taxonomy_terms') {
-            return $this->resolveTaxonomyTerms($target, $fieldHandle);
-        }
-
-        if ($resolver === 'entry_content') {
-            return $this->resolveEntryContent($target, $fieldHandle);
-        }
-
-        if ($resolver === 'asset_metadata') {
-            return $this->resolveAssetMetadata($target);
-        }
-
-        if (str_starts_with($resolver, 'entry_field:')) {
-            $handle = mb_substr($resolver, mb_strlen('entry_field:'));
-
-            return $this->resolveEntryField($target, $handle);
-        }
-
-        throw new InvalidArgumentException("Unsupported context resolver '{$resolver}'.");
+        return match (true) {
+            $resolver === 'taxonomy_terms' => $this->resolveTaxonomyTerms($target, $fieldHandle),
+            $resolver === 'entry_content' => $this->resolveEntryContent($target, $fieldHandle),
+            $resolver === 'asset_metadata' => $this->resolveAssetMetadata($target),
+            str_starts_with($resolver, 'entry_field:') => $this->resolveEntryField(
+                $target,
+                mb_substr($resolver, mb_strlen('entry_field:'))
+            ),
+            default => throw new InvalidArgumentException("Unsupported context resolver '{$resolver}'."),
+        };
     }
 
     private function resolveTaxonomyTerms(Entry|Asset $target, string $fieldHandle): string
@@ -267,18 +258,21 @@ final class ContextResolver
         }
 
         $title = $this->safeInvokeMethod($term, 'title');
-        if ($this->stringify($title) !== '') {
-            return $this->stringify($title);
+        $normalizedTitle = $this->stringify($title);
+        if ($normalizedTitle !== '') {
+            return $normalizedTitle;
         }
 
         $title = $this->safeInvokeMethod($term, 'value', ['title']);
-        if ($this->stringify($title) !== '') {
-            return $this->stringify($title);
+        $normalizedTitle = $this->stringify($title);
+        if ($normalizedTitle !== '') {
+            return $normalizedTitle;
         }
 
         $title = $this->safeInvokeMethod($term, 'get', ['title']);
-        if ($this->stringify($title) !== '') {
-            return $this->stringify($title);
+        $normalizedTitle = $this->stringify($title);
+        if ($normalizedTitle !== '') {
+            return $normalizedTitle;
         }
 
         $slug = $this->safeInvokeMethod($term, 'slug');
