@@ -98,7 +98,7 @@ return [
     | CLI Defaults
     |--------------------------------------------------------------------------
     |
-    | Default options for the magic:run CLI command.
+    | Default options for the statamic:magic:run / please magic:run CLI command.
     |
     */
     'cli' => [

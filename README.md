@@ -8,7 +8,7 @@ AI-powered field actions for Statamic v5. Generate alt text, extract tags, creat
 - **Multiple AI providers**: OpenAI and Anthropic via [Prism PHP](https://prismphp.dev/)
 - **Background processing**: Jobs run asynchronously with status tracking
 - **Bulk actions**: Run actions on multiple entries/assets from listing views
-- **CLI command**: `magic:run` for batch processing with dry-run support
+- **CLI command**: `php please magic:run` / `php artisan statamic:magic:run` for batch processing with dry-run support
 - **9 built-in actions**: Alt text, captions, titles, meta descriptions, teasers, tags, transcription
 - **Extensible**: Create custom actions — just extend `BaseMagicAction`
 
@@ -57,17 +57,19 @@ Select entries or assets in listing views — bulk action buttons appear automat
 
 ```bash
 # Process all entries in a collection
-php artisan magic:run --collection=pages --action=propose-title
+php please magic:run --collection=pages --action=propose-title
 
 # Dry run to preview targets
-php artisan magic:run --collection=pages --action=propose-title --dry-run
+php please magic:run --collection=pages --action=propose-title --dry-run
 
 # Process a specific entry
-php artisan magic:run --entry=home --action=propose-title
+php please magic:run --entry=home --action=propose-title
 
 # Queue jobs instead of running synchronously
-php artisan magic:run --collection=pages --action=propose-title --queue
+php please magic:run --collection=pages --action=propose-title --queue
 ```
+
+Equivalent Artisan command signature: `php artisan statamic:magic:run ...`
 
 ### 5. Queue processing
 

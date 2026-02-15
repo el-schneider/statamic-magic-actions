@@ -30,7 +30,7 @@ Three types of AI operations:
 | `src/Services/MagicFieldsConfigBuilder.php`  | Builds the global action catalog for the frontend                       |
 | `src/Services/ContextResolver.php`           | Resolves runtime context (taxonomy terms, entry content, etc.)          |
 | `src/Services/JobTracker.php`                | Job and batch tracking                                                  |
-| `src/Commands/MagicRunCommand.php`           | CLI `magic:run` command                                                 |
+| `src/Commands/MagicRunCommand.php`           | CLI `php please magic:run` / `php artisan statamic:magic:run` command   |
 | `config/statamic/magic-actions.php`          | Provider credentials, action definitions, fieldtype mappings            |
 
 ### Frontend (TypeScript)

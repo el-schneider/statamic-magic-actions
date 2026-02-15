@@ -10,6 +10,7 @@ use ElSchneider\StatamicMagicActions\Services\ActionLoader;
 use ElSchneider\StatamicMagicActions\Services\ActionRegistry;
 use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use Illuminate\Console\Command;
+use Statamic\Console\RunsInPlease;
 use Statamic\Contracts\Assets\Asset;
 use Statamic\Contracts\Entries\Entry;
 use Statamic\Facades\Asset as AssetFacade;
@@ -19,7 +20,9 @@ use Throwable;
 
 final class MagicRunCommand extends Command
 {
-    protected $signature = 'magic:run
+    use RunsInPlease;
+
+    protected $signature = 'statamic:magic:run
         {--collection= : Target all entries in a collection}
         {--entry= : Target a specific entry by ID}
         {--asset= : Target a specific asset by container::path}
