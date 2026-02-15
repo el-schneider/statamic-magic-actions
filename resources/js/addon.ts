@@ -57,7 +57,6 @@ function getConfiguredActions(config: FieldConfig): string[] {
 function createFieldAction(
     field: MagicField,
     action: MagicFieldAction,
-    pageContext: JobContext | null,
 ): FieldActionConfig {
     return {
         title: action.title,
@@ -79,6 +78,7 @@ function createFieldAction(
                 const stateValues = store.state.publish[storeName].values
                 const pathname = window.location.pathname
                 const actionType = determineActionType(action, config, stateValues, pathname)
+                const pageContext = extractPageContext()
 
                 const fieldContext: JobContext | undefined = pageContext ? { ...pageContext, field: handle } : undefined
 
@@ -112,16 +112,15 @@ function registerFieldActions(): void {
         return
     }
 
-    const pageContext = extractPageContext()
-
     for (const field of magicFields) {
         const componentName = `${field.component}-fieldtype`
 
         for (const action of field.actions) {
-            window.Statamic.$fieldActions.add(componentName, createFieldAction(field, action, pageContext))
+            window.Statamic.$fieldActions.add(componentName, createFieldAction(field, action))
         }
     }
 
+    const pageContext = extractPageContext()
     if (pageContext) {
         recoverTrackedJobs(pageContext)
     }
