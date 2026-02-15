@@ -9,6 +9,7 @@ This file provides guidance to AI coding agents working with this repository.
 **Statamic Magic Actions** is a Statamic CMS addon that integrates AI-powered actions into the Statamic control panel. Content editors can trigger magic actions (powered by OpenAI or Anthropic via [Prism PHP](https://prismphp.dev/)) directly on field types to generate or transform content.
 
 Three types of AI operations:
+
 - **Completion**: Text-to-text (titles, meta descriptions, teasers)
 - **Vision**: Image analysis (alt text, captions, image tags)
 - **Transcription**: Audio-to-text (audio file transcription)
@@ -17,30 +18,30 @@ Three types of AI operations:
 
 ### Backend (PHP/Laravel)
 
-| Component | Purpose |
-|---|---|
-| `src/ServiceProvider.php` | Addon bootstrap, registers services, delivers global action catalog |
-| `src/Http/Controllers/ActionsController.php` | API endpoints for starting and monitoring jobs |
-| `src/MagicActions/` | Action definitions — **single source of truth** for all action metadata |
-| `src/Actions/DynamicBulkAction.php` | Single adapter class for all Statamic bulk actions |
-| `src/Services/ActionExecutor.php` | Unified execution service for HTTP, CLI, and bulk entry points |
-| `src/Services/ActionRegistry.php` | Discovers and registers MagicAction classes |
-| `src/Services/BulkActionRegistrar.php` | Auto-registers bulk actions from MagicActions with `supportsBulk()` |
-| `src/Services/MagicFieldsConfigBuilder.php` | Builds the global action catalog for the frontend |
-| `src/Services/ContextResolver.php` | Resolves runtime context (taxonomy terms, entry content, etc.) |
-| `src/Services/JobTracker.php` | Job and batch tracking |
-| `src/Commands/MagicRunCommand.php` | CLI `magic:run` command |
-| `config/statamic/magic-actions.php` | Provider credentials, action definitions, fieldtype mappings |
+| Component                                    | Purpose                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------- |
+| `src/ServiceProvider.php`                    | Addon bootstrap, registers services, delivers global action catalog     |
+| `src/Http/Controllers/ActionsController.php` | API endpoints for starting and monitoring jobs                          |
+| `src/MagicActions/`                          | Action definitions — **single source of truth** for all action metadata |
+| `src/Actions/DynamicBulkAction.php`          | Single adapter class for all Statamic bulk actions                      |
+| `src/Services/ActionExecutor.php`            | Unified execution service for HTTP, CLI, and bulk entry points          |
+| `src/Services/ActionRegistry.php`            | Discovers and registers MagicAction classes                             |
+| `src/Services/BulkActionRegistrar.php`       | Auto-registers bulk actions from MagicActions with `supportsBulk()`     |
+| `src/Services/MagicFieldsConfigBuilder.php`  | Builds the global action catalog for the frontend                       |
+| `src/Services/ContextResolver.php`           | Resolves runtime context (taxonomy terms, entry content, etc.)          |
+| `src/Services/JobTracker.php`                | Job and batch tracking                                                  |
+| `src/Commands/MagicRunCommand.php`           | CLI `magic:run` command                                                 |
+| `config/statamic/magic-actions.php`          | Provider credentials, action definitions, fieldtype mappings            |
 
 ### Frontend (TypeScript)
 
-| File | Purpose |
-|---|---|
-| `resources/js/addon.ts` | Main entry point — registers field actions from global catalog |
-| `resources/js/api.ts` | API client for completion, vision, transcription endpoints |
-| `resources/js/helpers.ts` | URL parsing, page context extraction, MIME type checks |
-| `resources/js/job-tracker.ts` | Background job tracking with localStorage persistence |
-| `resources/js/types.ts` | TypeScript type definitions |
+| File                          | Purpose                                                        |
+| ----------------------------- | -------------------------------------------------------------- |
+| `resources/js/addon.ts`       | Main entry point — registers field actions from global catalog |
+| `resources/js/api.ts`         | API client for completion, vision, transcription endpoints     |
+| `resources/js/helpers.ts`     | URL parsing, page context extraction, MIME type checks         |
+| `resources/js/job-tracker.ts` | Background job tracking with localStorage persistence          |
+| `resources/js/types.ts`       | TypeScript type definitions                                    |
 
 ### Key Design Decisions
 
@@ -94,6 +95,7 @@ npm run build
 ```
 
 After building, publish assets in the sandbox:
+
 ```bash
 php artisan vendor:publish --tag=statamic-magic-actions --force
 ```
