@@ -36,7 +36,7 @@ final class BulkActionRegistrar
                 continue;
             }
 
-            $bindingKey = 'magic-actions.bulk.' . $handle;
+            $bindingKey = 'magic-actions.bulk.'.$handle;
 
             // Register a container binding that returns a configured DynamicBulkAction
             app()->bind($bindingKey, function () use ($handle): DynamicBulkAction {
@@ -47,7 +47,7 @@ final class BulkActionRegistrar
             });
 
             // Register in Statamic's action collection
-            $actionBindings['magic-bulk-' . $handle] = $bindingKey;
+            $actionBindings['magic-bulk-'.$handle] = $bindingKey;
         }
 
         $extensions[Action::class] = $actionBindings;

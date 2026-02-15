@@ -24,6 +24,15 @@ use Throwable;
  */
 final class DynamicBulkAction extends Action
 {
+    private const array IMAGE_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg',
+        'bmp', 'avif', 'tiff', 'tif', 'heic', 'heif',
+    ];
+
+    private const array AUDIO_EXTENSIONS = [
+        'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'webm',
+    ];
+
     protected $confirm = true;
 
     private string $magicActionHandle = '';
@@ -35,14 +44,10 @@ final class DynamicBulkAction extends Action
      */
     private array $configuredFieldCache = [];
 
-    private const array IMAGE_EXTENSIONS = [
-        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg',
-        'bmp', 'avif', 'tiff', 'tif', 'heic', 'heif',
-    ];
-
-    private const array AUDIO_EXTENSIONS = [
-        'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'webm',
-    ];
+    public static function title()
+    {
+        return '';
+    }
 
     public function setMagicActionHandle(string $handle): self
     {
@@ -50,11 +55,6 @@ final class DynamicBulkAction extends Action
         $this->magicAction = null;
 
         return $this;
-    }
-
-    public static function title()
-    {
-        return '';
     }
 
     /**
@@ -65,7 +65,7 @@ final class DynamicBulkAction extends Action
         $array = parent::toArray();
         $magic = $this->resolveMagicAction();
 
-        $array['handle'] = 'magic-bulk-' . $this->magicActionHandle;
+        $array['handle'] = 'magic-bulk-'.$this->magicActionHandle;
 
         if ($magic !== null) {
             $array['title'] = $magic->getTitle();
@@ -360,7 +360,7 @@ final class DynamicBulkAction extends Action
             $cacheKey = spl_object_hash($blueprint);
         }
 
-        $fullKey = $this->magicActionHandle . ':' . $cacheKey;
+        $fullKey = $this->magicActionHandle.':'.$cacheKey;
 
         if (isset($this->configuredFieldCache[$fullKey])) {
             return $this->configuredFieldCache[$fullKey];
