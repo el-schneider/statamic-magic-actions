@@ -136,10 +136,14 @@ final class ActionExecutor
 
     private function resolveAssetPath(Entry|Asset $target, array $options): ?string
     {
-        $assetPath = $options['asset_path'] ?? null;
+        if (array_key_exists('asset_path', $options)) {
+            $assetPath = $options['asset_path'];
 
-        if (is_string($assetPath) && $assetPath !== '') {
-            return $assetPath;
+            if (is_string($assetPath) && $assetPath !== '') {
+                return $assetPath;
+            }
+
+            return null;
         }
 
         return $target instanceof Asset ? (string) $target->id() : null;
@@ -174,6 +178,6 @@ final class ActionExecutor
             return null;
         }
 
-        return (new $configuredAction())->getHandle();
+        return (new $configuredAction)->getHandle();
     }
 }
