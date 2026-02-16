@@ -139,6 +139,7 @@ final class ActionLoader
         return match (mb_strtolower($provider)) {
             'openai' => 'OPENAI_API_KEY',
             'anthropic' => 'ANTHROPIC_API_KEY',
+            'gemini' => 'GEMINI_API_KEY',
             default => mb_strtoupper($provider).'_API_KEY',
         };
     }
