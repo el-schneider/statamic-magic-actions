@@ -65,7 +65,8 @@ declare global {
         }
         Statamic: {
             $config: {
-                cpRoot: string
+                get: (key: string, fallback?: string) => string
+                cpRoot?: string
             }
             $fieldActions: {
                 add: (type: string, config: FieldActionConfig) => void

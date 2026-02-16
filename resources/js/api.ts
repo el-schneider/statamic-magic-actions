@@ -1,7 +1,12 @@
 import { sleep } from './helpers'
 import type { JobContext, JobResponse, JobStatusResponse } from './types'
 
-const cpRoot = window.Statamic.$config.cpRoot.replace(/\/+$/, '')
+const cpRootFromConfig =
+    window.Statamic?.$config && typeof window.Statamic.$config.get === 'function'
+        ? window.Statamic.$config.get('cpRoot', '/cp')
+        : window.Statamic?.$config?.cpRoot
+
+const cpRoot = String(cpRootFromConfig ?? '/cp').replace(/\/+$/, '')
 const magicActionsRoot = `${cpRoot}/magic-actions`
 
 const ENDPOINTS = {
