@@ -1,11 +1,14 @@
 import { sleep } from './helpers'
 import type { JobContext, JobResponse, JobStatusResponse } from './types'
 
+const cpRoot = window.Statamic.$config.cpRoot.replace(/\/+$/, '')
+const magicActionsRoot = `${cpRoot}/magic-actions`
+
 const ENDPOINTS = {
-    completion: '/!/statamic-magic-actions/completion',
-    vision: '/!/statamic-magic-actions/vision',
-    transcription: '/!/statamic-magic-actions/transcribe',
-    status: '/!/statamic-magic-actions/status',
+    completion: `${magicActionsRoot}/completion`,
+    vision: `${magicActionsRoot}/vision`,
+    transcription: `${magicActionsRoot}/transcribe`,
+    status: `${magicActionsRoot}/status`,
 } as const
 
 export interface PollResult {

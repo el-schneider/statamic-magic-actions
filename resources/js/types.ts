@@ -64,6 +64,9 @@ declare global {
             magicActionCatalog?: MagicActionCatalog
         }
         Statamic: {
+            $config: {
+                cpRoot: string
+            }
             $fieldActions: {
                 add: (type: string, config: FieldActionConfig) => void
             }
