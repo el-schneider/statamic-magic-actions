@@ -19,17 +19,30 @@ return [
     |--------------------------------------------------------------------------
     |
     | Provider credentials for Prism. API keys loaded from environment.
+    | The `env` value is used for CP hints and runtime error messages.
     | Required env vars:
     | - OPENAI_API_KEY for OpenAI models
     | - ANTHROPIC_API_KEY for Anthropic models
+    | - GEMINI_API_KEY for Gemini models
+    | - MISTRAL_API_KEY for Mistral models
     |
     */
     'providers' => [
         'openai' => [
             'api_key' => env('OPENAI_API_KEY'),
+            'env' => 'OPENAI_API_KEY',
         ],
         'anthropic' => [
             'api_key' => env('ANTHROPIC_API_KEY'),
+            'env' => 'ANTHROPIC_API_KEY',
+        ],
+        'gemini' => [
+            'api_key' => env('GEMINI_API_KEY'),
+            'env' => 'GEMINI_API_KEY',
+        ],
+        'mistral' => [
+            'api_key' => env('MISTRAL_API_KEY'),
+            'env' => 'MISTRAL_API_KEY',
         ],
     ],
 
@@ -49,6 +62,10 @@ return [
                 'openai/gpt-4.1',
                 'openai/gpt-4.1-mini',
                 'anthropic/claude-sonnet-4-5',
+                'anthropic/claude-haiku-3-5',
+                'gemini/gemini-2.0-flash',
+                'gemini/gemini-2.5-pro',
+                'mistral/mistral-large-latest',
             ],
             'default' => 'openai/gpt-4.1',
         ],
@@ -56,12 +73,15 @@ return [
             'models' => [
                 'openai/gpt-4.1',
                 'anthropic/claude-sonnet-4-5',
+                'gemini/gemini-2.0-flash',
+                'anthropic/claude-haiku-3-5',
             ],
             'default' => 'openai/gpt-4.1',
         ],
         'audio' => [
             'models' => [
                 'openai/whisper-1',
+                'mistral/voxtral-mini-latest',
             ],
             'default' => 'openai/whisper-1',
         ],
