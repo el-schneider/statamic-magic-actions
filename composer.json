@@ -48,5 +48,14 @@
             "@pint --test",
             "@test"
         ]
-    }
+    },
+    "description": "AI-powered bulk actions and field generation for Statamic",
+    "license": "MIT",
+    "homepage": "https://github.com/el-schneider/statamic-magic-actions",
+    "authors": [
+        {
+            "name": "Jonas List",
+            "homepage": "https://github.com/el-schneider"
+        }
+    ]
 }

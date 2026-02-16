@@ -1,6 +1,6 @@
 # AGENTS.md
 
-> This addon is **unreleased**. Don't worry about breaking changes.
+> Released as v0.1.0. Treat the public API as semi-stable — breaking changes should be noted in CHANGELOG.md.
 
 ## What This Is
 
