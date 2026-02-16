@@ -13,6 +13,7 @@ use ElSchneider\StatamicMagicActions\Services\ContextResolver;
 use ElSchneider\StatamicMagicActions\Services\FieldConfigService;
 use ElSchneider\StatamicMagicActions\Services\JobTracker;
 use ElSchneider\StatamicMagicActions\Services\MagicFieldsConfigBuilder;
+use ElSchneider\StatamicMagicActions\Services\ProviderConfig;
 use ElSchneider\StatamicMagicActions\Settings\Blueprint as SettingsBlueprint;
 use Illuminate\Support\Facades\File;
 use Statamic\Facades\CP\Nav;
@@ -36,27 +37,21 @@ final class ServiceProvider extends AddonServiceProvider
 
         $this->mergeConfigFrom(__DIR__.'/../config/statamic/magic-actions.php', 'statamic.magic-actions');
 
-        $this->app->singleton(ActionLoader::class, fn () => new ActionLoader());
-        $this->app->singleton(JobTracker::class, fn () => new JobTracker());
-        $this->app->singleton(ContextResolver::class, fn () => new ContextResolver());
-        $this->app->singleton(ActionExecutor::class, fn ($app) => new ActionExecutor(
-            $app->make(ActionLoader::class),
-            $app->make(JobTracker::class),
-            $app->make(ContextResolver::class)
-        ));
-        $this->app->singleton(FieldConfigService::class, fn () => new FieldConfigService());
-        $this->app->singleton(
-            MagicFieldsConfigBuilder::class,
-            fn ($app) => new MagicFieldsConfigBuilder($app->make(ActionLoader::class))
-        );
+        $this->app->singleton(ProviderConfig::class);
+        $this->app->singleton(ActionLoader::class);
+        $this->app->singleton(JobTracker::class);
+        $this->app->singleton(ContextResolver::class);
+        $this->app->singleton(ActionExecutor::class);
+        $this->app->singleton(FieldConfigService::class);
+        $this->app->singleton(MagicFieldsConfigBuilder::class);
         $this->app->singleton(ActionRegistry::class, function () {
             $registry = new ActionRegistry();
             $registry->discoverFromNamespace('ElSchneider\\StatamicMagicActions\\MagicActions');
 
             return $registry;
         });
-        $this->app->singleton(BulkActionRegistrar::class, fn ($app) => new BulkActionRegistrar($app->make(ActionRegistry::class)));
-        $this->app->singleton(SettingsBlueprint::class, fn () => new SettingsBlueprint());
+        $this->app->singleton(BulkActionRegistrar::class);
+        $this->app->singleton(SettingsBlueprint::class);
     }
 
     public function boot(): void

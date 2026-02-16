@@ -137,6 +137,19 @@ it('throws MissingApiKeyException when provider API key is not configured', func
         ->toThrow(MissingApiKeyException::class, "API key not configured for provider 'openai'");
 });
 
+it('uses provider env config as source of truth for missing key hints', function () {
+    Config::set('statamic.magic-actions.providers.custom', [
+        'api_key' => null,
+        'env' => 'CUSTOM_PROVIDER_TOKEN',
+    ]);
+    Config::set('statamic.magic-actions.types.text.default', 'custom/custom-model');
+
+    $loader = app(ActionLoader::class);
+
+    expect(fn () => $loader->load('propose-title', ['text' => 'Sample content']))
+        ->toThrow(MissingApiKeyException::class, 'Set CUSTOM_PROVIDER_TOKEN in your .env file.');
+});
+
 // ============================================================================
 // Model constraints
 // ============================================================================

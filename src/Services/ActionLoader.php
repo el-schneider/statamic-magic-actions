@@ -14,6 +14,10 @@ use RuntimeException;
 
 final class ActionLoader
 {
+    private const PROMPT_TYPES = ['text', 'vision'];
+
+    public function __construct(private readonly ProviderConfig $providerConfig) {}
+
     public function load(string $action, array $variables = []): array
     {
         $magicAction = $this->loadMagicAction($action);
@@ -65,11 +69,9 @@ final class ActionLoader
         }
 
         $type = $action->type();
+        $modelKey = $this->resolveModelKeyForType($type);
 
-        $modelKey = Settings::get("global.defaults.{$type}")
-            ?? Config::get("statamic.magic-actions.types.{$type}.default", $this->defaultModelKeyForType($type));
-
-        if (! is_string($modelKey) || mb_trim($modelKey) === '') {
+        if ($modelKey === null) {
             throw new InvalidArgumentException(
                 "Missing model configuration for type '{$type}'. Set statamic.magic-actions.types.{$type}.default."
             );
@@ -80,11 +82,11 @@ final class ActionLoader
                 "Invalid model key format: '{$modelKey}'. Expected format: 'provider/model'"
             );
         }
+
         [$provider, $model] = explode('/', $modelKey, 2);
 
-        $apiKey = Config::get("statamic.magic-actions.providers.{$provider}.api_key", '');
-        if (! is_string($apiKey) || mb_trim($apiKey) === '') {
-            $envVar = $this->providerApiKeyEnvVar($provider);
+        if (! $this->providerConfig->hasApiKey($provider)) {
+            $envVar = $this->providerConfig->apiKeyEnvVar($provider);
 
             throw new MissingApiKeyException(
                 "API key not configured for provider '{$provider}'. Set {$envVar} in your .env file."
@@ -98,7 +100,7 @@ final class ActionLoader
             'parameters' => $action->parameters(),
         ];
 
-        if (! in_array($type, ['text', 'vision'], true)) {
+        if (! in_array($type, self::PROMPT_TYPES, true)) {
             return $result;
         }
 
@@ -111,6 +113,23 @@ final class ActionLoader
         }
 
         return $result;
+    }
+
+    private function resolveModelKeyForType(string $type): ?string
+    {
+        $candidates = [
+            Settings::get("global.defaults.{$type}"),
+            Config::get("statamic.magic-actions.types.{$type}.default"),
+            $this->firstModelKeyForType($type),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($this->isFilledString($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     private function renderBladeString(string $template, array $variables): string
@@ -126,21 +145,25 @@ final class ActionLoader
         return implode("\n\n", array_filter([$globalSystemPrompt, $actionSystemPrompt]));
     }
 
-    private function defaultModelKeyForType(string $type): string
+    private function firstModelKeyForType(string $type): ?string
     {
-        return match ($type) {
-            'audio' => 'openai/whisper-1',
-            default => 'openai/gpt-4.1',
-        };
+        $models = Config::get("statamic.magic-actions.types.{$type}.models", []);
+
+        if (! is_array($models)) {
+            return null;
+        }
+
+        foreach ($models as $modelKey) {
+            if ($this->isFilledString($modelKey)) {
+                return $modelKey;
+            }
+        }
+
+        return null;
     }
 
-    private function providerApiKeyEnvVar(string $provider): string
+    private function isFilledString(mixed $value): bool
     {
-        return match (mb_strtolower($provider)) {
-            'openai' => 'OPENAI_API_KEY',
-            'anthropic' => 'ANTHROPIC_API_KEY',
-            'gemini' => 'GEMINI_API_KEY',
-            default => mb_strtoupper($provider).'_API_KEY',
-        };
+        return is_string($value) && mb_trim($value) !== '';
     }
 }

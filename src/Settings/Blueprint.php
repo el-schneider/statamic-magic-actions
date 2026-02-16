@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace ElSchneider\StatamicMagicActions\Settings;
 
+use ElSchneider\StatamicMagicActions\Services\ProviderConfig;
 use Illuminate\Support\Facades\Config;
 use Statamic\Facades\Blueprint as BlueprintFacade;
 use Statamic\Fields\Blueprint as StatamicBlueprint;
 
 final class Blueprint
 {
+    public function __construct(private readonly ProviderConfig $providerConfig) {}
+
     /**
      * Transform flat form values to nested settings structure
      */
@@ -104,9 +107,13 @@ final class Blueprint
         $fields = [];
 
         foreach ($types as $type => $config) {
+            if (! is_array($config)) {
+                continue;
+            }
+
             $options = $this->buildModelOptions($config['models'] ?? []);
 
-            if (empty($options)) {
+            if ($options === []) {
                 continue;
             }
 
@@ -130,56 +137,58 @@ final class Blueprint
 
     private function defaultModelsInstructions(): string
     {
-        $providers = Config::get('statamic.magic-actions.providers', []);
-        $providerEnvKeys = [
-            'openai' => 'OPENAI_API_KEY',
-            'anthropic' => 'ANTHROPIC_API_KEY',
-            'gemini' => 'GEMINI_API_KEY',
-            'mistral' => 'MISTRAL_API_KEY',
-        ];
-        $configured = [];
-        $missing = [];
-
-        foreach ($providers as $name => $config) {
-            if (! empty($config['api_key'])) {
-                $configured[] = $name;
-            } else {
-                $missing[] = $name;
-            }
-        }
+        $providers = array_keys($this->providerConfig->all());
+        $configured = $this->providerConfig->configuredProviderNames();
+        $missing = $this->providerConfig->missingProviderNames();
 
         $base = 'Default model to use for each capability when no action-specific override is set.';
 
-        if (empty($configured)) {
-            return $base.' **No API keys configured.** Add provider API keys to your `.env` file (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) to enable model selection.';
+        if ($providers === []) {
+            return $base.' No providers configured. Add providers under `statamic.magic-actions.providers` to enable model selection.';
         }
 
-        if (! empty($missing)) {
-            $envKeys = array_map(
-                fn ($p) => '`'.($providerEnvKeys[$p] ?? mb_strtoupper($p).'_API_KEY').'`',
-                $missing
-            );
+        if ($configured === []) {
+            $envKeys = $this->providerEnvKeyList($providers, ', ');
 
-            return $base.' To unlock more providers, add '.implode(' or ', $envKeys).' to your `.env` file.';
+            return $base." **No API keys configured.** Add provider API keys to your `.env` file (e.g. {$envKeys}) to enable model selection.";
+        }
+
+        if ($missing !== []) {
+            $envKeys = $this->providerEnvKeyList($missing, ' or ');
+
+            return $base.' To unlock more providers, add '.$envKeys.' to your `.env` file.';
         }
 
         return $base;
     }
 
+    private function providerEnvKeyList(array $providers, string $separator): string
+    {
+        $envKeys = [];
+
+        foreach ($providers as $provider) {
+            if (! $this->isFilledString($provider)) {
+                continue;
+            }
+
+            $envKeys[] = '`'.$this->providerConfig->apiKeyEnvVar($provider).'`';
+        }
+
+        return implode($separator, $envKeys);
+    }
+
     private function buildModelOptions(array $models): array
     {
         $options = [];
-        $providers = Config::get('statamic.magic-actions.providers', []);
 
         foreach ($models as $modelKey) {
-            if (! str_contains($modelKey, '/')) {
+            if (! $this->isFilledString($modelKey) || ! str_contains($modelKey, '/')) {
                 continue;
             }
 
             [$provider, $model] = explode('/', $modelKey, 2);
 
-            $apiKey = $providers[$provider]['api_key'] ?? null;
-            if (! $apiKey) {
+            if (! $this->providerConfig->hasApiKey($provider)) {
                 continue;
             }
 
@@ -187,5 +196,10 @@ final class Blueprint
         }
 
         return $options;
+    }
+
+    private function isFilledString(mixed $value): bool
+    {
+        return is_string($value) && mb_trim($value) !== '';
     }
 }

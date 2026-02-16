@@ -19,6 +19,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Provider credentials for Prism. API keys loaded from environment.
+    | The `env` value is used for CP hints and runtime error messages.
     | Required env vars:
     | - OPENAI_API_KEY for OpenAI models
     | - ANTHROPIC_API_KEY for Anthropic models
@@ -29,15 +30,19 @@ return [
     'providers' => [
         'openai' => [
             'api_key' => env('OPENAI_API_KEY'),
+            'env' => 'OPENAI_API_KEY',
         ],
         'anthropic' => [
             'api_key' => env('ANTHROPIC_API_KEY'),
+            'env' => 'ANTHROPIC_API_KEY',
         ],
         'gemini' => [
             'api_key' => env('GEMINI_API_KEY'),
+            'env' => 'GEMINI_API_KEY',
         ],
         'mistral' => [
             'api_key' => env('MISTRAL_API_KEY'),
+            'env' => 'MISTRAL_API_KEY',
         ],
     ],
 
