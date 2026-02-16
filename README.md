@@ -5,7 +5,7 @@ AI-powered field actions for Statamic v5. Generate alt text, extract tags, creat
 ## Features
 
 - **Zero-friction workflow**: One-click AI actions integrated directly into field UI
-- **Multiple AI providers**: OpenAI and Anthropic via [Prism PHP](https://prismphp.dev/)
+- **Multiple AI providers**: OpenAI, Anthropic, Google, and Mistral via [Prism PHP](https://prismphp.dev/)
 - **Background processing**: Jobs run asynchronously with status tracking
 - **Bulk actions**: Run actions on multiple entries/assets from listing views
 - **CLI command**: `php please magic:run` / `php artisan statamic:magic:run` for batch processing with dry-run support
@@ -20,13 +20,16 @@ composer require el-schneider/statamic-magic-actions
 
 ## Configuration
 
-Add your API key to `.env`:
+Add your API keys to `.env`:
 
 ```env
 OPENAI_API_KEY=sk-...
-# or
 ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=...
+MISTRAL_API_KEY=...
 ```
+
+Only add keys for the providers you plan to use.
 
 Optionally publish the config:
 
@@ -195,11 +198,11 @@ Register in the config:
 
 ## Action Types
 
-| Type     | Use Case                | Model Example                  |
-| -------- | ----------------------- | ------------------------------ |
-| `text`   | Text-to-text processing | `gpt-4.1`, `claude-sonnet-4-5` |
-| `vision` | Image analysis          | `gpt-4.1`, `claude-sonnet-4-5` |
-| `audio`  | Transcription           | `whisper-1`                    |
+| Type     | Use Case                | Model Example                                                              |
+| -------- | ----------------------- | -------------------------------------------------------------------------- |
+| `text`   | Text-to-text processing | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash`, `mistral-large-latest` |
+| `vision` | Image analysis          | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash`                         |
+| `audio`  | Transcription           | `whisper-1`, `voxtral-mini-latest`                                         |
 
 ## Prompts with Blade
 
@@ -224,7 +227,7 @@ Most text actions auto-detect and match the input language. The system prompts i
 
 - PHP 8.2+
 - Statamic 5.0+
-- OpenAI or Anthropic API key
+- At least one supported provider API key (OpenAI, Anthropic, Google, or Mistral)
 - Queue worker recommended
 
 ## License
