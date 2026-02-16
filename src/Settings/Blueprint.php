@@ -91,7 +91,7 @@ final class Blueprint
                 'field' => [
                     'type' => 'section',
                     'display' => 'Default Models',
-                    'instructions' => 'Default model to use for each capability when no action-specific override is set.',
+                    'instructions' => $this->defaultModelsInstructions(),
                 ],
             ],
             ...$this->typeDefaultFields(),
@@ -126,6 +126,35 @@ final class Blueprint
         }
 
         return $fields;
+    }
+
+    private function defaultModelsInstructions(): string
+    {
+        $providers = Config::get('statamic.magic-actions.providers', []);
+        $configured = [];
+        $missing = [];
+
+        foreach ($providers as $name => $config) {
+            if (! empty($config['api_key'])) {
+                $configured[] = $name;
+            } else {
+                $missing[] = $name;
+            }
+        }
+
+        $base = 'Default model to use for each capability when no action-specific override is set.';
+
+        if (empty($configured)) {
+            return $base.' **No API keys configured.** Add provider API keys to your `.env` file (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) to enable model selection.';
+        }
+
+        if (! empty($missing)) {
+            $envKeys = array_map(fn ($p) => '`'.mb_strtoupper($p).'_API_KEY`', $missing);
+
+            return $base.' To unlock more providers, add '.implode(' or ', $envKeys).' to your `.env` file.';
+        }
+
+        return $base;
     }
 
     private function buildModelOptions(array $models): array
