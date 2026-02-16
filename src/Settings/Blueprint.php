@@ -131,6 +131,12 @@ final class Blueprint
     private function defaultModelsInstructions(): string
     {
         $providers = Config::get('statamic.magic-actions.providers', []);
+        $providerEnvKeys = [
+            'openai' => 'OPENAI_API_KEY',
+            'anthropic' => 'ANTHROPIC_API_KEY',
+            'google' => 'GOOGLE_API_KEY',
+            'mistral' => 'MISTRAL_API_KEY',
+        ];
         $configured = [];
         $missing = [];
 
@@ -145,11 +151,14 @@ final class Blueprint
         $base = 'Default model to use for each capability when no action-specific override is set.';
 
         if (empty($configured)) {
-            return $base.' **No API keys configured.** Add provider API keys to your `.env` file (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) to enable model selection.';
+            return $base.' **No API keys configured.** Add provider API keys to your `.env` file (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `MISTRAL_API_KEY`) to enable model selection.';
         }
 
         if (! empty($missing)) {
-            $envKeys = array_map(fn ($p) => '`'.mb_strtoupper($p).'_API_KEY`', $missing);
+            $envKeys = array_map(
+                fn ($p) => '`'.($providerEnvKeys[$p] ?? mb_strtoupper($p).'_API_KEY').'`',
+                $missing
+            );
 
             return $base.' To unlock more providers, add '.implode(' or ', $envKeys).' to your `.env` file.';
         }

@@ -22,6 +22,8 @@ return [
     | Required env vars:
     | - OPENAI_API_KEY for OpenAI models
     | - ANTHROPIC_API_KEY for Anthropic models
+    | - GOOGLE_API_KEY for Google models
+    | - MISTRAL_API_KEY for Mistral models
     |
     */
     'providers' => [
@@ -30,6 +32,12 @@ return [
         ],
         'anthropic' => [
             'api_key' => env('ANTHROPIC_API_KEY'),
+        ],
+        'google' => [
+            'api_key' => env('GOOGLE_API_KEY'),
+        ],
+        'mistral' => [
+            'api_key' => env('MISTRAL_API_KEY'),
         ],
     ],
 
@@ -49,6 +57,10 @@ return [
                 'openai/gpt-4.1',
                 'openai/gpt-4.1-mini',
                 'anthropic/claude-sonnet-4-5',
+                'anthropic/claude-haiku-3-5',
+                'google/gemini-2.0-flash',
+                'google/gemini-2.5-pro',
+                'mistral/mistral-large-latest',
             ],
             'default' => 'openai/gpt-4.1',
         ],
@@ -56,12 +68,15 @@ return [
             'models' => [
                 'openai/gpt-4.1',
                 'anthropic/claude-sonnet-4-5',
+                'google/gemini-2.0-flash',
+                'anthropic/claude-haiku-3-5',
             ],
             'default' => 'openai/gpt-4.1',
         ],
         'audio' => [
             'models' => [
                 'openai/whisper-1',
+                'mistral/voxtral',
             ],
             'default' => 'openai/whisper-1',
         ],
