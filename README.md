@@ -5,7 +5,7 @@ AI-powered field actions for Statamic v5. Generate alt text, extract tags, creat
 ## Features
 
 - **Zero-friction workflow**: One-click AI actions integrated directly into field UI
-- **Multiple AI providers**: OpenAI, Anthropic, Google, and Mistral via [Prism PHP](https://prismphp.dev/)
+- **Multiple AI providers**: OpenAI, Anthropic, Gemini, and Mistral via [Prism PHP](https://prismphp.dev/)
 - **Background processing**: Jobs run asynchronously with status tracking
 - **Bulk actions**: Run actions on multiple entries/assets from listing views
 - **CLI command**: `php please magic:run` / `php artisan statamic:magic:run` for batch processing with dry-run support
@@ -25,7 +25,7 @@ Add your API keys to `.env`:
 ```env
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_API_KEY=...
+GEMINI_API_KEY=...
 MISTRAL_API_KEY=...
 ```
 
@@ -34,7 +34,7 @@ Only add keys for the providers you plan to use.
 Optionally publish the config:
 
 ```bash
-php artisan vendor:publish --tag=magic-actions-config
+php artisan vendor:publish --tag=statamic-magic-actions-config
 ```
 
 ## Usage
@@ -60,16 +60,16 @@ Select entries or assets in listing views — bulk action buttons appear automat
 
 ```bash
 # Process all entries in a collection
-php please magic:run --collection=pages --action=propose-title
+php please magic:run --collection=pages --field=title --action=propose-title
 
 # Dry run to preview targets
-php please magic:run --collection=pages --action=propose-title --dry-run
+php please magic:run --collection=pages --field=title --action=propose-title --dry-run
 
-# Process a specific entry
-php please magic:run --entry=home --action=propose-title
+# Process a specific entry by ID
+php please magic:run --entry=entry-id --field=title --action=propose-title
 
 # Queue jobs instead of running synchronously
-php please magic:run --collection=pages --action=propose-title --queue
+php please magic:run --collection=pages --field=title --action=propose-title --queue
 ```
 
 Equivalent Artisan command signature: `php artisan statamic:magic:run ...`
@@ -113,11 +113,11 @@ php artisan queue:work
 
 ### Terms Fields
 
-| Action                          | Description                              |
-| ------------------------------- | ---------------------------------------- |
-| **Extract Tags**                | Auto-generate tags from content          |
-| **Assign Tags from Taxonomies** | Match content to existing taxonomy terms |
-| **Extract Asset Tags**          | Generate tags from image analysis        |
+| Action                                   | Description                              |
+| ---------------------------------------- | ---------------------------------------- |
+| **Extract Tags**                         | Auto-generate tags from content          |
+| **Assign Tags from Taxonomies**          | Match content to existing taxonomy terms |
+| **Extract Tags** (`extract-assets-tags`) | Generate tags from image analysis        |
 
 ## Custom Actions
 
@@ -227,7 +227,7 @@ Most text actions auto-detect and match the input language. The system prompts i
 
 - PHP 8.2+
 - Statamic 5.0+
-- At least one supported provider API key (OpenAI, Anthropic, Google, or Mistral)
+- At least one supported provider API key (OpenAI, Anthropic, Gemini, or Mistral)
 - Queue worker recommended
 
 ## License
