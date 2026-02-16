@@ -25,6 +25,9 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
+          extensions: sockets
           coverage: none
       - run: composer install --no-interaction
+      - run: npx playwright install chromium --with-deps
+      - run: npm run build
       - run: composer run ci
