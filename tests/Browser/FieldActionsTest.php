@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
+use Statamic\Statamic;
 
 uses()->group('browser');
 
@@ -79,8 +80,19 @@ beforeEach(function () {
 it('displays magic action button on fields with magic actions enabled', function () {
     $url = "/cp/collections/{$this->collectionHandle}/entries/{$this->entry->id()}";
 
-    visit($url)
-        ->assertScript('Boolean(window.StatamicConfig?.magicActionCatalog && Object.keys(window.StatamicConfig.magicActionCatalog).length > 0)', true)
+    $page = visit($url)
+        ->assertScript('Boolean(window.StatamicConfig?.magicActionCatalog && Object.keys(window.StatamicConfig.magicActionCatalog).length > 0)', true);
+
+    // Statamic 6 renders field actions as icon buttons with ARIA labels.
+    if (version_compare(Statamic::version(), '6.0.0', '>=')) {
+        $page
+            ->assertPresent('#field_title [aria-label="Propose Title"]')
+            ->assertPresent('#field_teaser [aria-label="Create Teaser"]');
+
+        return;
+    }
+
+    $page
         ->assertPresent('.publish-field__title .field-dropdown .quick-list-content a')
         ->assertPresent('.publish-field__teaser .field-dropdown .quick-list-content a');
 });
@@ -88,7 +100,18 @@ it('displays magic action button on fields with magic actions enabled', function
 it('shows action dropdown with multiple configured actions', function () {
     $url = "/cp/collections/{$this->collectionHandle}/entries/{$this->entry->id()}";
 
-    visit($url)
+    $page = visit($url);
+
+    // Statamic 5 shows these via the quick-list dropdown; Statamic 6 exposes them as quick buttons.
+    if (version_compare(Statamic::version(), '6.0.0', '>=')) {
+        $page
+            ->assertPresent('#field_teaser [aria-label="Create Teaser"]')
+            ->assertPresent('#field_teaser [aria-label="Extract Meta Description"]');
+
+        return;
+    }
+
+    $page
         ->click('.publish-field__teaser .field-dropdown .rotating-dots-button')
         ->assertSee('Create Teaser')
         ->assertSee('Extract Meta Description');
