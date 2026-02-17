@@ -16,6 +16,19 @@ const EXT_TO_MIME: Record<string, string> = {
     pdf: 'application/pdf',
 }
 
+function getCpRoot(): string {
+    const cpRootFromConfig =
+        window.Statamic?.$config && typeof window.Statamic.$config.get === 'function'
+            ? window.Statamic.$config.get('cpRoot', '/cp')
+            : window.Statamic?.$config?.cpRoot
+
+    return String(cpRootFromConfig ?? '/cp').replace(/\/+$/, '')
+}
+
+function escapeForRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -61,7 +74,9 @@ export function isAssetPath(value: unknown): boolean {
 }
 
 export function parseAssetPathFromUrl(pathname: string): string | null {
-    const match = pathname.match(/browse\/([^/]+)\/(.+?)\/edit/)
+    const cpRootPattern = escapeForRegex(getCpRoot())
+    const match = pathname.match(new RegExp(`^${cpRootPattern}/assets/browse/([^/]+)/(.+?)/edit$`))
+
     return match ? `${match[1]}::${match[2]}` : null
 }
 
@@ -106,23 +121,24 @@ export function getAssetPath(config: FieldConfig, stateValues: Record<string, un
 
 export function extractPageContext(): JobContext | null {
     const url = window.location.pathname
+    const cpRootPattern = escapeForRegex(getCpRoot())
 
-    // Entry context: /cp/collections/{collection}/entries/{entryId}
-    const entryMatch = url.match(/\/cp\/collections\/([^/]+)\/entries\/([^/]+)/)
-    if (entryMatch) {
+    const entryMatch = url.match(new RegExp(`^${cpRootPattern}/collections/[^/]+/entries/([^/]+)`))
+    const entryId = entryMatch?.[1]
+    if (entryId) {
         return {
             type: 'entry',
-            id: entryMatch[2],
+            id: entryId,
             field: '',
         }
     }
 
-    // Asset context: /cp/assets/browse/{container}/{path}/edit
-    const assetMatch = url.match(/\/cp\/assets\/browse\/(.+?)\/edit/)
-    if (assetMatch) {
+    const assetMatch = url.match(new RegExp(`^${cpRootPattern}/assets/browse/(.+?)/edit`))
+    const assetId = assetMatch?.[1]
+    if (assetId) {
         return {
             type: 'asset',
-            id: assetMatch[1],
+            id: assetId,
             field: '',
         }
     }
@@ -131,12 +147,18 @@ export function extractPageContext(): JobContext | null {
 }
 
 export function getAssetExtensionFromUrl(): string | null {
-    const match = window.location.pathname.match(/\/cp\/assets\/browse\/[^/]+\/(.+?)\/edit$/)
+    const cpRootPattern = escapeForRegex(getCpRoot())
+    const match = window.location.pathname.match(new RegExp(`^${cpRootPattern}/assets/browse/[^/]+/(.+?)/edit$`))
     if (!match) {
         return null
     }
 
-    const path = decodeURIComponent(match[1])
+    const matchedPath = match[1]
+    if (!matchedPath) {
+        return null
+    }
+
+    const path = decodeURIComponent(matchedPath)
     const fileName = path.split('/').pop() ?? path
     const dotIndex = fileName.lastIndexOf('.')
 
