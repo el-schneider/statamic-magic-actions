@@ -7,12 +7,20 @@ on:
 
 jobs:
   ci:
-    name: CI – PHP ${{ matrix.php }}
+    name: CI – PHP ${{ matrix.php }} / Statamic ${{ matrix.statamic }} / Laravel ${{ matrix.laravel }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
-        php: ['8.3', '8.4']
+        include:
+          - php: '8.3'
+            statamic: '^5.0'
+            laravel: '^11.0'
+            testbench: '^9.0'
+          - php: '8.4'
+            statamic: '^6.0'
+            laravel: '^12.0'
+            testbench: '^10.8'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,7 +35,9 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: sockets
           coverage: none
-      - run: composer install --no-interaction
+      - run: composer require --no-interaction --no-update "statamic/cms:${{ matrix.statamic }}" "laravel/framework:${{ matrix.laravel }}"
+      - run: composer require --no-interaction --no-update --dev "orchestra/testbench:${{ matrix.testbench }}"
+      - run: composer install --no-interaction --prefer-dist
       - run: npx playwright install chromium --with-deps
       - run: npm run build
       - run: composer run ci
