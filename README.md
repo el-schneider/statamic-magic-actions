@@ -1,6 +1,6 @@
 ![Magic Actions](images/ma_banner.png)
 
-AI-powered field actions for Statamic v5. Generate alt text, extract tags, create teasers, transcribe audio, and more — directly from the control panel.
+AI-powered field actions for Statamic. Generate alt text, extract tags, create teasers, transcribe audio, and more — directly from the control panel.
 
 ## Features
 
@@ -8,7 +8,7 @@ AI-powered field actions for Statamic v5. Generate alt text, extract tags, creat
 - **Multiple AI providers**: OpenAI, Anthropic, Gemini, and Mistral via [Prism PHP](https://prismphp.dev/)
 - **Background processing**: Jobs run asynchronously with status tracking
 - **Bulk actions**: Run actions on multiple entries/assets from listing views
-- **CLI command**: `php please magic:run` / `php artisan statamic:magic:run` for batch processing with dry-run support
+- **CLI command**: `php please magic:run` for batch processing with dry-run support
 - **9 built-in actions**: Alt text, captions, titles, meta descriptions, teasers, tags, transcription
 - **Extensible**: Create custom actions — just extend `BaseMagicAction`
 
@@ -36,6 +36,106 @@ Optionally publish the config:
 ```bash
 php artisan vendor:publish --tag=statamic-magic-actions-config
 ```
+
+## Built-in Actions
+
+### Propose Title
+
+Generate SEO-friendly titles from entry content.
+
+![Propose Title](images/actions/readme-propose-title.gif)
+
+|                |               |
+| -------------- | ------------- |
+| **Fieldtypes** | Text          |
+| **Source**     | Entry content |
+| **Model**      | Text          |
+
+### Extract Meta Description
+
+Generate SEO-optimized descriptions (max 160 characters) from entry content.
+
+![Extract Meta Description](images/actions/readme-meta-description.gif)
+
+|                |               |
+| -------------- | ------------- |
+| **Fieldtypes** | Textarea      |
+| **Source**     | Entry content |
+| **Model**      | Text          |
+
+### Extract Tags
+
+Auto-generate taxonomy tags from entry content.
+
+![Extract Tags](images/actions/readme-extract-tags.gif)
+
+|                |               |
+| -------------- | ------------- |
+| **Fieldtypes** | Terms         |
+| **Source**     | Entry content |
+| **Model**      | Text          |
+
+### Alt Text
+
+Create accessible image descriptions using vision models.
+
+![Alt Text](images/actions/readme-alt-text.gif)
+
+|                |             |
+| -------------- | ----------- |
+| **Fieldtypes** | Text        |
+| **Source**     | Asset image |
+| **Model**      | Vision      |
+
+### Image Caption
+
+Generate narrative captions for images.
+
+|                |                      |
+| -------------- | -------------------- |
+| **Fieldtypes** | Text, Textarea, Bard |
+| **Source**     | Asset image          |
+| **Model**      | Vision               |
+
+### Create Teaser
+
+Generate engaging preview text (~300 characters) from entry content.
+
+|                |                |
+| -------------- | -------------- |
+| **Fieldtypes** | Textarea, Bard |
+| **Source**     | Entry content  |
+| **Model**      | Text           |
+
+### Transcribe Audio
+
+Convert audio files to text using Whisper.
+
+|                |                |
+| -------------- | -------------- |
+| **Fieldtypes** | Textarea, Bard |
+| **Source**     | Audio asset    |
+| **Model**      | Audio          |
+
+### Assign Tags from Taxonomies
+
+Match entry content to existing taxonomy terms (won't create new ones).
+
+|                |                          |
+| -------------- | ------------------------ |
+| **Fieldtypes** | Terms                    |
+| **Source**     | Entry content + taxonomy |
+| **Model**      | Text                     |
+
+### Extract Asset Tags
+
+Generate tags from image analysis.
+
+|                |             |
+| -------------- | ----------- |
+| **Fieldtypes** | Terms       |
+| **Source**     | Asset image |
+| **Model**      | Vision      |
 
 ## Usage
 
@@ -72,8 +172,6 @@ php please magic:run --entry=entry-id --field=title --action=propose-title
 php please magic:run --collection=pages --field=title --action=propose-title --queue
 ```
 
-Equivalent Artisan command signature: `php artisan statamic:magic:run ...`
-
 ### 5. Queue processing
 
 For best performance, configure a queue worker:
@@ -83,41 +181,6 @@ php artisan queue:work
 ```
 
 > Without a queue worker, jobs run synchronously which may cause timeouts for longer operations.
-
-## Built-in Actions
-
-### Text Fields
-
-| Action            | Description                                        |
-| ----------------- | -------------------------------------------------- |
-| **Propose Title** | Generate SEO-friendly titles from content          |
-| **Alt Text**      | Create accessible image descriptions (uses vision) |
-| **Image Caption** | Generate narrative captions for images             |
-
-### Textarea Fields
-
-| Action                       | Description                                |
-| ---------------------------- | ------------------------------------------ |
-| **Extract Meta Description** | SEO-optimized descriptions (max 160 chars) |
-| **Create Teaser**            | Engaging preview text (~300 chars)         |
-| **Transcribe Audio**         | Convert audio files to text using Whisper  |
-| **Image Caption**            | Generate narrative captions for images     |
-
-### Bard Fields
-
-| Action               | Description                            |
-| -------------------- | -------------------------------------- |
-| **Create Teaser**    | Teaser text formatted for Bard         |
-| **Transcribe Audio** | Audio transcription formatted for Bard |
-| **Image Caption**    | Image captions formatted for Bard      |
-
-### Terms Fields
-
-| Action                                   | Description                              |
-| ---------------------------------------- | ---------------------------------------- |
-| **Extract Tags**                         | Auto-generate tags from content          |
-| **Assign Tags from Taxonomies**          | Match content to existing taxonomy terms |
-| **Extract Tags** (`extract-assets-tags`) | Generate tags from image analysis        |
 
 ## Custom Actions
 
@@ -198,8 +261,8 @@ Register in the config:
 
 ## Action Types
 
-| Type     | Use Case                | Model Example                                                              |
-| -------- | ----------------------- | -------------------------------------------------------------------------- |
+| Type     | Use Case                | Model Examples                                                             |
+| :------- | :---------------------- | :------------------------------------------------------------------------- |
 | `text`   | Text-to-text processing | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash`, `mistral-large-latest` |
 | `vision` | Image analysis          | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash`                         |
 | `audio`  | Transcription           | `whisper-1`, `voxtral-mini-latest`                                         |
