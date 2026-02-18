@@ -1,6 +1,6 @@
 ![Magic Actions](images/ma_banner.png)
 
-AI-powered field actions for Statamic v5. Generate alt text, extract tags, create teasers, transcribe audio, and more — directly from the control panel.
+AI-powered field actions for Statamic v5/v6. Generate alt text, extract tags, create teasers, transcribe audio, and more — directly from the control panel.
 
 ## Features
 
@@ -226,7 +226,7 @@ Most text actions auto-detect and match the input language. The system prompts i
 ## Requirements
 
 - PHP 8.2+
-- Statamic 5.0+
+- Statamic 5.0+ or 6.0+
 - At least one supported provider API key (OpenAI, Anthropic, Gemini, or Mistral)
 - Queue worker recommended
 

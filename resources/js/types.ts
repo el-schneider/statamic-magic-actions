@@ -10,8 +10,12 @@ export interface MagicFieldAction {
 
 export type MagicActionCatalog = Record<string, MagicFieldAction[]>
 
+export interface RefLike<T> {
+    value: T
+}
+
 export interface PublishState {
-    values: Record<string, unknown>
+    values: Record<string, unknown> | RefLike<Record<string, unknown>>
 }
 
 export interface FieldActionConfig {
@@ -19,7 +23,7 @@ export interface FieldActionConfig {
     quick: boolean
     visible: (context: { config: FieldConfig; handle: string }) => boolean
     icon: string
-    run: (context: RunContext) => Promise<void>
+    run: (context: RunContext) => void
 }
 
 export interface FieldConfig {
@@ -33,8 +37,19 @@ export interface RunContext {
     handle: string
     value: unknown
     update: (value: unknown) => void
-    store: Window['Statamic']['Store']['store']
-    storeName: string
+    store?: unknown
+    storeName?: string
+    vm?: {
+        publishContainer?: {
+            values?: unknown
+        }
+        injectedPublishContainer?: {
+            values?: unknown
+        }
+    }
+    publishContainer?: {
+        values?: unknown
+    }
     config: FieldConfig
 }
 
@@ -80,7 +95,7 @@ declare global {
                 get: <T>(url: string) => Promise<{ data: T }>
                 post: <T>(url: string, data: unknown) => Promise<{ data: T }>
             }
-            Store: {
+            Store?: {
                 store: {
                     state: {
                         publish: Record<string, PublishState>

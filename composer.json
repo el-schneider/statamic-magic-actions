@@ -11,13 +11,13 @@
         }
     },
     "require": {
-        "statamic/cms": "^5.0",
+        "statamic/cms": "^5.0 || ^6.0",
         "guzzlehttp/guzzle": "^7.8",
         "symfony/yaml": "^7.0",
         "prism-php/prism": "^0.99.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^10.0",
+        "orchestra/testbench": "^9.0 || ^10.8",
         "laravel/pint": "^1.21",
         "pestphp/pest": "^4.1",
         "pestphp/pest-plugin-browser": "^4.1"
