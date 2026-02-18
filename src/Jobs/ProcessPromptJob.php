@@ -114,6 +114,17 @@ final class ProcessPromptJob implements ShouldQueue
 
         Log::debug("Magic action: persisted to entry {$this->context['id']}");
 
+        // Terms fieldtype stores bare slugs but the Vue component expects taxonomy::slug format.
+        // Return the prefixed format so the frontend update() call matches meta.data[].id.
+        if ($field?->type() === 'terms' && is_array($finalValue)) {
+            $config = $field->config();
+            $taxonomy = $config['taxonomy'] ?? ($config['taxonomies'][0] ?? null);
+
+            if ($taxonomy) {
+                return array_map(fn (string $slug) => "{$taxonomy}::{$slug}", $finalValue);
+            }
+        }
+
         return $finalValue;
     }
 
@@ -142,6 +153,16 @@ final class ProcessPromptJob implements ShouldQueue
             'asset_id' => $this->context['id'],
             'field' => $fieldHandle,
         ]);
+
+        // Terms fieldtype: return taxonomy::slug format for the frontend (see persistToEntry).
+        if ($field?->type() === 'terms' && is_array($finalValue)) {
+            $config = $field->config();
+            $taxonomy = $config['taxonomy'] ?? ($config['taxonomies'][0] ?? null);
+
+            if ($taxonomy) {
+                return array_map(fn (string $slug) => "{$taxonomy}::{$slug}", $finalValue);
+            }
+        }
 
         return $finalValue;
     }
