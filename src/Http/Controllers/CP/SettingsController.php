@@ -78,6 +78,10 @@ final class SettingsController extends CpController
                         continue;
                     }
 
+                    if (($field['field']['type'] ?? null) === 'section') {
+                        continue;
+                    }
+
                     $config = $field['field'];
 
                     $fields[] = [
