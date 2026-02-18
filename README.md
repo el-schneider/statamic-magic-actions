@@ -45,11 +45,11 @@ Generate SEO-friendly titles from entry content.
 
 ![Propose Title](images/actions/readme-propose-title.gif)
 
-| | |
-|---|---|
-| **Fieldtypes** | Text |
-| **Source** | Entry content |
-| **Model** | Text |
+|                |               |
+| -------------- | ------------- |
+| **Fieldtypes** | Text          |
+| **Source**     | Entry content |
+| **Model**      | Text          |
 
 ### Extract Meta Description
 
@@ -57,11 +57,11 @@ Generate SEO-optimized descriptions (max 160 characters) from entry content.
 
 ![Extract Meta Description](images/actions/readme-meta-description.gif)
 
-| | |
-|---|---|
-| **Fieldtypes** | Textarea |
-| **Source** | Entry content |
-| **Model** | Text |
+|                |               |
+| -------------- | ------------- |
+| **Fieldtypes** | Textarea      |
+| **Source**     | Entry content |
+| **Model**      | Text          |
 
 ### Extract Tags
 
@@ -69,11 +69,11 @@ Auto-generate taxonomy tags from entry content.
 
 ![Extract Tags](images/actions/readme-extract-tags.gif)
 
-| | |
-|---|---|
-| **Fieldtypes** | Terms |
-| **Source** | Entry content |
-| **Model** | Text |
+|                |               |
+| -------------- | ------------- |
+| **Fieldtypes** | Terms         |
+| **Source**     | Entry content |
+| **Model**      | Text          |
 
 ### Alt Text
 
@@ -81,61 +81,61 @@ Create accessible image descriptions using vision models.
 
 ![Alt Text](images/actions/readme-alt-text.gif)
 
-| | |
-|---|---|
-| **Fieldtypes** | Text |
-| **Source** | Asset image |
-| **Model** | Vision |
+|                |             |
+| -------------- | ----------- |
+| **Fieldtypes** | Text        |
+| **Source**     | Asset image |
+| **Model**      | Vision      |
 
 ### Image Caption
 
 Generate narrative captions for images.
 
-| | |
-|---|---|
+|                |                      |
+| -------------- | -------------------- |
 | **Fieldtypes** | Text, Textarea, Bard |
-| **Source** | Asset image |
-| **Model** | Vision |
+| **Source**     | Asset image          |
+| **Model**      | Vision               |
 
 ### Create Teaser
 
 Generate engaging preview text (~300 characters) from entry content.
 
-| | |
-|---|---|
+|                |                |
+| -------------- | -------------- |
 | **Fieldtypes** | Textarea, Bard |
-| **Source** | Entry content |
-| **Model** | Text |
+| **Source**     | Entry content  |
+| **Model**      | Text           |
 
 ### Transcribe Audio
 
 Convert audio files to text using Whisper.
 
-| | |
-|---|---|
+|                |                |
+| -------------- | -------------- |
 | **Fieldtypes** | Textarea, Bard |
-| **Source** | Audio asset |
-| **Model** | Audio |
+| **Source**     | Audio asset    |
+| **Model**      | Audio          |
 
 ### Assign Tags from Taxonomies
 
 Match entry content to existing taxonomy terms (won't create new ones).
 
-| | |
-|---|---|
-| **Fieldtypes** | Terms |
-| **Source** | Entry content + taxonomy |
-| **Model** | Text |
+|                |                          |
+| -------------- | ------------------------ |
+| **Fieldtypes** | Terms                    |
+| **Source**     | Entry content + taxonomy |
+| **Model**      | Text                     |
 
 ### Extract Asset Tags
 
 Generate tags from image analysis.
 
-| | |
-|---|---|
-| **Fieldtypes** | Terms |
-| **Source** | Asset image |
-| **Model** | Vision |
+|                |             |
+| -------------- | ----------- |
+| **Fieldtypes** | Terms       |
+| **Source**     | Asset image |
+| **Model**      | Vision      |
 
 ## Usage
 
@@ -261,11 +261,11 @@ Register in the config:
 
 ## Action Types
 
-| Type | Use Case | Model Examples |
-|:--|:--|:--|
-| `text` | Text-to-text processing | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash`, `mistral-large-latest` |
-| `vision` | Image analysis | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash` |
-| `audio` | Transcription | `whisper-1`, `voxtral-mini-latest` |
+| Type     | Use Case                | Model Examples                                                             |
+| :------- | :---------------------- | :------------------------------------------------------------------------- |
+| `text`   | Text-to-text processing | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash`, `mistral-large-latest` |
+| `vision` | Image analysis          | `gpt-4.1`, `claude-sonnet-4-5`, `gemini-2.0-flash`                         |
+| `audio`  | Transcription           | `whisper-1`, `voxtral-mini-latest`                                         |
 
 ## Prompts with Blade
 
