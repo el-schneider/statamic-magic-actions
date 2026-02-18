@@ -1,5 +1,5 @@
 import { pollJobStatus } from './api'
-import type { JobContext } from './types'
+import type { JobContext, RelationshipMetaSyncContext } from './types'
 
 interface TrackedJob {
     jobId: string
@@ -9,9 +9,14 @@ interface TrackedJob {
 
 type UpdateFn = (value: unknown) => void
 
+interface UpdateContext {
+    update: UpdateFn
+    relationshipMetaSync?: RelationshipMetaSyncContext
+}
+
 const STORAGE_KEY_PREFIX = 'magic_actions_jobs_'
 
-const updateFunctions = new Map<string, UpdateFn>()
+const updateFunctions = new Map<string, UpdateContext>()
 
 function isTrackedJob(value: unknown): value is TrackedJob {
     if (!value || typeof value !== 'object') {
@@ -53,11 +58,37 @@ function removeTrackedJob(context: JobContext, jobId: string): void {
     saveTrackedJobs(context, jobs)
 }
 
-function updateFieldValue(jobId: string, value: string): void {
-    const updateFn = updateFunctions.get(jobId)
-    if (updateFn) {
-        updateFn(value)
+async function syncRelationshipMeta(
+    relationshipMetaSync: RelationshipMetaSyncContext | undefined,
+    value: unknown,
+): Promise<void> {
+    if (!relationshipMetaSync || !Array.isArray(value)) {
+        return
+    }
+
+    try {
+        const response = await window.Statamic.$axios.post<{ data: unknown[] }>(relationshipMetaSync.itemDataUrl, {
+            site: relationshipMetaSync.site,
+            selections: value,
+        })
+
+        const latestMeta = relationshipMetaSync.vm?.meta ?? relationshipMetaSync.meta
+
+        relationshipMetaSync.updateMeta({
+            ...latestMeta,
+            data: response.data.data,
+        })
+    } catch {
+        // Keep field value update successful even if relationship meta sync fails.
+    }
+}
+
+async function updateFieldValue(jobId: string, value: unknown): Promise<void> {
+    const updateContext = updateFunctions.get(jobId)
+    if (updateContext) {
+        updateContext.update(value)
         updateFunctions.delete(jobId)
+        await syncRelationshipMeta(updateContext.relationshipMetaSync, value)
     }
 }
 
@@ -67,6 +98,7 @@ export function startBackgroundJob(
     fieldHandle: string,
     fieldTitle: string,
     update: UpdateFn,
+    relationshipMetaSync?: RelationshipMetaSyncContext,
 ): void {
     const jobs = getTrackedJobs(context)
     const job: TrackedJob = { jobId, fieldHandle, fieldTitle }
@@ -76,14 +108,17 @@ export function startBackgroundJob(
         saveTrackedJobs(context, jobs)
     }
 
-    updateFunctions.set(jobId, update)
+    updateFunctions.set(jobId, {
+        update,
+        relationshipMetaSync,
+    })
     pollInBackground(context, job)
 }
 
 async function pollInBackground(context: JobContext, job: TrackedJob): Promise<void> {
     try {
         const result = await pollJobStatus(job.jobId)
-        updateFieldValue(job.jobId, result.data)
+        await updateFieldValue(job.jobId, result.data)
         window.Statamic.$toast.success(`"${job.fieldTitle}" completed!`)
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'

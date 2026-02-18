@@ -12,6 +12,7 @@ export type MagicActionCatalog = Record<string, MagicFieldAction[]>
 
 export interface PublishState {
     values: Record<string, unknown>
+    site?: string
 }
 
 export interface FieldActionConfig {
@@ -29,10 +30,33 @@ export interface FieldConfig {
     magic_actions_mode?: 'replace' | 'append'
 }
 
+export interface FieldMeta {
+    itemDataUrl?: string
+    data?: unknown[]
+    [key: string]: unknown
+}
+
+export interface FieldActionVm {
+    site?: string
+    itemDataUrl?: string
+    meta?: FieldMeta
+}
+
+export interface RelationshipMetaSyncContext {
+    meta: FieldMeta
+    updateMeta: (value: FieldMeta) => void
+    itemDataUrl: string
+    site?: string
+    vm?: FieldActionVm
+}
+
 export interface RunContext {
     handle: string
     value: unknown
     update: (value: unknown) => void
+    updateMeta: (value: FieldMeta) => void
+    meta: FieldMeta
+    vm: FieldActionVm
     store: Window['Statamic']['Store']['store']
     storeName: string
     config: FieldConfig
@@ -40,7 +64,7 @@ export interface RunContext {
 
 export interface JobStatusResponse {
     status: 'queued' | 'processing' | 'completed' | 'failed'
-    data?: string
+    data?: unknown
     error?: string
     context?: JobContext
 }
