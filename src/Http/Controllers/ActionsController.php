@@ -106,7 +106,7 @@ final class ActionsController extends Controller
         if (! $job) {
             Log::warning('Job not found in cache', ['job_id' => $jobId]);
 
-            return response()->json(['error' => 'Job not found'], 404);
+            return response()->json(['error' => __('magic-actions::messages.api_job_not_found')], 404);
         }
 
         return response()->json($job);
@@ -122,7 +122,7 @@ final class ActionsController extends Controller
         if (! $batch) {
             Log::warning('Batch not found in cache', ['batch_id' => $batchId]);
 
-            return response()->json(['error' => 'Batch not found'], 404);
+            return response()->json(['error' => __('magic-actions::messages.api_batch_not_found')], 404);
         }
 
         return response()->json($batch);
@@ -134,7 +134,7 @@ final class ActionsController extends Controller
 
         return response()->json([
             'error' => $errorMessage,
-            'message' => 'Please configure the required API key in the addon settings',
+            'message' => __('magic-actions::messages.api_configure_key'),
         ], 500);
     }
 
@@ -166,13 +166,13 @@ final class ActionsController extends Controller
     ): JsonResponse {
         try {
             if (! $this->actionLoader->exists($action)) {
-                return response()->json(['error' => 'Action not found'], 404);
+                return response()->json(['error' => __('magic-actions::messages.api_action_not_found')], 404);
             }
 
             $context = $this->extractContext($request);
 
             if (! $context) {
-                return response()->json(['error' => 'Context is required'], 400);
+                return response()->json(['error' => __('magic-actions::messages.api_context_required')], 400);
             }
 
             $target = $this->resolveTarget($context, $options);
@@ -184,7 +184,10 @@ final class ActionsController extends Controller
                 ]);
 
                 return response()->json([
-                    'error' => "Context target not found for type '{$context['type']}' and id '{$context['id']}'.",
+                    'error' => __('magic-actions::messages.api_target_not_found', [
+                        'type' => $context['type'],
+                        'id' => $context['id'],
+                    ]),
                     'context_type' => $context['type'],
                     'context_id' => $context['id'],
                 ], 404);

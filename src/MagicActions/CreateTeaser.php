@@ -100,11 +100,11 @@ BLADE;
 
     public function bulkConfirmationText(): string
     {
-        return 'Create a teaser for this entry?|Create teasers for these :count entries?';
+        return __('magic-actions::messages.confirm_create_teaser');
     }
 
     public function bulkButtonText(): string
     {
-        return 'Create Teaser|Create Teasers for :count Entries';
+        return __('magic-actions::messages.button_create_teaser');
     }
 }

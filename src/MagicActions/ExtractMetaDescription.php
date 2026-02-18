@@ -99,11 +99,11 @@ BLADE;
 
     public function bulkConfirmationText(): string
     {
-        return 'Generate a meta description for this entry?|Generate meta descriptions for these :count entries?';
+        return __('magic-actions::messages.confirm_extract_meta_description');
     }
 
     public function bulkButtonText(): string
     {
-        return 'Generate Meta Description|Generate Meta Descriptions for :count Entries';
+        return __('magic-actions::messages.button_extract_meta_description');
     }
 }

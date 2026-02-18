@@ -89,11 +89,11 @@ BLADE;
 
     public function bulkConfirmationText(): string
     {
-        return 'Generate alt text for this asset?|Generate alt text for these :count assets?';
+        return __('magic-actions::messages.confirm_alt_text');
     }
 
     public function bulkButtonText(): string
     {
-        return 'Generate Alt Text|Generate Alt Text for :count Assets';
+        return __('magic-actions::messages.button_alt_text');
     }
 }

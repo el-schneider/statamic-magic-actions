@@ -46,6 +46,6 @@ final class SettingsController extends CpController
 
         Settings::save($settings);
 
-        return response()->json(['message' => 'Settings saved']);
+        return response()->json(['message' => __('magic-actions::messages.settings_saved')]);
     }
 }

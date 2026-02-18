@@ -59,6 +59,7 @@ final class ServiceProvider extends AddonServiceProvider
         parent::boot();
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'magic-actions');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'magic-actions');
 
         $this->publishes([
             __DIR__.'/MagicActions' => app_path('MagicActions'),
@@ -67,6 +68,10 @@ final class ServiceProvider extends AddonServiceProvider
         $this->publishes([
             __DIR__.'/../config/statamic/magic-actions.php' => config_path('statamic/magic-actions.php'),
         ], 'statamic-magic-actions-config');
+
+        $this->publishes([
+            __DIR__.'/../resources/lang' => $this->app->langPath('vendor/magic-actions'),
+        ], 'statamic-magic-actions-lang');
     }
 
     public function bootAddon()

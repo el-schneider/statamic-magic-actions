@@ -77,12 +77,12 @@ BLADE;
 
     public function bulkConfirmationText(): string
     {
-        return 'Extract tags for this entry?|Extract tags for these :count entries?';
+        return __('magic-actions::messages.confirm_extract_tags');
     }
 
     public function bulkButtonText(): string
     {
-        return 'Extract Tags|Extract Tags for :count Entries';
+        return __('magic-actions::messages.button_extract_tags');
     }
 
     public function supportsFieldSelection(): bool

@@ -9,38 +9,6 @@ use Illuminate\Support\Facades\Config;
 
 final class FieldConfigService
 {
-    private const array DEFAULT_FIELD_CONFIG = [
-        'magic_actions' => [
-            'type' => 'section',
-            'display' => 'Magic Actions',
-        ],
-        'magic_actions_enabled' => [
-            'type' => 'toggle',
-            'display' => 'Enabled',
-            'default' => false,
-        ],
-        'magic_actions_source' => [
-            'type' => 'text',
-            'display' => 'Source',
-            'instructions' => 'The field that contains the content to be processed by Magic Actions.',
-            'placeholder' => 'content',
-            'sometimes' => ['magic_actions_enabled' => true],
-            'if' => ['magic_actions_enabled' => true],
-        ],
-        'magic_actions_mode' => [
-            'type' => 'select',
-            'display' => 'Mode',
-            'instructions' => 'Whether to append or replace to the existing content.',
-            'options' => [
-                'append' => 'Append',
-                'replace' => 'Replace',
-            ],
-            'default' => 'append',
-            'sometimes' => ['magic_actions_enabled' => true],
-            'if' => ['magic_actions_enabled' => true],
-        ],
-    ];
-
     private readonly array $config;
 
     public function __construct()
@@ -55,10 +23,10 @@ final class FieldConfigService
                 continue;
             }
 
-            $config = self::DEFAULT_FIELD_CONFIG;
+            $config = $this->defaultFieldConfig();
             $config['magic_actions_action'] = [
                 'type' => 'select',
-                'display' => 'Actions',
+                'display' => __('magic-actions::messages.field_actions'),
                 'multiple' => true,
                 'options' => collect($settings['actions'])->pluck('title', 'action')->toArray(),
                 'sometimes' => ['magic_actions_enabled' => true],
@@ -97,6 +65,41 @@ final class FieldConfigService
         }
 
         return $fieldtypesWithPrompts;
+    }
+
+    private function defaultFieldConfig(): array
+    {
+        return [
+            'magic_actions' => [
+                'type' => 'section',
+                'display' => __('magic-actions::messages.field_section'),
+            ],
+            'magic_actions_enabled' => [
+                'type' => 'toggle',
+                'display' => __('magic-actions::messages.field_enabled'),
+                'default' => false,
+            ],
+            'magic_actions_source' => [
+                'type' => 'text',
+                'display' => __('magic-actions::messages.field_source'),
+                'instructions' => __('magic-actions::messages.field_source_instructions'),
+                'placeholder' => __('magic-actions::messages.field_source_placeholder'),
+                'sometimes' => ['magic_actions_enabled' => true],
+                'if' => ['magic_actions_enabled' => true],
+            ],
+            'magic_actions_mode' => [
+                'type' => 'select',
+                'display' => __('magic-actions::messages.field_mode'),
+                'instructions' => __('magic-actions::messages.field_mode_instructions'),
+                'options' => [
+                    'append' => __('magic-actions::messages.field_mode_append'),
+                    'replace' => __('magic-actions::messages.field_mode_replace'),
+                ],
+                'default' => 'append',
+                'sometimes' => ['magic_actions_enabled' => true],
+                'if' => ['magic_actions_enabled' => true],
+            ],
+        ];
     }
 
     private function appendConfigToFieldtype(string $fieldtype, array $config): void

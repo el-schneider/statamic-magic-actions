@@ -89,11 +89,11 @@ BLADE;
 
     public function bulkConfirmationText(): string
     {
-        return 'Extract tags for this asset?|Extract tags for these :count assets?';
+        return __('magic-actions::messages.confirm_extract_assets_tags');
     }
 
     public function bulkButtonText(): string
     {
-        return 'Extract Tags|Extract Tags for :count Assets';
+        return __('magic-actions::messages.button_extract_assets_tags');
     }
 }

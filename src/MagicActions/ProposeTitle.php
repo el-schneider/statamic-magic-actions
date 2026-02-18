@@ -76,11 +76,11 @@ BLADE;
 
     public function bulkConfirmationText(): string
     {
-        return 'Propose a title for this entry?|Propose titles for these :count entries?';
+        return __('magic-actions::messages.confirm_propose_title');
     }
 
     public function bulkButtonText(): string
     {
-        return 'Propose Title|Propose Titles for :count Entries';
+        return __('magic-actions::messages.button_propose_title');
     }
 }

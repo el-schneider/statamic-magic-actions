@@ -94,14 +94,14 @@ abstract class BaseMagicAction implements MagicAction, RequiresContext
     {
         $title = static::TITLE;
 
-        return "{$title} for this item?|{$title} for these :count items?";
+        return __("{$title} for this item?|{$title} for these :count items?");
     }
 
     public function bulkButtonText(): string
     {
         $title = static::TITLE;
 
-        return "{$title}|{$title} for :count Items";
+        return __("{$title}|{$title} for :count Items");
     }
 
     public function supportsFieldSelection(): bool

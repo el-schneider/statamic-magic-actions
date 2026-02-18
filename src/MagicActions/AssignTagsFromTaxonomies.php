@@ -98,11 +98,11 @@ BLADE;
 
     public function bulkConfirmationText(): string
     {
-        return 'Assign tags for this entry?|Assign tags for these :count entries?';
+        return __('magic-actions::messages.confirm_assign_tags');
     }
 
     public function bulkButtonText(): string
     {
-        return 'Assign Tags|Assign Tags for :count Entries';
+        return __('magic-actions::messages.button_assign_tags');
     }
 }

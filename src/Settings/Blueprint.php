@@ -70,7 +70,7 @@ final class Blueprint
         return BlueprintFacade::make()->setContents([
             'sections' => [
                 'global' => [
-                    'display' => 'Global Settings',
+                    'display' => __('magic-actions::messages.settings_global'),
                     'fields' => $this->globalFields(),
                 ],
             ],
@@ -84,8 +84,8 @@ final class Blueprint
                 'handle' => 'global_system_prompt',
                 'field' => [
                     'type' => 'textarea',
-                    'display' => 'Global System Prompt',
-                    'instructions' => 'This prompt will be prepended to all action system prompts. Use it to describe your brand voice, style guidelines, or other global context.',
+                    'display' => __('magic-actions::messages.settings_system_prompt'),
+                    'instructions' => __('magic-actions::messages.settings_system_prompt_instructions'),
                     'rows' => 4,
                 ],
             ],
@@ -93,7 +93,7 @@ final class Blueprint
                 'handle' => 'global_defaults',
                 'field' => [
                     'type' => 'section',
-                    'display' => 'Default Models',
+                    'display' => __('magic-actions::messages.settings_default_models'),
                     'instructions' => $this->defaultModelsInstructions(),
                 ],
             ],
@@ -121,12 +121,12 @@ final class Blueprint
                 'handle' => "global_defaults_{$type}",
                 'field' => [
                     'type' => 'select',
-                    'display' => ucfirst($type).' Model',
-                    'instructions' => "Default model for {$type} actions.",
+                    'display' => __('magic-actions::messages.settings_model_display', ['type' => ucfirst($type)]),
+                    'instructions' => __('magic-actions::messages.settings_model_instructions', ['type' => $type]),
                     'options' => $options,
                     'default' => $config['default'] ?? null,
                     'clearable' => true,
-                    'placeholder' => 'Use config default',
+                    'placeholder' => __('magic-actions::messages.settings_model_placeholder'),
                     'width' => 33,
                 ],
             ];
@@ -141,22 +141,22 @@ final class Blueprint
         $configured = $this->providerConfig->configuredProviderNames();
         $missing = $this->providerConfig->missingProviderNames();
 
-        $base = 'Default model to use for each capability when no action-specific override is set.';
+        $base = __('magic-actions::messages.settings_default_models_base');
 
         if ($providers === []) {
-            return $base.' No providers configured. Add providers under `statamic.magic-actions.providers` to enable model selection.';
+            return $base.' '.__('magic-actions::messages.settings_no_providers');
         }
 
         if ($configured === []) {
             $envKeys = $this->providerEnvKeyList($providers, ', ');
 
-            return $base." **No API keys configured.** Add provider API keys to your `.env` file (e.g. {$envKeys}) to enable model selection.";
+            return $base.' '.__('magic-actions::messages.settings_no_api_keys', ['keys' => $envKeys]);
         }
 
         if ($missing !== []) {
             $envKeys = $this->providerEnvKeyList($missing, ' or ');
 
-            return $base.' To unlock more providers, add '.$envKeys.' to your `.env` file.';
+            return $base.' '.__('magic-actions::messages.settings_unlock_providers', ['keys' => $envKeys]);
         }
 
         return $base;
