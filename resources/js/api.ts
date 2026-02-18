@@ -17,7 +17,7 @@ const ENDPOINTS = {
 } as const
 
 export interface PollResult {
-    data: string
+    data: unknown
 }
 
 function addContext(payload: Record<string, unknown>, context?: JobContext): Record<string, unknown> {

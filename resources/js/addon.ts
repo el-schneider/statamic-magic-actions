@@ -12,10 +12,13 @@ import { recoverTrackedJobs, startBackgroundJob } from './job-tracker'
 import type {
     ActionType,
     FieldActionConfig,
+    FieldActionVm,
     FieldConfig,
+    FieldMeta,
     JobContext,
     MagicActionCatalog,
     MagicFieldAction,
+    RelationshipMetaSyncContext,
 } from './types'
 
 const registeredFieldActions = new Set<string>()
@@ -64,6 +67,35 @@ function getConfiguredActions(config: FieldConfig): string[] {
     return []
 }
 
+function getRelationshipMetaSyncContext(
+    store: Window['Statamic']['Store']['store'],
+    storeName: string,
+    meta: FieldMeta,
+    updateMeta: (value: FieldMeta) => void,
+    vm: FieldActionVm,
+): RelationshipMetaSyncContext | undefined {
+    const hasItemDataUrl = typeof meta.itemDataUrl === 'string' || typeof vm.itemDataUrl === 'string'
+
+    if (!hasItemDataUrl) {
+        return undefined
+    }
+
+    const itemDataUrl = typeof vm.itemDataUrl === 'string' ? vm.itemDataUrl : meta.itemDataUrl
+    if (!itemDataUrl) {
+        return undefined
+    }
+
+    const site = vm.site ?? store.state.publish[storeName]?.site ?? window.Statamic.$config.get('selectedSite')
+
+    return {
+        meta,
+        updateMeta,
+        itemDataUrl,
+        site,
+        vm,
+    }
+}
+
 function createFieldAction(action: MagicFieldAction): FieldActionConfig {
     return {
         title: action.title,
@@ -80,9 +112,14 @@ function createFieldAction(action: MagicFieldAction): FieldActionConfig {
             return isActionAllowedForExtension(action.acceptedMimeTypes, getAssetExtensionFromUrl())
         },
         icon: action.icon ?? magicIcon,
-        run: async ({ handle, update, store, storeName, config }) => {
+        run: async ({ handle, update, updateMeta, meta, vm, store, storeName, config }) => {
             try {
-                const stateValues = store.state.publish[storeName].values
+                const publishState = store.state.publish[storeName]
+                if (!publishState) {
+                    throw new Error('Could not determine publish state')
+                }
+
+                const stateValues = publishState.values
                 const pathname = window.location.pathname
                 const actionType = determineActionType(action, config, stateValues, pathname)
                 const pageContext = extractPageContext()
@@ -97,7 +134,9 @@ function createFieldAction(action: MagicFieldAction): FieldActionConfig {
 
                 window.Statamic.$toast.info(`"${action.title}" started...`)
 
-                startBackgroundJob(fieldContext, jobId, handle, action.title, update)
+                const relationshipMetaSync = getRelationshipMetaSyncContext(store, storeName, meta, updateMeta, vm)
+
+                startBackgroundJob(fieldContext, jobId, handle, action.title, update, relationshipMetaSync)
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Failed to start the action'
                 window.Statamic.$toast.error(message)
