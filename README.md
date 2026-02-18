@@ -87,55 +87,15 @@ Create accessible image descriptions using vision models.
 | **Source**     | Asset image |
 | **Model**      | Vision      |
 
-### Image Caption
+### More Actions
 
-Generate narrative captions for images.
-
-|                |                      |
-| -------------- | -------------------- |
-| **Fieldtypes** | Text, Textarea, Bard |
-| **Source**     | Asset image          |
-| **Model**      | Vision               |
-
-### Create Teaser
-
-Generate engaging preview text (~300 characters) from entry content.
-
-|                |                |
-| -------------- | -------------- |
-| **Fieldtypes** | Textarea, Bard |
-| **Source**     | Entry content  |
-| **Model**      | Text           |
-
-### Transcribe Audio
-
-Convert audio files to text using Whisper.
-
-|                |                |
-| -------------- | -------------- |
-| **Fieldtypes** | Textarea, Bard |
-| **Source**     | Audio asset    |
-| **Model**      | Audio          |
-
-### Assign Tags from Taxonomies
-
-Match entry content to existing taxonomy terms (won't create new ones).
-
-|                |                          |
-| -------------- | ------------------------ |
-| **Fieldtypes** | Terms                    |
-| **Source**     | Entry content + taxonomy |
-| **Model**      | Text                     |
-
-### Extract Asset Tags
-
-Generate tags from image analysis.
-
-|                |             |
-| -------------- | ----------- |
-| **Fieldtypes** | Terms       |
-| **Source**     | Asset image |
-| **Model**      | Vision      |
+| Action                 | Description                              | Fieldtypes           | Source                   | Model  |
+| :--------------------- | :--------------------------------------- | :------------------- | :----------------------- | :----- |
+| **Image Caption**      | Narrative captions for images            | Text, Textarea, Bard | Asset image              | Vision |
+| **Create Teaser**      | Preview text (~300 chars) from content   | Textarea, Bard       | Entry content            | Text   |
+| **Transcribe Audio**   | Audio-to-text via Whisper                | Textarea, Bard       | Audio asset              | Audio  |
+| **Assign Tags**        | Match content to existing taxonomy terms | Terms                | Entry content + taxonomy | Text   |
+| **Extract Asset Tags** | Generate tags from image analysis        | Terms                | Asset image              | Vision |
 
 ## Usage
 
