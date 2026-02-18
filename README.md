@@ -45,23 +45,11 @@ Generate SEO-friendly titles from entry content.
 
 ![Propose Title](images/actions/readme-propose-title.gif)
 
-|                |               |
-| -------------- | ------------- |
-| **Fieldtypes** | Text          |
-| **Source**     | Entry content |
-| **Model**      | Text          |
-
 ### Extract Meta Description
 
 Generate SEO-optimized descriptions (max 160 characters) from entry content.
 
 ![Extract Meta Description](images/actions/readme-meta-description.gif)
-
-|                |               |
-| -------------- | ------------- |
-| **Fieldtypes** | Textarea      |
-| **Source**     | Entry content |
-| **Model**      | Text          |
 
 ### Extract Tags
 
@@ -69,33 +57,25 @@ Auto-generate taxonomy tags from entry content.
 
 ![Extract Tags](images/actions/readme-extract-tags.gif)
 
-|                |               |
-| -------------- | ------------- |
-| **Fieldtypes** | Terms         |
-| **Source**     | Entry content |
-| **Model**      | Text          |
-
 ### Alt Text
 
 Create accessible image descriptions using vision models.
 
 ![Alt Text](images/actions/readme-alt-text.gif)
 
-|                |             |
-| -------------- | ----------- |
-| **Fieldtypes** | Text        |
-| **Source**     | Asset image |
-| **Model**      | Vision      |
+### Action Reference
 
-### More Actions
-
-| Action                 | Description                              | Fieldtypes           | Source                   | Model  |
-| :--------------------- | :--------------------------------------- | :------------------- | :----------------------- | :----- |
-| **Image Caption**      | Narrative captions for images            | Text, Textarea, Bard | Asset image              | Vision |
-| **Create Teaser**      | Preview text (~300 chars) from content   | Textarea, Bard       | Entry content            | Text   |
-| **Transcribe Audio**   | Audio-to-text via Whisper                | Textarea, Bard       | Audio asset              | Audio  |
-| **Assign Tags**        | Match content to existing taxonomy terms | Terms                | Entry content + taxonomy | Text   |
-| **Extract Asset Tags** | Generate tags from image analysis        | Terms                | Asset image              | Vision |
+| Action                       | Description                              | Fieldtypes           | Source                   | Model  |
+| :--------------------------- | :--------------------------------------- | :------------------- | :----------------------- | :----- |
+| **Propose Title**            | SEO-friendly titles from content         | Text                 | Entry content            | Text   |
+| **Extract Meta Description** | SEO descriptions (max 160 chars)         | Textarea             | Entry content            | Text   |
+| **Extract Tags**             | Auto-generate taxonomy tags              | Terms                | Entry content            | Text   |
+| **Alt Text**                 | Accessible image descriptions            | Text                 | Asset image              | Vision |
+| **Image Caption**            | Narrative captions for images            | Text, Textarea, Bard | Asset image              | Vision |
+| **Create Teaser**            | Preview text (~300 chars) from content   | Textarea, Bard       | Entry content            | Text   |
+| **Transcribe Audio**         | Audio-to-text via Whisper                | Textarea, Bard       | Audio asset              | Audio  |
+| **Assign Tags**              | Match content to existing taxonomy terms | Terms                | Entry content + taxonomy | Text   |
+| **Extract Asset Tags**       | Generate tags from image analysis        | Terms                | Asset image              | Vision |
 
 ## Usage
 
