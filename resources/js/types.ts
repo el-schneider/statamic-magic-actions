@@ -39,7 +39,7 @@ export interface FieldMeta {
 export interface FieldActionVm {
     site?: string
     itemDataUrl?: string
-    meta?: FieldMeta
+    meta?: FieldMeta | null
 }
 
 export interface RelationshipMetaSyncContext {
@@ -55,8 +55,8 @@ export interface RunContext {
     value: unknown
     update: (value: unknown) => void
     updateMeta: (value: FieldMeta) => void
-    meta: FieldMeta
-    vm: FieldActionVm
+    meta: FieldMeta | null
+    vm: FieldActionVm | null
     store: Window['Statamic']['Store']['store']
     storeName: string
     config: FieldConfig

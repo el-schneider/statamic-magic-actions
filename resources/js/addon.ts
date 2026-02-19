@@ -70,29 +70,26 @@ function getConfiguredActions(config: FieldConfig): string[] {
 function getRelationshipMetaSyncContext(
     store: Window['Statamic']['Store']['store'],
     storeName: string,
-    meta: FieldMeta,
+    meta: FieldMeta | null | undefined,
     updateMeta: (value: FieldMeta) => void,
-    vm: FieldActionVm,
+    vm: FieldActionVm | null | undefined,
 ): RelationshipMetaSyncContext | undefined {
-    const hasItemDataUrl = typeof meta.itemDataUrl === 'string' || typeof vm.itemDataUrl === 'string'
+    const metaItemDataUrl = typeof meta?.itemDataUrl === 'string' ? meta.itemDataUrl : undefined
+    const vmItemDataUrl = typeof vm?.itemDataUrl === 'string' ? vm.itemDataUrl : undefined
+    const itemDataUrl = vmItemDataUrl ?? metaItemDataUrl
 
-    if (!hasItemDataUrl) {
-        return undefined
-    }
-
-    const itemDataUrl = typeof vm.itemDataUrl === 'string' ? vm.itemDataUrl : meta.itemDataUrl
     if (!itemDataUrl) {
         return undefined
     }
 
-    const site = vm.site ?? store.state.publish[storeName]?.site ?? window.Statamic.$config.get('selectedSite')
+    const site = vm?.site ?? store.state.publish[storeName]?.site ?? window.Statamic.$config.get('selectedSite')
 
     return {
-        meta,
+        meta: meta ?? {},
         updateMeta,
         itemDataUrl,
         site,
-        vm,
+        vm: vm ?? undefined,
     }
 }
 
@@ -135,8 +132,9 @@ function createFieldAction(action: MagicFieldAction): FieldActionConfig {
                 window.Statamic.$toast.info(`"${action.title}" started...`)
 
                 const relationshipMetaSync = getRelationshipMetaSyncContext(store, storeName, meta, updateMeta, vm)
+                const boundUpdate = vm ? update.bind(vm) : update
 
-                startBackgroundJob(fieldContext, jobId, handle, action.title, update, relationshipMetaSync)
+                startBackgroundJob(fieldContext, jobId, handle, action.title, boundUpdate, relationshipMetaSync)
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Failed to start the action'
                 window.Statamic.$toast.error(message)
