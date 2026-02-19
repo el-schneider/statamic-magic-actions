@@ -22,7 +22,7 @@ final class FieldConfigService
         'magic_actions_source' => [
             'type' => 'text',
             'display' => 'Source',
-            'instructions' => 'The field that contains the content to be processed by Magic Actions.',
+            'instructions' => 'The field that contains the content to be processed. On asset blueprints, leave empty to use the current asset.',
             'placeholder' => 'content',
             'sometimes' => ['magic_actions_enabled' => true],
             'if' => ['magic_actions_enabled' => true],
