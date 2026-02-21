@@ -42,7 +42,7 @@ final class ProcessPromptJob implements ShouldQueue
     public function handle(ActionLoader $actionLoader, JobTracker $jobTracker): void
     {
         try {
-            $this->updateJobStatus($jobTracker, 'processing', 'Processing request...');
+            $this->updateJobStatus($jobTracker, 'processing', __('magic-actions::magic-actions.errors.job.processing'));
 
             $promptData = $actionLoader->load($this->action, $this->variables);
             $action = $promptData['action'];
@@ -51,7 +51,9 @@ final class ProcessPromptJob implements ShouldQueue
             $response = match ($promptData['type']) {
                 'text', 'vision' => $this->handleTextPrompt($promptData, $action),
                 'audio' => $this->handleAudioPrompt($promptData),
-                default => throw new Exception("Unknown prompt type: {$promptData['type']}"),
+                default => throw new Exception(__('magic-actions::magic-actions.errors.job.unknown_prompt_type', [
+                    'type' => $promptData['type'],
+                ])),
             };
 
             $finalValue = $this->persistResult($response);
@@ -359,7 +361,7 @@ final class ProcessPromptJob implements ShouldQueue
     {
         $asset = $this->resolveAsset();
         if (! $asset) {
-            throw new Exception('Audio asset not found');
+            throw new Exception(__('magic-actions::magic-actions.errors.job.audio_asset_not_found'));
         }
 
         $audioFile = Audio::fromStoragePath(

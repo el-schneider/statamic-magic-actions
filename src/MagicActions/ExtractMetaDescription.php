@@ -97,13 +97,15 @@ BLADE;
         return 'entry';
     }
 
+    /** @translation */
     public function bulkConfirmationText(): string
     {
-        return 'Generate a meta description for this entry?|Generate meta descriptions for these :count entries?';
+        return __('magic-actions::magic-actions.actions.extract-meta-description.bulk_confirmation');
     }
 
+    /** @translation */
     public function bulkButtonText(): string
     {
-        return 'Generate Meta Description|Generate Meta Descriptions for :count Entries';
+        return __('magic-actions::magic-actions.actions.extract-meta-description.bulk_button');
     }
 }

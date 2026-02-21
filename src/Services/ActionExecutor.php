@@ -69,7 +69,7 @@ final class ActionExecutor
         $job = $this->jobTracker->getJob($jobId);
 
         if (($job['status'] ?? null) === 'failed') {
-            throw new RuntimeException((string) ($job['message'] ?? 'Action execution failed.'));
+            throw new RuntimeException((string) ($job['message'] ?? $this->t('errors.action_executor.execution_failed')));
         }
 
         return $job['data'] ?? null;
@@ -133,15 +133,18 @@ final class ActionExecutor
     private function assertCanExecute(string $action, Entry|Asset $target, string $fieldHandle, array $options): void
     {
         if (! $this->actionLoader->exists($action)) {
-            throw new InvalidArgumentException(
-                "Action '{$action}' not found. Check config/statamic/magic-actions.php and your field action configuration."
-            );
+            throw new InvalidArgumentException($this->t('errors.action_executor.action_not_found', [
+                'action' => $action,
+            ]));
         }
 
         $this->assertMimeTypeSupported($action, $target, $options);
 
         if (! $this->canExecute($action, $target, $fieldHandle, $options)) {
-            throw new InvalidArgumentException("Action '{$action}' cannot be executed for field '{$fieldHandle}'.");
+            throw new InvalidArgumentException($this->t('errors.action_executor.cannot_execute_field', [
+                'action' => $action,
+                'field' => $fieldHandle,
+            ]));
         }
     }
 
@@ -211,10 +214,14 @@ final class ActionExecutor
         if (! $this->mimeTypeMatches($assetMimeType, $acceptedMimeTypes)) {
             $accepted = implode(', ', $acceptedMimeTypes);
             $actionName = class_basename($magicAction);
-            $displayMimeType = $assetMimeType !== '' ? $assetMimeType : 'unknown';
-            throw new InvalidArgumentException(
-                "Action {$actionName} does not support file type '{$displayMimeType}'. Accepted types: {$accepted}."
-            );
+            $displayMimeType = $assetMimeType !== ''
+                ? $assetMimeType
+                : $this->t('errors.action_executor.unknown_mime');
+            throw new InvalidArgumentException($this->t('errors.action_executor.unsupported_mime', [
+                'action' => $actionName,
+                'mime' => $displayMimeType,
+                'accepted' => $accepted,
+            ]));
         }
     }
 
@@ -362,5 +369,10 @@ final class ActionExecutor
         }
 
         return (new $configuredAction)->getHandle();
+    }
+
+    private function t(string $key, array $replace = []): string
+    {
+        return __('magic-actions::magic-actions.'.$key, $replace);
     }
 }

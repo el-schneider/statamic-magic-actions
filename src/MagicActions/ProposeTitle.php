@@ -74,13 +74,15 @@ BLADE;
         return 'entry';
     }
 
+    /** @translation */
     public function bulkConfirmationText(): string
     {
-        return 'Propose a title for this entry?|Propose titles for these :count entries?';
+        return __('magic-actions::magic-actions.actions.propose-title.bulk_confirmation');
     }
 
+    /** @translation */
     public function bulkButtonText(): string
     {
-        return 'Propose Title|Propose Titles for :count Entries';
+        return __('magic-actions::magic-actions.actions.propose-title.bulk_button');
     }
 }

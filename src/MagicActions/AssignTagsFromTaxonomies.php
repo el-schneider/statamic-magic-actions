@@ -96,13 +96,15 @@ BLADE;
         return 'entry';
     }
 
+    /** @translation */
     public function bulkConfirmationText(): string
     {
-        return 'Assign tags for this entry?|Assign tags for these :count entries?';
+        return __('magic-actions::magic-actions.actions.assign-tags-from-taxonomies.bulk_confirmation');
     }
 
+    /** @translation */
     public function bulkButtonText(): string
     {
-        return 'Assign Tags|Assign Tags for :count Entries';
+        return __('magic-actions::magic-actions.actions.assign-tags-from-taxonomies.bulk_button');
     }
 }

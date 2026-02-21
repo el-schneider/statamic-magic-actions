@@ -123,7 +123,7 @@ final class DynamicBulkAction extends Action
         $magic = $this->resolveMagicAction();
 
         if ($magic === null) {
-            return 'Action not found.';
+            return __('magic-actions::magic-actions.bulk.action_not_found');
         }
 
         if ($magic->bulkTargetType() === 'asset') {
@@ -149,8 +149,8 @@ final class DynamicBulkAction extends Action
 
         return [
             'field_handle' => [
-                'display' => __('Target Field'),
-                'instructions' => __('Select the field that should receive the result.'),
+                'display' => __('magic-actions::magic-actions.bulk.target_field.display'),
+                'instructions' => __('magic-actions::magic-actions.bulk.target_field.instructions'),
                 'type' => 'select',
                 'options' => $options,
                 'validate' => 'required',
@@ -545,20 +545,19 @@ final class DynamicBulkAction extends Action
 
     private function resultMessage(int $queued, int $skipped, int $failed, MagicAction $magic): string
     {
-        $title = $magic->getTitle();
         $messages = [];
 
         if ($queued > 0) {
             $messages[] = trans_choice(
-                "Queued {$title} for :count item.|Queued {$title} for :count items.",
+                'magic-actions::magic-actions.bulk.result.queued',
                 $queued,
-                ['count' => $queued]
+                ['count' => $queued, 'action' => $magic->getTitle()]
             );
         }
 
         if ($skipped > 0) {
             $messages[] = trans_choice(
-                ':count item was skipped.|:count items were skipped.',
+                'magic-actions::magic-actions.bulk.result.skipped',
                 $skipped,
                 ['count' => $skipped]
             );
@@ -566,13 +565,15 @@ final class DynamicBulkAction extends Action
 
         if ($failed > 0) {
             $messages[] = trans_choice(
-                ':count item failed to queue.|:count items failed to queue.',
+                'magic-actions::magic-actions.bulk.result.failed_to_queue',
                 $failed,
                 ['count' => $failed]
             );
         }
 
-        return $messages === [] ? __('No items were processed.') : implode(' ', $messages);
+        return $messages === []
+            ? __('magic-actions::magic-actions.bulk.result.none_processed')
+            : implode(' ', $messages);
     }
 
     private function resolveMagicAction(): ?MagicAction

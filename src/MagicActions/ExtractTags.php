@@ -75,14 +75,16 @@ BLADE;
         return 'entry';
     }
 
+    /** @translation */
     public function bulkConfirmationText(): string
     {
-        return 'Extract tags for this entry?|Extract tags for these :count entries?';
+        return __('magic-actions::magic-actions.actions.extract-tags.bulk_confirmation');
     }
 
+    /** @translation */
     public function bulkButtonText(): string
     {
-        return 'Extract Tags|Extract Tags for :count Entries';
+        return __('magic-actions::magic-actions.actions.extract-tags.bulk_button');
     }
 
     public function supportsFieldSelection(): bool

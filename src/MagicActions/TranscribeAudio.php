@@ -52,13 +52,15 @@ final class TranscribeAudio extends BaseMagicAction
         return 'asset';
     }
 
+    /** @translation */
     public function bulkConfirmationText(): string
     {
-        return 'Transcribe this asset?|Transcribe these :count assets?';
+        return __('magic-actions::magic-actions.actions.transcribe-audio.bulk_confirmation');
     }
 
+    /** @translation */
     public function bulkButtonText(): string
     {
-        return 'Transcribe Audio|Transcribe Audio for :count Assets';
+        return __('magic-actions::magic-actions.actions.transcribe-audio.bulk_button');
     }
 }

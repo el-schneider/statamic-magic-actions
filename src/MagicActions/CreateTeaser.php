@@ -98,13 +98,15 @@ BLADE;
         return 'entry';
     }
 
+    /** @translation */
     public function bulkConfirmationText(): string
     {
-        return 'Create a teaser for this entry?|Create teasers for these :count entries?';
+        return __('magic-actions::magic-actions.actions.create-teaser.bulk_confirmation');
     }
 
+    /** @translation */
     public function bulkButtonText(): string
     {
-        return 'Create Teaser|Create Teasers for :count Entries';
+        return __('magic-actions::magic-actions.actions.create-teaser.bulk_button');
     }
 }

@@ -87,13 +87,15 @@ BLADE;
         return 'asset';
     }
 
+    /** @translation */
     public function bulkConfirmationText(): string
     {
-        return 'Generate alt text for this asset?|Generate alt text for these :count assets?';
+        return __('magic-actions::magic-actions.actions.alt-text.bulk_confirmation');
     }
 
+    /** @translation */
     public function bulkButtonText(): string
     {
-        return 'Generate Alt Text|Generate Alt Text for :count Assets';
+        return __('magic-actions::magic-actions.actions.alt-text.bulk_button');
     }
 }

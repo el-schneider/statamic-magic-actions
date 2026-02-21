@@ -44,7 +44,9 @@ final class ContextResolver
             return $resolver($target, $fieldHandle);
         }
 
-        throw new InvalidArgumentException("Invalid context resolver for variable '{$variable}'.");
+        throw new InvalidArgumentException(__('magic-actions::magic-actions.errors.context_resolver.invalid_resolver_variable', [
+            'variable' => $variable,
+        ]));
     }
 
     private function resolveBuiltInRequirement(string $resolver, Entry|Asset $target, string $fieldHandle): mixed
@@ -57,7 +59,9 @@ final class ContextResolver
                 $target,
                 mb_substr($resolver, mb_strlen('entry_field:'))
             ),
-            default => throw new InvalidArgumentException("Unsupported context resolver '{$resolver}'."),
+            default => throw new InvalidArgumentException(__('magic-actions::magic-actions.errors.context_resolver.unsupported_resolver', [
+                'resolver' => $resolver,
+            ])),
         };
     }
 

@@ -71,6 +71,8 @@ final class ServiceProvider extends AddonServiceProvider
 
     public function bootAddon()
     {
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'magic-actions');
+
         $this->commands([MagicRunCommand::class]);
 
         $this->app->make(FieldConfigService::class)->registerFieldConfigs();
@@ -80,7 +82,7 @@ final class ServiceProvider extends AddonServiceProvider
         $this->provideGlobalMagicActionCatalog();
 
         Nav::extend(function ($nav) {
-            $nav->tools('Magic Actions')
+            $nav->tools(__('magic-actions::magic-actions.nav.tools'))
                 ->route('magic-actions.settings.index')
                 ->icon(File::get(__DIR__.'/../resources/js/icons/magic.svg'));
         });

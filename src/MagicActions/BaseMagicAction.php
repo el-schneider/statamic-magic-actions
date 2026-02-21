@@ -53,7 +53,10 @@ abstract class BaseMagicAction implements MagicAction, RequiresContext
 
     final public function getTitle(): string
     {
-        return static::TITLE;
+        $key = 'magic-actions::magic-actions.actions.'.$this->getHandle().'.title';
+        $translated = __($key);
+
+        return $translated === $key ? static::TITLE : $translated;
     }
 
     final public function getHandle(): string
@@ -92,16 +95,16 @@ abstract class BaseMagicAction implements MagicAction, RequiresContext
 
     public function bulkConfirmationText(): string
     {
-        $title = static::TITLE;
-
-        return "{$title} for this item?|{$title} for these :count items?";
+        return __('magic-actions::magic-actions.actions.defaults.bulk_confirmation', [
+            'title' => $this->getTitle(),
+        ]);
     }
 
     public function bulkButtonText(): string
     {
-        $title = static::TITLE;
-
-        return "{$title}|{$title} for :count Items";
+        return __('magic-actions::magic-actions.actions.defaults.bulk_button', [
+            'title' => $this->getTitle(),
+        ]);
     }
 
     public function supportsFieldSelection(): bool

@@ -38,7 +38,7 @@ final class JobTracker
     ): void {
         $jobData = [
             'status' => 'queued',
-            'message' => 'Job has been queued',
+            'message' => __('magic-actions::magic-actions.errors.job.queued'),
             'context' => [
                 'type' => $contextType,
                 'id' => $contextId,
@@ -162,7 +162,7 @@ final class JobTracker
                 $failed++;
                 $errors[] = [
                     'job_id' => $jobId,
-                    'message' => (string) ($job['message'] ?? 'Job failed'),
+                    'message' => (string) ($job['message'] ?? __('magic-actions::magic-actions.errors.job.failed')),
                 ];
 
                 continue;

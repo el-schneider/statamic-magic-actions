@@ -24,10 +24,12 @@ abstract class TestCase extends AddonTestCase
 
     protected function tearDown(): void
     {
-        // Override to create directory with proper permissions
+        // Override to recreate directory with proper permissions
         if (isset($this->fakeStacheDirectory) && is_string($this->fakeStacheDirectory)) {
             app('files')->deleteDirectory($this->fakeStacheDirectory);
-            mkdir($this->fakeStacheDirectory, 0755, true);
+            if (! is_dir($this->fakeStacheDirectory)) {
+                mkdir($this->fakeStacheDirectory, 0755, true);
+            }
             touch($this->fakeStacheDirectory.'/.gitkeep');
         }
 

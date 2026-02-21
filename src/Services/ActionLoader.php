@@ -22,7 +22,7 @@ final class ActionLoader
     {
         $magicAction = $this->loadMagicAction($action);
         if ($magicAction === null) {
-            throw new RuntimeException("Action '{$action}' not found");
+            throw new RuntimeException($this->t('errors.action_loader.action_not_found', ['action' => $action]));
         }
 
         $result = $this->buildResultFromMagicAction($magicAction, $variables);
@@ -65,22 +65,24 @@ final class ActionLoader
     {
         $validator = Validator::make($variables, $action->rules());
         if ($validator->fails()) {
-            throw new InvalidArgumentException('Invalid variables: '.implode(', ', $validator->errors()->all()));
+            throw new InvalidArgumentException($this->t('errors.action_loader.invalid_variables', [
+                'errors' => implode(', ', $validator->errors()->all()),
+            ]));
         }
 
         $type = $action->type();
         $modelKey = $this->resolveModelKeyForType($type);
 
         if ($modelKey === null) {
-            throw new InvalidArgumentException(
-                "Missing model configuration for type '{$type}'. Set statamic.magic-actions.types.{$type}.default."
-            );
+            throw new InvalidArgumentException($this->t('errors.action_loader.missing_model_configuration', [
+                'type' => $type,
+            ]));
         }
 
         if (! str_contains($modelKey, '/')) {
-            throw new InvalidArgumentException(
-                "Invalid model key format: '{$modelKey}'. Expected format: 'provider/model'"
-            );
+            throw new InvalidArgumentException($this->t('errors.action_loader.invalid_model_key_format', [
+                'model' => $modelKey,
+            ]));
         }
 
         [$provider, $model] = explode('/', $modelKey, 2);
@@ -88,9 +90,10 @@ final class ActionLoader
         if (! $this->providerConfig->hasApiKey($provider)) {
             $envVar = $this->providerConfig->apiKeyEnvVar($provider);
 
-            throw new MissingApiKeyException(
-                "API key not configured for provider '{$provider}'. Set {$envVar} in your .env file."
-            );
+            throw new MissingApiKeyException($this->t('errors.action_loader.missing_provider_api_key', [
+                'provider' => $provider,
+                'env' => $envVar,
+            ]));
         }
 
         $result = [
@@ -165,5 +168,10 @@ final class ActionLoader
     private function isFilledString(mixed $value): bool
     {
         return is_string($value) && mb_trim($value) !== '';
+    }
+
+    private function t(string $key, array $replace = []): string
+    {
+        return __('magic-actions::magic-actions.'.$key, $replace);
     }
 }

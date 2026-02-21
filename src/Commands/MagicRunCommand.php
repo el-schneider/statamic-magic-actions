@@ -22,25 +22,18 @@ final class MagicRunCommand extends Command
 {
     use RunsInPlease;
 
-    protected $signature = 'statamic:magic:run
-        {--collection= : Target all entries in a collection}
-        {--entry= : Target a specific entry by ID}
-        {--asset= : Target a specific asset by container::path}
-        {--field= : Target field handle (required)}
-        {--action= : Override action handle}
-        {--overwrite : Overwrite existing values}
-        {--no-overwrite : Disable overwrite even when enabled by config}
-        {--queue : Dispatch jobs to queue instead of running synchronously}
-        {--no-queue : Run synchronously even when queueing is enabled by config}
-        {--dry-run : Show what would be processed without making changes}';
+    protected $signature = 'statamic:magic:run';
 
-    protected $description = 'Run magic actions against entries or assets from the CLI.';
+    protected $description = '';
 
     public function __construct(
         private readonly ActionExecutor $actionExecutor,
         private readonly ActionLoader $actionLoader,
         private readonly JobTracker $jobTracker,
     ) {
+        $this->signature = $this->buildSignature();
+        $this->description = $this->t('cli.description');
+
         parent::__construct();
     }
 
@@ -53,13 +46,13 @@ final class MagicRunCommand extends Command
         $actionOverride = $this->stringOption('action');
 
         if ($this->booleanOptionProvided('overwrite') && $this->booleanOptionProvided('no-overwrite')) {
-            $this->components->error('Use either --overwrite or --no-overwrite, not both.');
+            $this->components->error($this->t('cli.errors.overwrite_conflict'));
 
             return self::FAILURE;
         }
 
         if ($this->booleanOptionProvided('queue') && $this->booleanOptionProvided('no-queue')) {
-            $this->components->error('Use either --queue or --no-queue, not both.');
+            $this->components->error($this->t('cli.errors.queue_conflict'));
 
             return self::FAILURE;
         }
@@ -69,23 +62,23 @@ final class MagicRunCommand extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         if ($fieldHandle === null) {
-            $this->components->error('Missing required option: --field=');
+            $this->components->error($this->t('cli.errors.missing_field'));
 
             return self::FAILURE;
         }
 
         if ($collectionHandle === null && $entryId === null && $assetIdentifier === null) {
-            $this->components->error('Provide at least one target via --collection=, --entry=, or --asset=');
+            $this->components->error($this->t('cli.errors.missing_target'));
 
             return self::FAILURE;
         }
 
         if ($actionOverride !== null && ! $this->actionLoader->exists($actionOverride)) {
             $availableActions = $this->formatList($this->availableActionHandles());
-            $this->components->error(
-                "Action '{$actionOverride}' not found. Available actions: {$availableActions}. ".
-                'Check config/statamic/magic-actions.php.'
-            );
+            $this->components->error($this->t('cli.errors.action_not_found', [
+                'action' => $actionOverride,
+                'actions' => $availableActions,
+            ]));
 
             return self::FAILURE;
         }
@@ -94,7 +87,7 @@ final class MagicRunCommand extends Command
         $totalTargets = count($targets) + count($resolutionErrors);
 
         if ($totalTargets === 0) {
-            $this->components->warn('No targets resolved.');
+            $this->components->warn($this->t('cli.errors.no_targets_resolved'));
 
             return self::FAILURE;
         }
@@ -110,7 +103,7 @@ final class MagicRunCommand extends Command
                 'target' => $resolutionError['target'],
                 'field' => $fieldHandle,
                 'action' => $actionOverride ?? '-',
-                'status' => 'failed',
+                'status' => $this->t('cli.status.failed'),
                 'message' => $resolutionError['message'],
             ];
             $failed++;
@@ -129,8 +122,8 @@ final class MagicRunCommand extends Command
                     'target' => $targetLabel,
                     'field' => $fieldHandle,
                     'action' => '-',
-                    'status' => 'failed',
-                    'message' => $actionError ?? 'Could not determine action.',
+                    'status' => $this->t('cli.status.failed'),
+                    'message' => $actionError ?? $this->t('cli.errors.could_not_determine_action'),
                 ];
                 $failed++;
 
@@ -142,8 +135,8 @@ final class MagicRunCommand extends Command
                     'target' => $targetLabel,
                     'field' => $fieldHandle,
                     'action' => $resolvedAction,
-                    'status' => 'skipped',
-                    'message' => 'Field already has a value. Use --overwrite to force.',
+                    'status' => $this->t('cli.status.skipped'),
+                    'message' => $this->t('cli.errors.field_has_value'),
                 ];
                 $skipped++;
 
@@ -157,8 +150,8 @@ final class MagicRunCommand extends Command
                     'target' => $targetLabel,
                     'field' => $fieldHandle,
                     'action' => $resolvedAction,
-                    'status' => 'failed',
-                    'message' => 'Action cannot run for this target/field.',
+                    'status' => $this->t('cli.status.failed'),
+                    'message' => $this->t('cli.errors.cannot_run_for_target'),
                 ];
                 $failed++;
 
@@ -174,13 +167,17 @@ final class MagicRunCommand extends Command
         }
 
         if ($dryRun) {
-            $this->components->info('Dry run: no changes will be made.');
+            $this->components->info($this->t('cli.messages.dry_run'));
 
             if ($executionPlan === []) {
-                $this->components->warn('No targets would be processed.');
+                $this->components->warn($this->t('cli.messages.dry_run_no_targets'));
             } else {
                 $this->table(
-                    ['Target', 'Field', 'Action'],
+                    [
+                        $this->t('cli.table.execution_headers.target'),
+                        $this->t('cli.table.execution_headers.field'),
+                        $this->t('cli.table.execution_headers.action'),
+                    ],
                     array_map(
                         fn (array $row): array => [$row['target_label'], $fieldHandle, $row['action']],
                         $executionPlan
@@ -231,8 +228,8 @@ final class MagicRunCommand extends Command
                         'target' => $planRow['target_label'],
                         'field' => $fieldHandle,
                         'action' => $planRow['action'],
-                        'status' => 'queued',
-                        'message' => 'Job dispatched.',
+                        'status' => $this->t('cli.status.queued'),
+                        'message' => $this->t('cli.messages.job_dispatched'),
                     ];
                     $dispatched++;
                 } else {
@@ -247,8 +244,8 @@ final class MagicRunCommand extends Command
                         'target' => $planRow['target_label'],
                         'field' => $fieldHandle,
                         'action' => $planRow['action'],
-                        'status' => 'processed',
-                        'message' => 'Completed synchronously.',
+                        'status' => $this->t('cli.status.processed'),
+                        'message' => $this->t('cli.messages.completed_sync'),
                     ];
                 }
 
@@ -258,7 +255,7 @@ final class MagicRunCommand extends Command
                     'target' => $planRow['target_label'],
                     'field' => $fieldHandle,
                     'action' => $planRow['action'],
-                    'status' => 'failed',
+                    'status' => $this->t('cli.status.failed'),
                     'message' => $e->getMessage(),
                 ];
                 $failed++;
@@ -296,7 +293,10 @@ final class MagicRunCommand extends Command
                 $availableCollections = $this->formatList($this->availableCollectionHandles());
                 $errors[] = [
                     'target' => "collection:{$collectionHandle}",
-                    'message' => "Collection '{$collectionHandle}' not found. Available collections: {$availableCollections}.",
+                    'message' => $this->t('cli.errors.collection_not_found', [
+                        'collection' => $collectionHandle,
+                        'collections' => $availableCollections,
+                    ]),
                 ];
             } else {
                 foreach ($collection->queryEntries()->get() as $entry) {
@@ -315,7 +315,7 @@ final class MagicRunCommand extends Command
             if (! $entry) {
                 $errors[] = [
                     'target' => "entry:{$entryId}",
-                    'message' => 'Entry not found.',
+                    'message' => $this->t('cli.errors.entry_not_found'),
                 ];
             } else {
                 $this->addTargetIfNotSeen($targets, $seen, $entry);
@@ -328,7 +328,7 @@ final class MagicRunCommand extends Command
             if (! $asset) {
                 $errors[] = [
                     'target' => "asset:{$assetIdentifier}",
-                    'message' => 'Asset not found. Expected format: container::path',
+                    'message' => $this->t('cli.errors.asset_not_found'),
                 ];
             } else {
                 $this->addTargetIfNotSeen($targets, $seen, $asset);
@@ -350,25 +350,25 @@ final class MagicRunCommand extends Command
         $blueprint = $target->blueprint();
 
         if (! $blueprint) {
-            return [null, 'Target has no blueprint; unable to resolve field action config.'];
+            return [null, $this->t('cli.errors.target_has_no_blueprint')];
         }
 
         $field = $blueprint->field($fieldHandle);
 
         if (! $field) {
-            return [null, "Field '{$fieldHandle}' does not exist on target blueprint."];
+            return [null, $this->t('cli.errors.field_missing_on_blueprint', ['field' => $fieldHandle])];
         }
 
         $configuredActions = $this->normalizeConfiguredActions($field->config()['magic_actions_action'] ?? null);
 
         if ($configuredActions === []) {
-            return [null, "Field '{$fieldHandle}' has no configured magic_actions_action."];
+            return [null, $this->t('cli.errors.field_no_configured_actions', ['field' => $fieldHandle])];
         }
 
         if (count($configuredActions) > 1) {
             return [
                 null,
-                "Field '{$fieldHandle}' has multiple configured actions. Use --action= to select one.",
+                $this->t('cli.errors.field_multiple_actions', ['field' => $fieldHandle]),
             ];
         }
 
@@ -377,7 +377,10 @@ final class MagicRunCommand extends Command
         if (! $this->actionLoader->exists($action)) {
             $availableActions = $this->formatList($this->availableActionHandles());
 
-            return [null, "Configured action '{$action}' does not exist. Available actions: {$availableActions}."];
+            return [null, $this->t('cli.errors.configured_action_missing', [
+                'action' => $action,
+                'actions' => $availableActions,
+            ])];
         }
 
         return [$action, null];
@@ -503,10 +506,14 @@ final class MagicRunCommand extends Command
             $collectionHandle = (string) $target->collectionHandle();
             $site = (string) $target->locale();
 
-            return "entry:{$target->id()} [collection={$collectionHandle}, site={$site}]";
+            return $this->t('cli.targets.entry_label', [
+                'id' => (string) $target->id(),
+                'collection' => $collectionHandle,
+                'site' => $site,
+            ]);
         }
 
-        return 'asset:'.(string) $target->id();
+        return $this->t('cli.targets.asset_label', ['id' => (string) $target->id()]);
     }
 
     private function resolveAsset(string $identifier): ?Asset
@@ -537,7 +544,13 @@ final class MagicRunCommand extends Command
         }
 
         $this->table(
-            ['Target', 'Field', 'Action', 'Status', 'Message'],
+            [
+                $this->t('cli.table.status_headers.target'),
+                $this->t('cli.table.status_headers.field'),
+                $this->t('cli.table.status_headers.action'),
+                $this->t('cli.table.status_headers.status'),
+                $this->t('cli.table.status_headers.message'),
+            ],
             array_map(
                 fn (array $row): array => [$row['target'], $row['field'], $row['action'], $row['status'], $row['message']],
                 $rows
@@ -555,21 +568,24 @@ final class MagicRunCommand extends Command
         ?string $batchId
     ): void {
         $summaryRows = [
-            ['Total targets', (string) $totalTargets],
-            ['Processed', (string) $processed],
-            ['Skipped', (string) $skipped],
-            ['Failed', (string) $failed],
+            [$this->t('cli.table.summary.total_targets'), (string) $totalTargets],
+            [$this->t('cli.table.summary.processed'), (string) $processed],
+            [$this->t('cli.table.summary.skipped'), (string) $skipped],
+            [$this->t('cli.table.summary.failed'), (string) $failed],
         ];
 
         if ($queued) {
-            $summaryRows[] = ['Dispatched jobs', (string) $dispatched];
+            $summaryRows[] = [$this->t('cli.table.summary.dispatched_jobs'), (string) $dispatched];
 
             if ($batchId !== null) {
-                $summaryRows[] = ['Batch ID', $batchId];
+                $summaryRows[] = [$this->t('cli.table.summary.batch_id'), $batchId];
             }
         }
 
-        $this->table(['Metric', 'Count'], $summaryRows);
+        $this->table([
+            $this->t('cli.table.summary_headers.metric'),
+            $this->t('cli.table.summary_headers.count'),
+        ], $summaryRows);
     }
 
     /**
@@ -586,7 +602,7 @@ final class MagicRunCommand extends Command
             return $actions[0];
         }
 
-        return 'mixed';
+        return $this->t('cli.misc.mixed');
     }
 
     private function stringOption(string $name): ?string
@@ -716,7 +732,29 @@ final class MagicRunCommand extends Command
 
     private function formatList(array $values): string
     {
-        return $values === [] ? '(none)' : implode(', ', $values);
+        return $values === [] ? $this->t('cli.misc.none') : implode(', ', $values);
+    }
+
+    private function buildSignature(): string
+    {
+        return implode("\n", [
+            'statamic:magic:run',
+            '    {--collection= : '.$this->t('cli.options.collection').'}',
+            '    {--entry= : '.$this->t('cli.options.entry').'}',
+            '    {--asset= : '.$this->t('cli.options.asset').'}',
+            '    {--field= : '.$this->t('cli.options.field').'}',
+            '    {--action= : '.$this->t('cli.options.action').'}',
+            '    {--overwrite : '.$this->t('cli.options.overwrite').'}',
+            '    {--no-overwrite : '.$this->t('cli.options.no_overwrite').'}',
+            '    {--queue : '.$this->t('cli.options.queue').'}',
+            '    {--no-queue : '.$this->t('cli.options.no_queue').'}',
+            '    {--dry-run : '.$this->t('cli.options.dry_run').'}',
+        ]);
+    }
+
+    private function t(string $key, array $replace = []): string
+    {
+        return __('magic-actions::magic-actions.'.$key, $replace);
     }
 
     /**
