@@ -141,7 +141,7 @@ final class ActionExecutor
         $this->assertMimeTypeSupported($action, $target, $options);
 
         if (! $this->canExecute($action, $target, $fieldHandle, $options)) {
-            throw new InvalidArgumentException("Action '{$action}' cannot be executed for field '{$fieldHandle}'.");
+            throw new InvalidArgumentException(__('magic-actions::magic-actions.errors.action_field_mismatch', ['action' => $action, 'field' => $fieldHandle]));
         }
     }
 
@@ -213,7 +213,7 @@ final class ActionExecutor
             $actionName = class_basename($magicAction);
             $displayMimeType = $assetMimeType !== '' ? $assetMimeType : 'unknown';
             throw new InvalidArgumentException(
-                "Action {$actionName} does not support file type '{$displayMimeType}'. Accepted types: {$accepted}."
+                __('magic-actions::magic-actions.errors.unsupported_file_type', ['action' => $actionName, 'type' => $displayMimeType, 'accepted' => $accepted])
             );
         }
     }
