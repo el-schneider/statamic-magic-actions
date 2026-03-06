@@ -3,7 +3,6 @@ vendor
 composer.lock
 .phpunit.result.cache
 .env
-resources/dist
 .cursorrules
 .playwright-mcp
 
