@@ -5,20 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.2.1 - 2026-03-06
+
+### Fixed
+
+- **Assets now ship with Composer installs** — previously `resources/dist` was gitignored, requiring users to manually build frontend assets after installation (#22, #23)
+- **Null-guard in meta sync** — fixed error when using the addon on simple text fields without relationship meta
+
+### Added
+
+- GitHub Actions workflow to automatically build and commit compiled assets on push to `main`
+
 ## v0.2.0 - 2026-02-18
 
 ### Added
+
 - Multi-provider support — configure default AI provider and model in settings (#11)
 - Helpful hint when provider API keys are missing in settings
 - Pest browser tests for field actions and settings page (#8)
 - MIT license
 
 ### Fixed
+
 - Taxonomy terms and relationship fields now display titles instead of raw slugs after magic action updates (#18)
 - CP route resolution via `Statamic::cpRoute()` instead of hardcoded paths
 - Auth middleware on action routes (security)
 
 ### Changed
+
 - AI endpoints migrated to Statamic CP routes with proper authentication
 - README updated for multi-provider setup
 
