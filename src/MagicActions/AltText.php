@@ -11,6 +11,13 @@ final class AltText extends BaseMagicAction
 {
     public const string TITLE = 'Alt Text';
 
+    public function contextRequirements(): array
+    {
+        return [
+            'text' => 'asset_metadata',
+        ];
+    }
+
     public function type(): string
     {
         return 'vision';
