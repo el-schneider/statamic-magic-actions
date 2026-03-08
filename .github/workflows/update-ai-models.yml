@@ -12,14 +12,20 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Install Claude CLI
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Fetch latest models
         run: |
-          curl -s https://openrouter.ai/api/v1/models | jq '
+          RESPONSE=$(curl -s -w "\n%{http_code}" https://openrouter.ai/api/v1/models)
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -1)
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "OpenRouter API returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
+          echo "$RESPONSE" | head -n -1 | jq '
             [.data[] | select(.id | test("^(anthropic|openai|google|meta-llama|mistralai|x-ai)/"))]
             | group_by(.id | split("/")[0])
             | map({
@@ -35,7 +41,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          cat <<'PROMPT' | claude -p --model sonnet --allowedTools "Read,Write,Edit,Bash"
+          cat <<'PROMPT' | claude -p --model sonnet --allowedTools "Read,Write,Edit"
           Read /tmp/latest-models.json — it contains the 5 most recent models per
           provider, sorted by release date.
 
@@ -65,7 +71,7 @@ jobs:
 
       - name: Create pull request
         if: steps.changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
 
           branch: chore/update-ai-models
