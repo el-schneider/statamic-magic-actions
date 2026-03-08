@@ -60,6 +60,9 @@ it('base action defaults to entry_content', function () {
 it('resolves asset_metadata to filename and dimensions for assets', function () {
     $resolver = app(ContextResolver::class);
 
+    // Uses concrete Asset class (not contract) because ContextResolver::resolveAssetMetadata()
+    // calls width()/height()/size() via safeInvokeMethod() which relies on method_exists() —
+    // these methods exist on the concrete class but not the contract interface.
     $asset = Mockery::mock(Asset::class);
     $asset->shouldReceive('basename')->andReturn('hero.jpg');
     $asset->shouldReceive('extension')->andReturn('jpg');
@@ -67,7 +70,6 @@ it('resolves asset_metadata to filename and dimensions for assets', function () 
     $asset->shouldReceive('width')->andReturn(1920);
     $asset->shouldReceive('height')->andReturn(1080);
     $asset->shouldReceive('metadata')->andReturn([]);
-    $asset->shouldReceive('blueprint')->andReturn(null);
 
     $action = new AltText;
     $result = $resolver->resolve($action, $asset, 'alt');
@@ -81,7 +83,6 @@ it('returns empty text for entry_content when target is an asset', function () {
     $resolver = app(ContextResolver::class);
 
     $asset = Mockery::mock(Asset::class);
-    $asset->shouldReceive('blueprint')->andReturn(null);
 
     $action = new ProposeTitle;
     $result = $resolver->resolve($action, $asset, 'title');
