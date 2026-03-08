@@ -1,0 +1,76 @@
+name: Update AI Model References
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 9am UTC
+  workflow_dispatch:
+
+jobs:
+  update-models:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Fetch latest models
+        run: |
+          curl -s https://openrouter.ai/api/v1/models | jq '
+            [.data[] | select(.id | test("^(anthropic|openai|google|meta-llama|mistralai|x-ai)/"))]
+            | group_by(.id | split("/")[0])
+            | map({
+                provider: .[0].id | split("/")[0],
+                models: [sort_by(-.created) | .[:5][] | {
+                  id: (.id | split("/")[1]),
+                  created: (.created | todate)
+                }]
+              })
+          ' > /tmp/latest-models.json
+
+      - name: Run agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cat <<'PROMPT' | claude -p --model sonnet --allowedTools "Read,Write,Edit,Bash"
+          Read /tmp/latest-models.json — it contains the 5 most recent models per
+          provider, sorted by release date.
+
+          Scan this entire codebase — including .github/workflows/ — for ALL
+          mentions of specific AI model names or IDs (e.g. claude-sonnet-4-20250514,
+          gpt-4o, gemini-2.0-flash). This includes illustrative examples, prompts,
+          comments, and documentation — not just functional references.
+          Do NOT touch model aliases like "haiku", "sonnet", "opus" — those resolve
+          automatically and are intentional.
+
+          Compare found references against the latest models. The most recently
+          created non-preview model in each family is the current stable version.
+          Update any outdated ones to their current equivalents. Preserve intent — if a
+          small/fast model was used, pick the current small/fast model, not the largest.
+
+          If nothing is outdated, change nothing.
+
+          Write a summary of changes (with old → new table) to /tmp/update-summary.md.
+          PROMPT
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git diff --name-only)" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PAT }}
+          branch: chore/update-ai-models
+          delete-branch: true
+          commit-message: 'chore: update AI model references'
+          title: 'chore: update AI model references'
+          body-path: /tmp/update-summary.md
+          labels: dependencies, automated
