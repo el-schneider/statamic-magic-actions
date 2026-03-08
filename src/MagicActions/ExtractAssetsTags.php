@@ -12,6 +12,13 @@ final class ExtractAssetsTags extends BaseMagicAction
 {
     public const string TITLE = 'Extract Tags';
 
+    public function contextRequirements(): array
+    {
+        return [
+            'text' => 'asset_metadata',
+        ];
+    }
+
     public function type(): string
     {
         return 'vision';
