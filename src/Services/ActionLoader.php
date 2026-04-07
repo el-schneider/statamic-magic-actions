@@ -22,7 +22,7 @@ final class ActionLoader
     {
         $magicAction = $this->loadMagicAction($action);
         if ($magicAction === null) {
-            throw new RuntimeException("Action '{$action}' not found");
+            throw new RuntimeException(__('magic-actions::magic-actions.errors.action_not_found', ['action' => $action]));
         }
 
         $result = $this->buildResultFromMagicAction($magicAction, $variables);
@@ -79,7 +79,7 @@ final class ActionLoader
 
         if (! str_contains($modelKey, '/')) {
             throw new InvalidArgumentException(
-                "Invalid model key format: '{$modelKey}'. Expected format: 'provider/model'"
+                __('magic-actions::magic-actions.errors.invalid_model_key', ['key' => $modelKey])
             );
         }
 

@@ -59,6 +59,11 @@ final class ServiceProvider extends AddonServiceProvider
         parent::boot();
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'magic-actions');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'magic-actions');
+
+        $this->publishes([
+            __DIR__.'/../resources/lang' => $this->app->langPath('vendor/magic-actions'),
+        ], 'statamic-magic-actions-translations');
 
         $this->publishes([
             __DIR__.'/MagicActions' => app_path('MagicActions'),

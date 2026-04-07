@@ -149,8 +149,8 @@ final class DynamicBulkAction extends Action
 
         return [
             'field_handle' => [
-                'display' => __('Target Field'),
-                'instructions' => __('Select the field that should receive the result.'),
+                'display' => __('magic-actions::magic-actions.bulk.target_field'),
+                'instructions' => __('magic-actions::magic-actions.bulk.target_field_instructions'),
                 'type' => 'select',
                 'options' => $options,
                 'validate' => 'required',
@@ -550,15 +550,15 @@ final class DynamicBulkAction extends Action
 
         if ($queued > 0) {
             $messages[] = trans_choice(
-                "Queued {$title} for :count item.|Queued {$title} for :count items.",
+                'magic-actions::magic-actions.bulk.queued',
                 $queued,
-                ['count' => $queued]
+                ['count' => $queued, 'title' => $title]
             );
         }
 
         if ($skipped > 0) {
             $messages[] = trans_choice(
-                ':count item was skipped.|:count items were skipped.',
+                'magic-actions::magic-actions.bulk.skipped',
                 $skipped,
                 ['count' => $skipped]
             );
@@ -566,13 +566,13 @@ final class DynamicBulkAction extends Action
 
         if ($failed > 0) {
             $messages[] = trans_choice(
-                ':count item failed to queue.|:count items failed to queue.',
+                'magic-actions::magic-actions.bulk.failed',
                 $failed,
                 ['count' => $failed]
             );
         }
 
-        return $messages === [] ? __('No items were processed.') : implode(' ', $messages);
+        return $messages === [] ? __('magic-actions::magic-actions.bulk.no_items') : implode(' ', $messages);
     }
 
     private function resolveMagicAction(): ?MagicAction
