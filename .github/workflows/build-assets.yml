@@ -19,6 +19,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use npm with min-release-age support
+        run: npm install -g npm@11.10.0 && npm --version
+
       - name: Install front-end dependencies
         run: npm ci
 
