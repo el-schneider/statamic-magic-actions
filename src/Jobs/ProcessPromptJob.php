@@ -51,7 +51,7 @@ final class ProcessPromptJob implements ShouldQueue
             $response = match ($promptData['type']) {
                 'text', 'vision' => $this->handleTextPrompt($promptData, $action),
                 'audio' => $this->handleAudioPrompt($promptData),
-                default => throw new Exception("Unknown prompt type: {$promptData['type']}"),
+                default => throw new Exception(__('magic-actions::magic-actions.errors.unknown_prompt_type', ['type' => $promptData['type']])),
             };
 
             $finalValue = $this->persistResult($response);

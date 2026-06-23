@@ -53,13 +53,13 @@ final class MagicRunCommand extends Command
         $actionOverride = $this->stringOption('action');
 
         if ($this->booleanOptionProvided('overwrite') && $this->booleanOptionProvided('no-overwrite')) {
-            $this->components->error('Use either --overwrite or --no-overwrite, not both.');
+            $this->components->error(__('magic-actions::magic-actions.cli.overwrite_conflict'));
 
             return self::FAILURE;
         }
 
         if ($this->booleanOptionProvided('queue') && $this->booleanOptionProvided('no-queue')) {
-            $this->components->error('Use either --queue or --no-queue, not both.');
+            $this->components->error(__('magic-actions::magic-actions.cli.queue_conflict'));
 
             return self::FAILURE;
         }
@@ -69,13 +69,13 @@ final class MagicRunCommand extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         if ($fieldHandle === null) {
-            $this->components->error('Missing required option: --field=');
+            $this->components->error(__('magic-actions::magic-actions.cli.missing_field'));
 
             return self::FAILURE;
         }
 
         if ($collectionHandle === null && $entryId === null && $assetIdentifier === null) {
-            $this->components->error('Provide at least one target via --collection=, --entry=, or --asset=');
+            $this->components->error(__('magic-actions::magic-actions.cli.missing_target'));
 
             return self::FAILURE;
         }
@@ -83,8 +83,7 @@ final class MagicRunCommand extends Command
         if ($actionOverride !== null && ! $this->actionLoader->exists($actionOverride)) {
             $availableActions = $this->formatList($this->availableActionHandles());
             $this->components->error(
-                "Action '{$actionOverride}' not found. Available actions: {$availableActions}. ".
-                'Check config/statamic/magic-actions.php.'
+                __('magic-actions::magic-actions.cli.action_not_found', ['action' => $actionOverride, 'available' => $availableActions])
             );
 
             return self::FAILURE;
@@ -94,7 +93,7 @@ final class MagicRunCommand extends Command
         $totalTargets = count($targets) + count($resolutionErrors);
 
         if ($totalTargets === 0) {
-            $this->components->warn('No targets resolved.');
+            $this->components->warn(__('magic-actions::magic-actions.cli.no_targets'));
 
             return self::FAILURE;
         }
@@ -174,10 +173,10 @@ final class MagicRunCommand extends Command
         }
 
         if ($dryRun) {
-            $this->components->info('Dry run: no changes will be made.');
+            $this->components->info(__('magic-actions::magic-actions.cli.dry_run'));
 
             if ($executionPlan === []) {
-                $this->components->warn('No targets would be processed.');
+                $this->components->warn(__('magic-actions::magic-actions.cli.dry_run_empty'));
             } else {
                 $this->table(
                     ['Target', 'Field', 'Action'],
@@ -296,7 +295,7 @@ final class MagicRunCommand extends Command
                 $availableCollections = $this->formatList($this->availableCollectionHandles());
                 $errors[] = [
                     'target' => "collection:{$collectionHandle}",
-                    'message' => "Collection '{$collectionHandle}' not found. Available collections: {$availableCollections}.",
+                    'message' => __('magic-actions::magic-actions.cli.collection_not_found', ['collection' => $collectionHandle, 'available' => $availableCollections]),
                 ];
             } else {
                 foreach ($collection->queryEntries()->get() as $entry) {
@@ -356,19 +355,19 @@ final class MagicRunCommand extends Command
         $field = $blueprint->field($fieldHandle);
 
         if (! $field) {
-            return [null, "Field '{$fieldHandle}' does not exist on target blueprint."];
+            return [null, __('magic-actions::magic-actions.cli.field_not_found', ['field' => $fieldHandle])];
         }
 
         $configuredActions = $this->normalizeConfiguredActions($field->config()['magic_actions_action'] ?? null);
 
         if ($configuredActions === []) {
-            return [null, "Field '{$fieldHandle}' has no configured magic_actions_action."];
+            return [null, __('magic-actions::magic-actions.cli.field_no_action', ['field' => $fieldHandle])];
         }
 
         if (count($configuredActions) > 1) {
             return [
                 null,
-                "Field '{$fieldHandle}' has multiple configured actions. Use --action= to select one.",
+                __('magic-actions::magic-actions.cli.field_multiple_actions', ['field' => $fieldHandle]),
             ];
         }
 
@@ -377,7 +376,7 @@ final class MagicRunCommand extends Command
         if (! $this->actionLoader->exists($action)) {
             $availableActions = $this->formatList($this->availableActionHandles());
 
-            return [null, "Configured action '{$action}' does not exist. Available actions: {$availableActions}."];
+            return [null, __('magic-actions::magic-actions.cli.configured_action_not_found', ['action' => $action, 'available' => $availableActions])];
         }
 
         return [$action, null];

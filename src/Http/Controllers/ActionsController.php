@@ -184,7 +184,7 @@ final class ActionsController extends Controller
                 ]);
 
                 return response()->json([
-                    'error' => "Context target not found for type '{$context['type']}' and id '{$context['id']}'.",
+                    'error' => __('magic-actions::magic-actions.errors.context_not_found', ['type' => $context['type'], 'id' => $context['id']]),
                     'context_type' => $context['type'],
                     'context_id' => $context['id'],
                 ], 404);
