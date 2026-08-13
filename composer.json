@@ -14,7 +14,7 @@
         "statamic/cms": "^5.0",
         "guzzlehttp/guzzle": "^7.8",
         "symfony/yaml": "^7.0",
-        "prism-php/prism": "^0.99.0"
+        "prism-php/prism": "^0.99.0 || ^0.100"
     },
     "require-dev": {
         "orchestra/testbench": "^10.0",
