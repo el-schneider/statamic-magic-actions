@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.2.2 - 2026-08-13
+
+### Fixed
+
+- Allow Prism 0.100 alongside 0.99. Composer's caret pins the minor on `0.x`, so `^0.99.0` blocked installation next to any package requiring Prism 0.100 (#29)
+
+### Changed
+
+- CI now tests against both supported Prism minors (#29)
+- Repair Dependabot config: the `github-actions` block used an unsupported cooldown option that disabled all version updates; Composer updates now use the `widen` strategy (#30)
+
 ## v0.2.1 - 2026-03-06
 
 ### Fixed
