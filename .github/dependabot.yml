@@ -6,9 +6,10 @@ updates:
       interval: daily
       time: '00:30'
       timezone: Europe/Berlin
+    # The GitHub Actions ecosystem supports only default-days; a semver-*-days
+    # key here invalidates the file and stops all version updates.
     cooldown:
       default-days: 7
-      semver-patch-days: 7
       include:
         - '*'
 
@@ -18,6 +19,9 @@ updates:
       interval: daily
       time: '01:30'
       timezone: Europe/Berlin
+    # This package is a library: widen constraints to keep older versions
+    # installable instead of replacing them.
+    versioning-strategy: widen
     cooldown:
       default-days: 7
       semver-patch-days: 7
