@@ -7,12 +7,13 @@ on:
 
 jobs:
   ci:
-    name: CI – PHP ${{ matrix.php }}
+    name: CI – PHP ${{ matrix.php }}, Prism ${{ matrix.prism }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
         php: ['8.3', '8.4']
+        prism: ['^0.99.0', '^0.100']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,6 +28,7 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: sockets
           coverage: none
+      - run: composer require "prism-php/prism:${{ matrix.prism }}" --no-update --no-interaction
       - run: composer install --no-interaction
       - run: npx playwright install chromium --with-deps
       - run: npm run build
