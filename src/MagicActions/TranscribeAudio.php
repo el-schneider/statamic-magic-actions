@@ -10,6 +10,13 @@ final class TranscribeAudio extends BaseMagicAction
 {
     public const string TITLE = 'Transcribe Audio';
 
+    public function contextRequirements(): array
+    {
+        return [
+            'text' => 'asset_metadata',
+        ];
+    }
+
     public function type(): string
     {
         return 'audio';

@@ -11,6 +11,13 @@ final class ImageCaption extends BaseMagicAction
 {
     public const string TITLE = 'Image Caption';
 
+    public function contextRequirements(): array
+    {
+        return [
+            'text' => 'asset_metadata',
+        ];
+    }
+
     public function type(): string
     {
         return 'vision';
